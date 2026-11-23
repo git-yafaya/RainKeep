@@ -6,15 +6,16 @@ public enum FileCategory: String, CaseIterable, Identifiable, Sendable {
 
     public var id: String { rawValue }
 
-    public var displayName: String {
+    /// 界面名，也是「按类型放进子文件夹」时的文件夹名
+    public func name(_ language: Language) -> String {
         switch self {
-        case .video: "视频"
-        case .audio: "音频"
-        case .image: "图片"
-        case .document: "文档"
-        case .archive: "压缩包"
-        case .installer: "安装包"
-        case .other: "其他"
+        case .video: language.pick("视频", "Video")
+        case .audio: language.pick("音频", "Audio")
+        case .image: language.pick("图片", "Images")
+        case .document: language.pick("文档", "Documents")
+        case .archive: language.pick("压缩包", "Archives")
+        case .installer: language.pick("安装包", "Installers")
+        case .other: language.pick("其他", "Other")
         }
     }
 
@@ -54,6 +55,8 @@ public struct DownloadItem: Identifiable, Codable, Sendable {
     public var destination: URL?
     /// 失败原因或重试提示，显示在灰色小字里
     public var message: String?
+    /// 用户自定义分类，nil 表示没归类
+    public var group: UUID?
 
     public init(id: UUID = UUID(), name: String, url: URL? = nil, destination: URL? = nil,
                 size: Int64, received: Int64 = 0, status: TaskStatus = .queued) {

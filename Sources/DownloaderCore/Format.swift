@@ -13,27 +13,28 @@ public enum Format {
         return String(format: i < 2 ? "%.0f %@" : "%.1f %@", amount, units[i])
     }
 
-    public static func eta(_ seconds: Double) -> String {
-        if seconds < 60 { return "\(Int(seconds.rounded(.up))) 秒" }
-        if seconds < 3600 { return "\(Int((seconds / 60).rounded(.up))) 分" }
-        return String(format: "%.1f 小时", seconds / 3600)
+    public static func eta(_ seconds: Double, _ language: Language = .zh) -> String {
+        if seconds < 60 { return "\(Int(seconds.rounded(.up))) \(language.pick("秒", "s"))" }
+        if seconds < 3600 { return "\(Int((seconds / 60).rounded(.up))) \(language.pick("分", "min"))" }
+        return String(format: "%.1f %@", seconds / 3600, language.pick("小时", "h"))
     }
 
-    /// 任务行第三层的灰色小字
-    public static func summary(_ item: DownloadItem) -> String {
+    /// 任务行第三层的灰色小字；已完成的显示自定义分类名，没有就显示类型
+    public static func summary(_ item: DownloadItem, _ language: Language = .zh, groupName: String? = nil) -> String {
+        let l = language
         let total = bytes(Double(item.size))
         let progress = "\(bytes(Double(item.received))) / \(total)"
         switch item.status {
         case .downloading:
             if let message = item.message { return "\(message) · \(progress)" }
             // 服务器没给长度时只能显示已下多少
-            guard item.size > 0 else { return "\(bytes(item.speed))/s · 已下 \(bytes(Double(item.received)))" }
+            guard item.size > 0 else { return "\(bytes(item.speed))/s · \(l.pick("已下", "got")) \(bytes(Double(item.received)))" }
             let remaining = Double(item.size - item.received) / max(item.speed, 1)
-            return "\(bytes(item.speed))/s · 剩 \(eta(remaining)) · \(progress)"
-        case .queued: return "排队中 · \(total)"
-        case .paused: return "已暂停 · \(progress)"
-        case .failed: return "\(item.message ?? "连接中断") · \(progress)"
-        case .completed: return "\(total) · \(item.category.displayName)"
+            return "\(bytes(item.speed))/s · \(l.pick("剩 ", ""))\(eta(remaining, l))\(l.pick("", " left")) · \(progress)"
+        case .queued: return "\(l.pick("排队中", "Queued")) · \(total)"
+        case .paused: return "\(l.pick("已暂停", "Paused")) · \(progress)"
+        case .failed: return "\(item.message ?? l.pick("连接中断", "Connection lost")) · \(progress)"
+        case .completed: return "\(total) · \(groupName ?? item.category.name(l))"
         }
     }
 }

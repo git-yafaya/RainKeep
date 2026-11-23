@@ -1,4 +1,4 @@
-// 界面状态与任务列表：调度下载引擎、网络出错自动重试、任务和设置存盘
+// 界面状态与任务列表：调度下载引擎、网络出错自动重试、自定义分类、外观，任务和设置存盘
 import AppKit
 import DownloaderCore
 import Foundation
@@ -12,29 +12,71 @@ struct AppSettings: Equatable, Codable {
     /// 每个任务分几段，0 表示自动
     var threads = 0
     var classify = true
+    var learn = true
     var notify = true
+    var menuBar = true
+    var theme = ThemeChoice.system
+    var fontSize = FontSize.standard
+    /// nil 表示跟随系统
+    var language: Language?
+    var background: URL?
+
+    init() {}
+
+    /// 老版本存的设置缺新字段，缺的用默认值
+    init(from decoder: any Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        let d = AppSettings()
+        downloadDir = try c.decodeIfPresent(URL.self, forKey: .downloadDir) ?? d.downloadDir
+        maxActive = try c.decodeIfPresent(Int.self, forKey: .maxActive) ?? d.maxActive
+        threads = try c.decodeIfPresent(Int.self, forKey: .threads) ?? d.threads
+        classify = try c.decodeIfPresent(Bool.self, forKey: .classify) ?? d.classify
+        learn = try c.decodeIfPresent(Bool.self, forKey: .learn) ?? d.learn
+        notify = try c.decodeIfPresent(Bool.self, forKey: .notify) ?? d.notify
+        menuBar = try c.decodeIfPresent(Bool.self, forKey: .menuBar) ?? d.menuBar
+        theme = try c.decodeIfPresent(ThemeChoice.self, forKey: .theme) ?? d.theme
+        fontSize = try c.decodeIfPresent(FontSize.self, forKey: .fontSize) ?? d.fontSize
+        language = try c.decodeIfPresent(Language.self, forKey: .language)
+        background = try c.decodeIfPresent(URL.self, forKey: .background)
+    }
 }
 
 enum StatusFilter: CaseIterable, Identifiable {
     case all, active, done
     var id: Self { self }
-    var title: String {
+    func title(_ language: Language) -> String {
         switch self {
-        case .all: "全部"
-        case .active: "进行中"
-        case .done: "已完成"
+        case .all: language.pick("全部", "All")
+        case .active: language.pick("进行中", "Active")
+        case .done: language.pick("已完成", "Done")
         }
     }
+}
+
+/// 侧栏选中项：全部、某个类型、某个自定义分类
+enum SidebarSelection: Hashable {
+    case all
+    case type(FileCategory)
+    case group(UUID)
+}
+
+/// 新任务：浏览器接管来的会带文件名和请求头
+private struct NewTask {
+    var url: URL
+    var fileName: String?
+    var headers: [String: String] = [:]
 }
 
 enum Dialog: Equatable {
     case add, settings
 }
 
-/// 存盘内容：任务列表和设置
+/// 存盘内容：任务列表、设置、自定义分类和学到的习惯（后两项老版本没有）
 private struct SavedState: Codable {
     var items: [DownloadItem]
     var settings: AppSettings
+    var categories: CategoryTree?
+    var learner: CategoryLearner?
 }
 
 @MainActor
@@ -45,20 +87,29 @@ final class DownloadStore {
     private static let retryPollInterval = Duration.milliseconds(500)
     private static let speedSmoothing = 0.3
     private static let minSpeedSampleSeconds = 0.2
-    private static let retryMessage = "网络中断，正在重试"
 
     var items: [DownloadItem] = []
     var settings = AppSettings() {
         didSet {
             if settings.notify, !oldValue.notify { requestNotificationPermission() }
+            if settings.background != oldValue.background { loadBackground() }
+            if settings.theme != oldValue.theme || settings.background != oldValue.background { applyAppearance() }
             reschedule()
         }
     }
-    /// nil 表示「全部」
-    var category: FileCategory?
+    var categories = CategoryTree()
+    var selection = SidebarSelection.all
     var statusFilter: StatusFilter = .all
     var dialog: Dialog?
     var toastText: String?
+    /// 正在侧栏里改名的分类
+    var renaming: UUID?
+    private(set) var backgroundImage: NSImage?
+    private var backgroundIsBright = true
+
+    @ObservationIgnored private var learner = CategoryLearner()
+    /// 浏览器带来的 Cookie 等请求头只放内存，不写进存盘文件
+    @ObservationIgnored private var headers: [UUID: [String: String]] = [:]
 
     @ObservationIgnored private var toastToken = 0
     @ObservationIgnored private var jobs: [UUID: Task<Void, Never>] = [:]
@@ -74,6 +125,8 @@ final class DownloadStore {
         do {
             let saved = try JSONDecoder().decode(SavedState.self, from: data)
             settings = saved.settings
+            categories = saved.categories ?? CategoryTree()
+            learner = saved.learner ?? CategoryLearner()
             // 上次没下完的重新排队，start() 时自动续传
             items = saved.items.map { item in
                 var item = item
@@ -83,29 +136,60 @@ final class DownloadStore {
                 return item
             }
         } catch {
-            showToast("读取任务列表失败：\(error.localizedDescription)")
+            showToast(language.pick("读取任务列表失败：", "Couldn't read saved tasks: ") + error.localizedDescription)
         }
+        loadBackground()
     }
 
     // MARK: 派生数据
 
+    var language: Language { settings.language ?? .system }
+    /// 启动时的语言，给窗口标题这类不随设置刷新的地方用
+    @ObservationIgnored private(set) lazy var launchLanguage = language
+
+    var theme: Theme {
+        Theme.make(settings.theme, size: settings.fontSize,
+                   backgroundIsBright: backgroundImage == nil ? nil : backgroundIsBright)
+    }
+
     var visibleItems: [DownloadItem] {
         items.filter { item in
-            (category == nil || item.category == category) &&
+            matches(item, selection) &&
                 (statusFilter == .all || (statusFilter == .done) == (item.status == .completed))
         }
     }
 
     /// 筛选条件变了列表才重建、播入场动画
-    var filterKey: String { "\(category?.rawValue ?? "all")-\(statusFilter)" }
+    var filterKey: String { "\(selection)-\(statusFilter)" }
+
+    var title: String {
+        switch selection {
+        case .all: language.pick("全部", "All")
+        case .type(let type): type.name(language)
+        case .group(let id): categories[id]?.name ?? ""
+        }
+    }
 
     var activeItems: [DownloadItem] { items.filter { $0.status == .downloading } }
+    var totalSpeed: Double { activeItems.reduce(0) { $0 + $1.speed } }
     var isRunning: Bool { items.contains { $0.status == .downloading || $0.status == .queued } }
     var hasPaused: Bool { items.contains { $0.status == .paused } }
 
-    func count(for category: FileCategory?) -> Int {
-        guard let category else { return items.count }
-        return items.filter { $0.category == category }.count
+    func count(for selection: SidebarSelection) -> Int {
+        items.filter { matches($0, selection) }.count
+    }
+
+    /// 选中上级分类时连子孙分类的任务一起显示
+    private func matches(_ item: DownloadItem, _ selection: SidebarSelection) -> Bool {
+        switch selection {
+        case .all: true
+        case .type(let type): item.category == type
+        case .group(let id): item.group.map { categories.subtree(of: id).contains($0) } ?? false
+        }
+    }
+
+    func groupName(of item: DownloadItem) -> String? {
+        item.group.flatMap { categories[$0]?.name }
     }
 
     var downloadDirDisplay: String {
@@ -128,18 +212,45 @@ final class DownloadStore {
         monitor.start(queue: .global(qos: .utility))
         self.monitor = monitor
         if settings.notify { requestNotificationPermission() }
+        applyAppearance()
         reschedule()
     }
 
     func add(urls: [URL]) {
-        for url in urls {
-            let fileName = Naming.fileName(from: url)
-            let dir = directory(for: .of(fileName: fileName))
-            let name = Naming.uniqueName(fileName, taken: takenNames(in: dir))
-            items.append(DownloadItem(name: name, url: url, destination: dir.appending(path: name), size: 0))
+        add(urls.map { NewTask(url: $0) })
+    }
+
+    /// 浏览器扩展经 downloader://add 交来的下载；链接不合法直接拒绝
+    func handle(_ url: URL) {
+        guard let request = BrowserRequest.parse(url) else {
+            showToast(language.pick("无法识别的下载请求", "Unrecognized download request"))
+            return
+        }
+        add([NewTask(url: request.url, fileName: request.filename, headers: request.headers)])
+    }
+
+    /// 学过习惯的新任务直接放进对应分类
+    private func add(_ tasks: [NewTask]) {
+        var learned: UUID?
+        for task in tasks {
+            let fileName = task.fileName ?? Naming.fileName(from: task.url)
+            var item = DownloadItem(name: fileName, url: task.url, size: 0)
+            if settings.learn, let group = learner.suggest(url: task.url, fileName: fileName, in: categories) {
+                item.group = group
+                learned = group
+            }
+            let dir = directory(for: item)
+            item.name = Naming.uniqueName(fileName, taken: takenNames(in: dir))
+            item.destination = dir.appending(path: item.name)
+            if !task.headers.isEmpty { headers[item.id] = task.headers }
+            items.append(item)
         }
         reschedule()
-        showToast("已添加 \(urls.count) 个任务")
+        if let learned, let name = categories[learned]?.name {
+            showToast(language.pick("已按习惯放进「\(name)」", "Sorted into “\(name)” by habit"))
+        } else {
+            showToast(language.pick("已添加 \(tasks.count) 个任务", "Added \(tasks.count) \(tasks.count == 1 ? "task" : "tasks")"))
+        }
     }
 
     /// 行内主按钮：下载/排队→暂停，暂停/失败→重新排队，已完成→在访达中显示
@@ -167,6 +278,7 @@ final class DownloadStore {
         items.removeAll { $0.id == id }
         let job = jobs.removeValue(forKey: id)
         job?.cancel()
+        headers[id] = nil
         reschedule()
         guard item.status != .completed, let destination = item.destination else { return }
         Task {
@@ -192,6 +304,96 @@ final class DownloadStore {
             }
         }
         reschedule()
+    }
+
+    // MARK: 自定义分类
+
+    func level(of selection: SidebarSelection) -> Int {
+        switch selection {
+        case .all: 1
+        case .type: 2
+        case .group(let id): categories.depth(of: id)
+        }
+    }
+
+    func newCategory(parent: UUID?) {
+        guard let category = categories.add(language.pick("新分类", "New Category"), parent: parent) else { return }
+        renaming = category.id
+        save()
+    }
+
+    func rename(_ id: UUID, to name: String) {
+        categories.rename(id, to: name)
+        renaming = nil
+        save()
+    }
+
+    /// 删分类连同子分类，里面的任务保留、只是不再归类，文件留在原地
+    func deleteCategory(_ id: UUID) {
+        guard let name = categories[id]?.name else { return }
+        let removed = categories.remove(id)
+        for i in items.indices where items[i].group.map(removed.contains) == true { items[i].group = nil }
+        if case .group(let selected) = selection, removed.contains(selected) { selection = .all }
+        save()
+        showToast(language.pick("已删除「\(name)」，里面的任务保留", "Deleted “\(name)”; its tasks were kept"))
+    }
+
+    /// 手动归类：记下习惯；已下完的文件立刻挪进分类文件夹，没下完的等下完再挪
+    func assign(_ id: UUID, to group: UUID?) {
+        guard let i = items.firstIndex(where: { $0.id == id }), items[i].group != group else { return }
+        items[i].group = group
+        if let group, let name = categories[group]?.name {
+            if settings.learn { learner.record(url: items[i].url, fileName: items[i].name, category: group) }
+            relocate(id)
+            showToast(language.pick("已移到「\(name)」", "Moved to “\(name)”"))
+        }
+        save()
+    }
+
+    /// 已完成且归了分类的文件挪到分类对应的文件夹，重名自动加序号
+    private func relocate(_ id: UUID) {
+        guard let i = items.firstIndex(where: { $0.id == id }), items[i].status == .completed,
+              items[i].group != nil, let source = items[i].destination else { return }
+        let dir = directory(for: items[i])
+        guard source.deletingLastPathComponent().standardizedFileURL != dir.standardizedFileURL else { return }
+        do {
+            try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+            let name = Naming.uniqueName(source.lastPathComponent, taken: takenNames(in: dir))
+            let target = dir.appending(path: name)
+            try FileManager.default.moveItem(at: source, to: target)
+            items[i].destination = target
+            items[i].name = name
+        } catch {
+            showToast(language.pick("移动文件失败：", "Couldn't move the file: ") + error.localizedDescription)
+        }
+    }
+
+    // MARK: 外观
+
+    /// 主题有固定深浅色时整个 App（含菜单、面板）跟着切，跟随系统时交还给系统
+    /// 放到下一轮 runloop：在 SwiftUI 更新里同步改外观会触发重入刷新，递归到栈溢出
+    private func applyAppearance() {
+        let name: NSAppearance.Name? = theme.scheme.map { $0 == .dark ? .darkAqua : .aqua }
+        Task { @MainActor in
+            guard let app = NSApp, app.appearance?.name != name else { return }
+            app.appearance = name.flatMap(NSAppearance.init(named:))
+        }
+    }
+
+    /// 读背景图并判断明暗；读不出来就当没设，提示一下
+    private func loadBackground() {
+        guard let url = settings.background else {
+            backgroundImage = nil
+            return
+        }
+        guard let image = NSImage(contentsOf: url),
+              let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) else {
+            backgroundImage = nil
+            showToast(language.pick("背景图片读不出来", "Couldn't read the background image"))
+            return
+        }
+        backgroundIsBright = ImageTone.isBright(cgImage)
+        backgroundImage = image
     }
 
     func showToast(_ text: String) {
@@ -220,8 +422,12 @@ final class DownloadStore {
         save()
     }
 
-    private func directory(for category: FileCategory) -> URL {
-        settings.classify ? settings.downloadDir.appending(path: category.displayName) : settings.downloadDir
+    /// 有自定义分类放进分类路径，否则按设置决定要不要按类型分文件夹（文件夹名用当时的界面语言）
+    private func directory(for item: DownloadItem) -> URL {
+        if let group = item.group, categories[group] != nil {
+            return categories.path(of: group).reduce(settings.downloadDir) { $0.appending(path: $1.name) }
+        }
+        return settings.classify ? settings.downloadDir.appending(path: item.category.name(language)) : settings.downloadDir
     }
 
     /// 目录里已有的文件 + 列表里要下到这个目录的任务，新任务不能和它们重名
@@ -240,7 +446,8 @@ final class DownloadStore {
             do {
                 try FileManager.default.createDirectory(at: destination.deletingLastPathComponent(),
                                                         withIntermediateDirectories: true)
-                let job = DownloadJob(url: url, destination: destination, segments: settings.threads)
+                let job = DownloadJob(url: url, destination: destination, segments: settings.threads,
+                                      headers: headers[id] ?? [:])
                 _ = try await DownloadEngine.run(job) { [weak self] progress in
                     Task { @MainActor in self?.apply(progress, to: id) }
                 }
@@ -253,8 +460,9 @@ final class DownloadStore {
                     fail(id, error.localizedDescription)
                     return
                 }
+                let message = language.pick("网络中断，正在重试", "Network lost, retrying")
                 update(id) {
-                    $0.message = Self.retryMessage
+                    $0.message = message
                     $0.speed = 0
                 }
                 guard await waitForRetry(Retry.delay(attempt: attempt)) else { return }
@@ -292,6 +500,7 @@ final class DownloadStore {
     private func finish(_ id: UUID) {
         jobs[id] = nil
         speedSamples[id] = nil
+        headers[id] = nil
         update(id) {
             $0.status = .completed
             $0.received = max($0.received, $0.size)
@@ -299,9 +508,10 @@ final class DownloadStore {
             $0.speed = 0
             $0.message = nil
         }
+        relocate(id)
         if settings.notify, let name = items.first(where: { $0.id == id })?.name {
-            showToast("下载完成：\(name)")
-            postNotification("下载完成", body: name)
+            showToast(language.pick("下载完成：", "Downloaded: ") + name)
+            postNotification(language.pick("下载完成", "Download complete"), body: name)
         }
         reschedule()
     }
@@ -336,10 +546,11 @@ final class DownloadStore {
         do {
             try FileManager.default.createDirectory(at: stateFile.deletingLastPathComponent(),
                                                     withIntermediateDirectories: true)
-            let data = try JSONEncoder().encode(SavedState(items: items, settings: settings))
+            let data = try JSONEncoder().encode(SavedState(items: items, settings: settings,
+                                                            categories: categories, learner: learner))
             try data.write(to: stateFile, options: .atomic)
         } catch {
-            showToast("保存任务列表失败：\(error.localizedDescription)")
+            showToast(language.pick("保存任务列表失败：", "Couldn't save tasks: ") + error.localizedDescription)
         }
     }
 

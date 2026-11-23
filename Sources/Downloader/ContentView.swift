@@ -1,4 +1,4 @@
-// 主窗口：自绘侧栏（可拖宽）+ 顶栏 + 任务列表，外加弹窗、提示和拖拽添加
+// 主窗口：自绘侧栏（可拖宽）+ 顶栏 + 任务列表，外加背景图、弹窗、提示和拖拽添加
 // 不用系统分栏和工具栏：它们的浮动侧栏、按钮样式和动画都跟原型对不上
 import AppKit
 import DownloaderCore
@@ -20,6 +20,8 @@ enum Layout {
 
 struct ContentView: View {
     @Environment(DownloadStore.self) private var store
+    @Environment(\.theme) private var theme
+    @Environment(\.language) private var language
     @State private var isDropTargeted = false
     @AppStorage("sidebarWidth") private var sidebarWidth = Layout.sidebarDefault
 
@@ -27,7 +29,7 @@ struct ContentView: View {
         HStack(spacing: 0) {
             SidebarView()
                 .frame(width: sidebarWidth)
-                .background { Theme.sidebar.modifier(WindowDragArea()) }
+                .background { theme.sidebar.modifier(WindowDragArea()) }
                 .overlay(alignment: .trailing) {
                     SidebarResizer(width: $sidebarWidth).offset(x: 4)
                 }
@@ -37,28 +39,50 @@ struct ContentView: View {
                 TaskListView()
                 StatusBar()
             }
-            .background(Theme.content)
-            .overlay(alignment: .leading) { Theme.line.frame(width: 1) }
+            .background(theme.content)
+            .overlay(alignment: .leading) { theme.line.frame(width: 1) }
         }
+        .background { BackgroundImage() }
         .ignoresSafeArea()
         .overlay { DialogHost() }
         .overlay(alignment: .bottom) { ToastView() }
         .overlay {
             if isDropTargeted {
                 RoundedRectangle(cornerRadius: 9)
-                    .strokeBorder(Color.accentColor, lineWidth: 2)
+                    .strokeBorder(theme.accent, lineWidth: 2)
                     .padding(6)
                     .ignoresSafeArea()
                     .allowsHitTesting(false)
             }
         }
         .dropDestination(for: URL.self) { urls, _ in
+            // 任务行拖到侧栏以外的地方松手时也会落到这里，不当成链接
+            guard !urls.contains(where: { $0.scheme == TaskDrag.scheme }) else { return false }
             let web = urls.filter(Naming.isWebURL)
-            if web.isEmpty { store.showToast("没有识别到链接") } else { store.add(urls: web) }
+            if web.isEmpty {
+                store.showToast(language.pick("没有识别到链接", "No links found"))
+            } else {
+                store.add(urls: web)
+            }
             return true
         } isTargeted: { isDropTargeted = $0 }
         .focusEffectDisabled()
-        .onAppear { store.start() }
+    }
+}
+
+/// 用户自选的背景图铺满窗口；侧栏和主区各盖一层半透明蒙版（见 Theme.adapt）
+private struct BackgroundImage: View {
+    @Environment(DownloadStore.self) private var store
+
+    var body: some View {
+        if let image = store.backgroundImage {
+            Image(nsImage: image)
+                .resizable()
+                .aspectRatio(contentMode: .fill)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .clipped()
+                .accessibilityHidden(true)
+        }
     }
 }
 
@@ -76,6 +100,8 @@ private struct WindowDragArea: ViewModifier {
 /// 侧栏右边缘的拖动条：鼠标拖或 ←/→ 键调宽度，范围 160–340
 private struct SidebarResizer: View {
     @Binding var width: Double
+    @Environment(\.theme) private var theme
+    @Environment(\.language) private var language
     @State private var dragStart: Double?
     @State private var hovering = false
 
@@ -84,7 +110,7 @@ private struct SidebarResizer: View {
             .frame(width: 8)
             .contentShape(Rectangle())
             .overlay {
-                Color.accentColor
+                theme.accent
                     .opacity(hovering || dragStart != nil ? 0.5 : 0)
                     .frame(width: 2)
                     .animation(.easeOut(duration: 0.15), value: hovering)
@@ -111,7 +137,7 @@ private struct SidebarResizer: View {
                 width = Layout.clampSidebar(width + Layout.sidebarStep)
                 return .handled
             }
-            .accessibilityLabel("调整侧栏宽度")
+            .accessibilityLabel(language.pick("调整侧栏宽度", "Resize sidebar"))
             .accessibilityValue("\(Int(width))")
     }
 }
@@ -119,17 +145,25 @@ private struct SidebarResizer: View {
 /// 顶栏：当前分类名 · 状态切换 · 全部暂停/继续 · 添加
 private struct HeaderBar: View {
     @Environment(DownloadStore.self) private var store
+    @Environment(\.theme) private var theme
+    @Environment(\.language) private var language
 
     var body: some View {
+        @Bindable var store = store
         HStack(spacing: 8) {
-            Text(store.category?.displayName ?? "全部")
-                .font(.system(size: 15, weight: .semibold))
+            Text(store.title)
+                .font(theme.font(15, .semibold))
+                .lineLimit(1)
             Spacer()
-            StatusSegmented().padding(.trailing, 6)
+            Segmented(options: StatusFilter.allCases.map { ($0, $0.title(language)) },
+                      selection: $store.statusFilter)
+                .padding(.trailing, 6)
             IconButton(systemName: store.isRunning ? "pause.fill" : "play.fill",
-                       label: store.isRunning ? "全部暂停" : "全部继续") { store.pauseOrResumeAll() }
+                       label: store.isRunning ? language.pick("全部暂停", "Pause All")
+                                              : language.pick("全部继续", "Resume All")) { store.pauseOrResumeAll() }
                 .disabled(!store.isRunning && !store.hasPaused)
-            IconButton(systemName: "plus", label: "添加下载（⌘N）", font: .system(size: 15, weight: .regular)) {
+            IconButton(systemName: "plus", label: language.pick("添加下载（⌘N）", "Add Download (⌘N)"), size: 15,
+                       weight: .regular) {
                 store.present(.add)
             }
         }
@@ -137,32 +171,34 @@ private struct HeaderBar: View {
         .padding(.trailing, 14)
         .frame(height: Layout.headerHeight)
         .background { Color.clear.contentShape(Rectangle()).modifier(WindowDragArea()) }
-        .overlay(alignment: .bottom) { Theme.line.frame(height: 1) }
+        .overlay(alignment: .bottom) { theme.line.frame(height: 1) }
     }
 }
 
-/// 全部 / 进行中 / 已完成，选中背景滑动
-struct StatusSegmented: View {
-    @Environment(DownloadStore.self) private var store
+/// 分段控件（顶栏的全部 / 进行中 / 已完成、设置页签），选中背景滑动
+struct Segmented<Value: Hashable>: View {
+    let options: [(value: Value, label: String)]
+    @Binding var selection: Value
+    @Environment(\.theme) private var theme
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Namespace private var namespace
 
     var body: some View {
         HStack(spacing: 0) {
-            ForEach(StatusFilter.allCases) { filter in
-                let selected = store.statusFilter == filter
+            ForEach(options, id: \.value) { option in
+                let selected = selection == option.value
                 Button {
-                    withAnimation(reduceMotion ? nil : Motion.slide) { store.statusFilter = filter }
+                    withAnimation(reduceMotion ? nil : Motion.slide) { selection = option.value }
                 } label: {
-                    Text(filter.title)
-                        .font(.system(size: 12))
+                    Text(option.label)
+                        .font(theme.font(12))
                         .foregroundStyle(selected ? .primary : .secondary)
                         .padding(.horizontal, 12)
                         .frame(height: 22)
                         .background {
                             if selected {
                                 RoundedRectangle(cornerRadius: 5)
-                                    .fill(Theme.segmentThumb)
+                                    .fill(theme.segmentThumb)
                                     .shadow(color: .black.opacity(0.12), radius: 1, y: 1)
                                     .matchedGeometryEffect(id: "thumb", in: namespace)
                             }
@@ -174,42 +210,45 @@ struct StatusSegmented: View {
             }
         }
         .padding(2)
-        .background(RoundedRectangle(cornerRadius: 7).fill(Theme.segmentBackground))
+        .background(RoundedRectangle(cornerRadius: 7).fill(theme.segmentBackground))
     }
 }
 
 struct StatusBar: View {
     @Environment(DownloadStore.self) private var store
+    @Environment(\.theme) private var theme
+    @Environment(\.language) private var language
 
     var body: some View {
-        let active = store.activeItems
+        let count = store.activeItems.count
         HStack {
             Spacer()
-            if !active.isEmpty {
-                Text("\(active.count) 个下载中 · \(Format.bytes(active.reduce(0) { $0 + $1.speed }))/s")
+            if count > 0 {
+                Text(language.pick("\(count) 个下载中", "\(count) downloading") + " · \(Format.bytes(store.totalSpeed))/s")
             }
         }
-        .font(.system(size: 11.5))
+        .font(theme.font(11.5))
         .monospacedDigit()
         .foregroundStyle(.secondary)
         .padding(.horizontal, 20)
         .frame(height: 32)
-        .overlay(alignment: .top) { Theme.line.frame(height: 1) }
+        .overlay(alignment: .top) { theme.line.frame(height: 1) }
     }
 }
 
 struct ToastView: View {
     @Environment(DownloadStore.self) private var store
+    @Environment(\.theme) private var theme
 
     var body: some View {
         ZStack {
             if let text = store.toastText {
                 Text(text)
-                    .font(.system(size: 12))
-                    .foregroundStyle(Theme.content)
+                    .font(theme.font(12))
+                    .foregroundStyle(theme.card)
                     .padding(.horizontal, 12)
                     .padding(.vertical, 6)
-                    .background(RoundedRectangle(cornerRadius: 8).fill(Color.primary.opacity(0.92)))
+                    .background(RoundedRectangle(cornerRadius: 8).fill(theme.text.opacity(0.92)))
                     .transition(.opacity)
             }
         }
