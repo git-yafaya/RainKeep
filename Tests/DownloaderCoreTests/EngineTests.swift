@@ -48,7 +48,8 @@ private final class Server: @unchecked Sendable {
         }
     }
 
-    var gets: [URLRequest] { lock.withLock { requests.filter { $0.httpMethod == "GET" } } }
+    var allRequests: [URLRequest] { lock.withLock { requests } }
+    var gets: [URLRequest] { allRequests.filter { $0.httpMethod == "GET" } }
 }
 
 private final class EngineProtocol: URLProtocol, @unchecked Sendable {
@@ -331,6 +332,34 @@ private func rangeProbeFindsSegmentSupport(headStatus: Int) async throws {
         try await fixture.run()
         let ranges = fixture.server.gets.compactMap { $0.value(forHTTPHeaderField: "Range") }
         #expect(ranges.contains("bytes=3145728-4194303"))
+        try fixture.checkResult(data)
+    }
+}
+
+/// HEAD、首字节探测、分段及回退 GET 都应携带自定义头，并保留引擎的范围控制。
+@Test(arguments: [false, true])
+func customHeadersReachEveryRequest(ignoreRange: Bool) async throws {
+    let data = payload(2 * mib)
+    try await withServer(Reply(body: data, ignoreRange: ignoreRange, headStatus: 405), segments: 2) { fixture in
+        var job = fixture.job
+        job.headers = ["X-Download": "ticket", "Cookie": "session=example", "rAnGe": "bytes=7-9",
+                       "IF-range": "wrong", "aCCept-encoding": "gzip"]
+        _ = try await DownloadEngine.run(job, session: fixture.session) { _ in }
+        let requests = fixture.server.allRequests
+        #expect(requests.first?.httpMethod == "HEAD")
+        #expect(requests.allSatisfy { $0.value(forHTTPHeaderField: "X-Download") == "ticket" })
+        #expect(requests.allSatisfy { $0.value(forHTTPHeaderField: "Cookie") == "session=example" })
+        #expect(requests.allSatisfy { $0.value(forHTTPHeaderField: "Accept-Encoding") == "identity" })
+        let ranges = requests.map { $0.value(forHTTPHeaderField: "Range") }
+        #expect(Array(ranges.prefix(2)) == [nil, "bytes=0-0"])
+        #expect(requests.prefix(2).allSatisfy { $0.value(forHTTPHeaderField: "If-Range") == nil })
+        if ignoreRange {
+            #expect(Array(ranges.dropFirst(2)) == [nil])
+            #expect(requests.last?.value(forHTTPHeaderField: "If-Range") == nil)
+        } else {
+            #expect(Set(ranges.dropFirst(2)) == ["bytes=0-1048575", "bytes=1048576-2097151"])
+            #expect(requests.dropFirst(2).allSatisfy { $0.value(forHTTPHeaderField: "If-Range") == "\"v1\"" })
+        }
         try fixture.checkResult(data)
     }
 }

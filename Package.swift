@@ -8,6 +8,7 @@ let package = Package(
     targets: [
         .target(name: "DownloaderCore"),
         .executableTarget(name: "Downloader", dependencies: ["DownloaderCore"]),
+        .executableTarget(name: "DownloaderHost", dependencies: ["DownloaderCore"]),
         .testTarget(name: "DownloaderCoreTests", dependencies: ["DownloaderCore"]),
     ]
 )

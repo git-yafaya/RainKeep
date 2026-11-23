@@ -10,6 +10,7 @@ APP=.build/Downloader.app
 
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp "$BIN_DIR/Downloader" "$APP/Contents/MacOS/Downloader"
+cp "$BIN_DIR/DownloaderHost" "$APP/Contents/MacOS/DownloaderHost"
 cp assets/AppIcon.icns "$APP/Contents/Resources/AppIcon.icns"
 cat > "$APP/Contents/Info.plist" <<'PLIST'
 <?xml version="1.0" encoding="UTF-8"?>

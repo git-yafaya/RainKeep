@@ -5,11 +5,14 @@ public struct DownloadJob: Sendable {
     public var url: URL
     public var destination: URL
     public var segments: Int
+    public var headers: [String: String]
 
-    public init(url: URL, destination: URL, segments: Int = 0) {
+    /// 创建下载任务，可附带浏览器提供的请求头。
+    public init(url: URL, destination: URL, segments: Int = 0, headers: [String: String] = [:]) {
         self.url = url
         self.destination = destination
         self.segments = segments
+        self.headers = headers
     }
 }
 
@@ -86,10 +89,10 @@ public enum DownloadEngine {
         defer { _ = lock.withLock { destinations.remove(path) } }
 
         do {
-            let (resource, ranges) = try await probe(job.url, session)
+            let (resource, ranges) = try await probe(job, session)
             let file = try EngineFile(job, resource: resource, ranged: ranges, progress: onProgress)
             do {
-                try await download(job.url, resource, file, session)
+                try await download(job, resource, file, session)
             } catch {
                 // 任务组已收齐所有回调，此时保存的偏移不会再变。
                 try file.checkpoint()
@@ -102,8 +105,15 @@ public enum DownloadEngine {
         }
     }
 
-    private static func request(_ url: URL) -> URLRequest {
-        var request = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalCacheData)
+    /// 探测和传输共用同一组头，范围和内容编码始终由引擎决定。
+    private static func request(_ job: DownloadJob) -> URLRequest {
+        var request = URLRequest(url: job.url, cachePolicy: .reloadIgnoringLocalCacheData)
+        for (field, value) in job.headers {
+            switch field.lowercased() {
+            case "range", "if-range", "accept-encoding": continue
+            default: request.setValue(value, forHTTPHeaderField: field)
+            }
+        }
         request.setValue("identity", forHTTPHeaderField: "Accept-Encoding")
         return request
     }
@@ -114,32 +124,34 @@ public enum DownloadEngine {
         return http
     }
 
-    private static func probe(_ url: URL, _ session: URLSession) async throws -> (EngineResource, Bool) {
-        var head = request(url)
+    /// 先用 HEAD 探测，必要时再请求首字节。
+    private static func probe(_ job: DownloadJob, _ session: URLSession) async throws -> (EngineResource, Bool) {
+        var head = request(job)
         head.httpMethod = "HEAD"
         let (_, response) = try await session.data(for: head)
         guard let http = response as? HTTPURLResponse else { throw EngineError.invalidResponse }
         if (200..<300).contains(http.statusCode), let ranges = http.value(forHTTPHeaderField: "Accept-Ranges") {
-            return (EngineResource(url, http), ranges.lowercased() == "bytes")
+            return (EngineResource(job.url, http), ranges.lowercased() == "bytes")
         }
 
-        var sample = request(url)
+        var sample = request(job)
         sample.setValue("bytes=0-0", forHTTPHeaderField: "Range")
         let (bytes, headers) = try await session.bytes(for: sample)
         bytes.task.cancel()  // 只取响应头，服务器可能忽略 Range 并发送整个文件。
         try Task.checkCancellation()
         let sampled = try checked(headers)
-        guard sampled.statusCode == 206 else { return (EngineResource(url, sampled), false) }
+        guard sampled.statusCode == 206 else { return (EngineResource(job.url, sampled), false) }
         let prefix = "bytes 0-0/"
         guard let range = sampled.value(forHTTPHeaderField: "Content-Range")?.lowercased(),
               range.hasPrefix(prefix) else { throw EngineError.invalidResponse }
         let length = range.dropFirst(prefix.count)
-        if length == "*" { return (EngineResource(url, sampled), false) }
+        if length == "*" { return (EngineResource(job.url, sampled), false) }
         guard let total = Int64(length), total > 0 else { throw EngineError.invalidResponse }
-        return (EngineResource(url, sampled, probedLength: total), true)
+        return (EngineResource(job.url, sampled, probedLength: total), true)
     }
 
-    private static func download(_ url: URL, _ resource: EngineResource,
+    /// 调度各分段，服务器不支持范围时退回整文件下载。
+    private static func download(_ job: DownloadJob, _ resource: EngineResource,
                                  _ file: EngineFile, _ session: URLSession) async throws {
         let segments = file.segments
         if segments.first?.end != nil {
@@ -148,7 +160,7 @@ public enum DownloadEngine {
                     for (index, segment) in segments.enumerated() {
                         guard let end = segment.end, segment.next < end else { continue }
                         group.addTask {
-                            try await downloadRange(segment.next..<end, index, resource, file, session)
+                            try await downloadRange(segment.next..<end, index, request(job), resource, file, session)
                         }
                     }
                     while let _ = try await group.next() {}
@@ -159,18 +171,19 @@ public enum DownloadEngine {
             }
         }
         try Task.checkCancellation()
-        try await EngineTransfer.run(request(url), session: session) { response in
+        try await EngineTransfer.run(request(job), session: session) { response in
             let http = try checked(response)
             guard http.statusCode != 206 else { throw EngineError.invalidResponse }
             let length = resource.acceptsValidators(http) ? resource.total : nil
-            try file.beginFullDownload(EngineResource(url, http, probedLength: length))
+            try file.beginFullDownload(EngineResource(job.url, http, probedLength: length))
         } receive: { try file.write($0, to: 0) }
         try file.verify(0)
     }
 
-    private static func downloadRange(_ range: Range<Int64>, _ index: Int, _ resource: EngineResource,
-                                      _ file: EngineFile, _ session: URLSession) async throws {
-        var req = request(resource.url)
+    /// 为分段设置校验器并核对返回的字节区间。
+    private static func downloadRange(_ range: Range<Int64>, _ index: Int, _ request: URLRequest,
+                                      _ resource: EngineResource, _ file: EngineFile, _ session: URLSession) async throws {
+        var req = request
         let bounds = "\(range.lowerBound)-\(range.upperBound - 1)"
         req.setValue("bytes=\(bounds)", forHTTPHeaderField: "Range")
         req.setValue(resource.ifRange, forHTTPHeaderField: "If-Range")
