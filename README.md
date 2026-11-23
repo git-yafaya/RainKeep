@@ -44,3 +44,4 @@ DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test
 - `Sources/Downloader`：SwiftUI 界面
 - `prototype/index.html`：界面的 HTML 原型，浏览器直接打开
 - `docs/UI.md`：界面规则
+- `assets/AppIcon.svg`：应用图标源文件；改完跑 `./scripts/make-icon.sh` 重新生成 `AppIcon.icns`

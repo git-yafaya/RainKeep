@@ -44,3 +44,4 @@ DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test
 - `Sources/Downloader`: SwiftUI interface
 - `prototype/index.html`: HTML prototype of the interface, open it in a browser
 - `docs/UI.md`: interface rules (Chinese)
+- `assets/AppIcon.svg`: app icon source; after editing, run `./scripts/make-icon.sh` to regenerate `AppIcon.icns`

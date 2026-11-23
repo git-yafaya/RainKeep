@@ -1,0 +1,75 @@
+<!doctype html>
+<!-- 应用图标草稿：几版黑白线稿并排对比，大图 + 深色 + 实际小尺寸 -->
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>图标草稿 · 水滴</title>
+<style>
+  :root {
+    --page: #f2f2f2; --text: #1d1d1f; --muted: #86868b;
+    --ink-light: #1d1d1f; --plate-light: #ffffff;
+    --ink-dark: #f5f5f7; --plate-dark: #1d1d1f;
+  }
+  body { margin: 0; padding: 32px 16px; background: var(--page); color: var(--text);
+         font: 13px -apple-system, BlinkMacSystemFont, sans-serif; }
+  main { max-width: 900px; margin: 0 auto; display: grid; gap: 40px; }
+  .row { display: flex; align-items: center; gap: 28px; flex-wrap: wrap; }
+  .label { width: 100%; font-weight: 600; }
+  .icon { filter: drop-shadow(0 4px 10px rgba(0,0,0,.12)); }
+  .light { --plate: var(--plate-light); --ink: var(--ink-light); }
+  .dark  { --plate: var(--plate-dark);  --ink: var(--ink-dark); }
+  .plate { fill: var(--plate); }
+  .light .plate { stroke: rgba(0,0,0,.08); stroke-width: 4; }
+  .ink { fill: none; stroke: var(--ink); stroke-width: 60; stroke-linecap: round; stroke-linejoin: round; }
+  .smalls { display: flex; align-items: flex-end; gap: 16px; }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <!-- 苹果图标网格：1024 画布，主体 824 圆角方块 -->
+    <symbol id="plate" viewBox="0 0 1024 1024">
+      <rect class="plate" x="100" y="100" width="824" height="824" rx="186"/>
+    </symbol>
+    <!-- A1 原版：水滴悬在一道涟漪上方 -->
+    <symbol id="a1" viewBox="0 0 1024 1024">
+      <use href="#plate"/>
+      <path class="ink" d="M512 262 C462 340 382 432 382 540 a130 130 0 0 0 260 0 C642 432 562 340 512 262 Z"/>
+      <path class="ink" d="M302 752 A210 50 0 0 0 722 752"/>
+    </symbol>
+    <!-- A2 水滴下移贴近水面，涟漪更宽更扁，像正要落进去 -->
+    <symbol id="a2" viewBox="0 0 1024 1024">
+      <use href="#plate"/>
+      <path class="ink" d="M512 290 C462 368 382 460 382 568 a130 130 0 0 0 260 0 C642 460 562 368 512 290 Z"/>
+      <path class="ink" d="M262 750 A250 46 0 0 0 762 750"/>
+    </symbol>
+    <!-- A3 两圈涟漪，外圈淡一些 -->
+    <symbol id="a3" viewBox="0 0 1024 1024">
+      <use href="#plate"/>
+      <g transform="translate(0 -26)">
+        <path class="ink" d="M512 262 C462 340 382 432 382 540 a130 130 0 0 0 260 0 C642 432 562 340 512 262 Z"/>
+        <path class="ink" d="M362 742 A150 34 0 0 0 662 742"/>
+        <path class="ink" style="opacity:.4" d="M252 790 A260 50 0 0 0 772 790"/>
+      </g>
+    </symbol>
+  </defs>
+</svg>
+
+<main id="list"></main>
+
+<script>
+  // 每一版一行：浅色大图、深色大图、浅色 64/32/16 实际尺寸
+  const variants = [['a1', 'A1 原版'], ['a2', 'A2 水滴贴近水面'], ['a3', 'A3 两圈涟漪']];
+  const icon = (id, size, theme) =>
+    `<svg class="icon ${theme}" width="${size}" height="${size}" role="img" aria-label="${id}"><use href="#${id}"/></svg>`;
+  document.getElementById('list').innerHTML = variants.map(([id, name]) => `
+    <section class="row">
+      <div class="label">${name}</div>
+      ${icon(id, 220, 'light')}
+      ${icon(id, 220, 'dark')}
+      <div class="smalls">${[64, 32, 16].map(s => icon(id, s, 'light')).join('')}</div>
+    </section>`).join('');
+</script>
+</body>
+</html>

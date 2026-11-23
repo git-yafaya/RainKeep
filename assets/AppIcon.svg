@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <!-- 应用图标 A2：水滴正要落进水面。苹果图标网格：1024 画布，主体 824 圆角方块 -->
+  <rect x="100" y="100" width="824" height="824" rx="186" fill="#ffffff"/>
+  <g fill="none" stroke="#1d1d1f" stroke-width="60" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M512 290 C462 368 382 460 382 568 a130 130 0 0 0 260 0 C642 460 562 368 512 290 Z"/>
+    <path d="M262 750 A250 46 0 0 0 762 750"/>
+  </g>
+</svg>
