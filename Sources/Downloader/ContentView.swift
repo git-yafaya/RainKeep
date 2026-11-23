@@ -1,21 +1,46 @@
-// 主窗口：侧栏 + 任务列表 + 工具栏，外加弹窗、提示和拖拽添加
+// 主窗口：自绘侧栏（可拖宽）+ 顶栏 + 任务列表，外加弹窗、提示和拖拽添加
+// 不用系统分栏和工具栏：它们的浮动侧栏、按钮样式和动画都跟原型对不上
+import AppKit
 import DownloaderCore
 import SwiftUI
+
+enum Layout {
+    static let sidebarMin = 160.0
+    static let sidebarMax = 340.0
+    static let sidebarDefault = 210.0
+    static let sidebarStep = 10.0
+    static let headerHeight = 52.0
+    /// 侧栏顶部给红绿灯留的空间
+    static let sidebarTop = 44.0
+
+    static func clampSidebar(_ width: Double) -> Double {
+        min(sidebarMax, max(sidebarMin, width.rounded()))
+    }
+}
 
 struct ContentView: View {
     @Environment(DownloadStore.self) private var store
     @State private var isDropTargeted = false
+    @AppStorage("sidebarWidth") private var sidebarWidth = Layout.sidebarDefault
 
     var body: some View {
-        NavigationSplitView {
+        HStack(spacing: 0) {
             SidebarView()
-                .navigationSplitViewColumnWidth(min: 160, ideal: 210, max: 340)
-        } detail: {
-            TaskListView()
-                .safeAreaInset(edge: .bottom, spacing: 0) { StatusBar() }
-                .navigationTitle(store.category?.displayName ?? "全部")
-                .toolbar { toolbarContent }
+                .frame(width: sidebarWidth)
+                .background { Theme.sidebar.modifier(WindowDragArea()) }
+                .overlay(alignment: .trailing) {
+                    SidebarResizer(width: $sidebarWidth).offset(x: 4)
+                }
+                .zIndex(1)
+            VStack(spacing: 0) {
+                HeaderBar()
+                TaskListView()
+                StatusBar()
+            }
+            .background(Theme.content)
+            .overlay(alignment: .leading) { Theme.line.frame(width: 1) }
         }
+        .ignoresSafeArea()
         .overlay { DialogHost() }
         .overlay(alignment: .bottom) { ToastView() }
         .overlay {
@@ -23,6 +48,7 @@ struct ContentView: View {
                 RoundedRectangle(cornerRadius: 9)
                     .strokeBorder(Color.accentColor, lineWidth: 2)
                     .padding(6)
+                    .ignoresSafeArea()
                     .allowsHitTesting(false)
             }
         }
@@ -34,31 +60,85 @@ struct ContentView: View {
         .focusEffectDisabled()
         .onAppear { store.startSimulation() }
     }
+}
 
-    @ToolbarContentBuilder
-    private var toolbarContent: some ToolbarContent {
-        ToolbarItemGroup(placement: .primaryAction) {
-            StatusSegmented()
-                .disabled(dialogOpen)
-            Button {
-                store.pauseOrResumeAll()
-            } label: {
-                Label(store.isRunning ? "全部暂停" : "全部继续", systemImage: store.isRunning ? "pause.fill" : "play.fill")
-            }
-            .help(store.isRunning ? "全部暂停" : "全部继续")
-            .disabled(dialogOpen || (!store.isRunning && !store.hasPaused))
-            Button {
-                store.present(.add)
-            } label: {
-                Label("添加下载", systemImage: "plus")
-            }
-            .help("添加下载（⌘N）")
-            .disabled(dialogOpen)
+/// 隐藏标题栏后，用空白处拖动窗口
+private struct WindowDragArea: ViewModifier {
+    func body(content: Content) -> some View {
+        if #available(macOS 15.0, *) {
+            content.gesture(WindowDragGesture())
+        } else {
+            content
         }
     }
+}
 
-    /// 遮罩盖不到窗口工具栏，弹窗打开时直接禁用工具栏按钮
-    private var dialogOpen: Bool { store.dialog != nil }
+/// 侧栏右边缘的拖动条：鼠标拖或 ←/→ 键调宽度，范围 160–340
+private struct SidebarResizer: View {
+    @Binding var width: Double
+    @State private var dragStart: Double?
+    @State private var hovering = false
+
+    var body: some View {
+        Color.clear
+            .frame(width: 8)
+            .contentShape(Rectangle())
+            .overlay {
+                Color.accentColor
+                    .opacity(hovering || dragStart != nil ? 0.5 : 0)
+                    .frame(width: 2)
+                    .animation(.easeOut(duration: 0.15), value: hovering)
+            }
+            .onHover { inside in
+                hovering = inside
+                if inside { NSCursor.resizeLeftRight.push() } else { NSCursor.pop() }
+            }
+            .gesture(
+                DragGesture(minimumDistance: 0, coordinateSpace: .global)
+                    .onChanged { value in
+                        let start = dragStart ?? width
+                        dragStart = start
+                        width = Layout.clampSidebar(start + value.translation.width)
+                    }
+                    .onEnded { _ in dragStart = nil }
+            )
+            .focusable()
+            .onKeyPress(.leftArrow) {
+                width = Layout.clampSidebar(width - Layout.sidebarStep)
+                return .handled
+            }
+            .onKeyPress(.rightArrow) {
+                width = Layout.clampSidebar(width + Layout.sidebarStep)
+                return .handled
+            }
+            .accessibilityLabel("调整侧栏宽度")
+            .accessibilityValue("\(Int(width))")
+    }
+}
+
+/// 顶栏：当前分类名 · 状态切换 · 全部暂停/继续 · 添加
+private struct HeaderBar: View {
+    @Environment(DownloadStore.self) private var store
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Text(store.category?.displayName ?? "全部")
+                .font(.system(size: 15, weight: .semibold))
+            Spacer()
+            StatusSegmented().padding(.trailing, 6)
+            IconButton(systemName: store.isRunning ? "pause.fill" : "play.fill",
+                       label: store.isRunning ? "全部暂停" : "全部继续") { store.pauseOrResumeAll() }
+                .disabled(!store.isRunning && !store.hasPaused)
+            IconButton(systemName: "plus", label: "添加下载（⌘N）", font: .system(size: 15, weight: .regular)) {
+                store.present(.add)
+            }
+        }
+        .padding(.leading, 20)
+        .padding(.trailing, 14)
+        .frame(height: Layout.headerHeight)
+        .background { Color.clear.contentShape(Rectangle()).modifier(WindowDragArea()) }
+        .overlay(alignment: .bottom) { Theme.line.frame(height: 1) }
+    }
 }
 
 /// 全部 / 进行中 / 已完成，选中背景滑动
@@ -114,7 +194,6 @@ struct StatusBar: View {
         .foregroundStyle(.secondary)
         .padding(.horizontal, 20)
         .frame(height: 32)
-        .background(Theme.window)
         .overlay(alignment: .top) { Theme.line.frame(height: 1) }
     }
 }
@@ -127,12 +206,11 @@ struct ToastView: View {
             if let text = store.toastText {
                 Text(text)
                     .font(.system(size: 12))
-                    .foregroundStyle(Theme.window)
+                    .foregroundStyle(Theme.content)
                     .padding(.horizontal, 12)
                     .padding(.vertical, 6)
                     .background(RoundedRectangle(cornerRadius: 8).fill(Color.primary.opacity(0.92)))
                     .transition(.opacity)
-                    .accessibilityAddTraits(.updatesFrequently)
             }
         }
         .padding(.bottom, 44)

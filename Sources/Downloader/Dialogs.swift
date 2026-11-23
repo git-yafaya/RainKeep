@@ -182,8 +182,12 @@ private struct SettingRow<Content: View>: View {
     }
 }
 
-/// 自绘下拉：按钮下方展开、跟主题变色，Esc 和点外面能收起（由外层控制 isOpen）
+/// 自绘下拉：按钮下方展开、和按钮等宽、文字左边对齐，跟主题变色；Esc 和点外面能收起（由外层控制 isOpen）
 private struct Dropdown<Value: Hashable>: View {
+    static var width: CGFloat { 88 }
+    /// 按钮文字左内边距；菜单内边距 4 + 选项左内边距 6 也等于它，两边文字才能对齐
+    static var textInset: CGFloat { 10 }
+
     let options: [(value: Value, label: String)]
     @Binding var selection: Value
     @Binding var isOpen: Bool
@@ -193,24 +197,25 @@ private struct Dropdown<Value: Hashable>: View {
         Button {
             isOpen.toggle()
         } label: {
-            HStack(spacing: 10) {
+            HStack(spacing: 0) {
                 Text(options.first { $0.value == selection }?.label ?? "")
+                Spacer(minLength: 6)
                 Image(systemName: "chevron.down")
                     .font(.system(size: 9, weight: .semibold))
                     .foregroundStyle(.secondary)
                     .rotationEffect(.degrees(isOpen ? 180 : 0))
             }
             .font(.system(size: 12))
-            .padding(.leading, 10)
+            .padding(.leading, Self.textInset)
             .padding(.trailing, 8)
-            .frame(minWidth: 84, minHeight: 24, alignment: .leading)
+            .frame(width: Self.width, height: 24)
             .background(RoundedRectangle(cornerRadius: 6).fill(Theme.segmentBackground))
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .accessibilityLabel(label)
         .accessibilityValue(options.first { $0.value == selection }?.label ?? "")
-        .overlay(alignment: .topTrailing) {
+        .overlay(alignment: .topLeading) {
             if isOpen {
                 menu
                     .offset(y: 28)
@@ -220,16 +225,17 @@ private struct Dropdown<Value: Hashable>: View {
     }
 
     private var menu: some View {
-        VStack(alignment: .leading, spacing: 0) {
+        VStack(spacing: 0) {
             ForEach(options, id: \.value) { option in
-                DropdownOption(label: option.label, isSelected: option.value == selection) {
+                DropdownOption(label: option.label, isSelected: option.value == selection,
+                               leadingInset: Self.textInset - 4) {
                     selection = option.value
                     isOpen = false
                 }
             }
         }
         .padding(4)
-        .fixedSize()
+        .frame(width: Self.width)
         .background(RoundedRectangle(cornerRadius: 8).fill(Theme.menu))
         .shadow(color: .black.opacity(0.14), radius: 12, y: 4)
         .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(Theme.line))
@@ -239,23 +245,24 @@ private struct Dropdown<Value: Hashable>: View {
 private struct DropdownOption: View {
     let label: String
     let isSelected: Bool
+    let leadingInset: CGFloat
     let action: () -> Void
     @State private var hovering = false
 
     var body: some View {
         Button(action: action) {
-            HStack(spacing: 6) {
+            HStack(spacing: 0) {
+                Text(label)
+                Spacer(minLength: 6)
                 Image(systemName: "checkmark")
                     .font(.system(size: 10, weight: .semibold))
                     .opacity(isSelected ? 1 : 0)
-                Text(label)
-                Spacer(minLength: 0)
             }
             .font(.system(size: 12))
             .foregroundStyle(hovering ? Color.white : Color.primary)
-            .padding(.leading, 6)
-            .padding(.trailing, 10)
-            .frame(minWidth: 84, minHeight: 24)
+            .padding(.leading, leadingInset)
+            .padding(.trailing, 8)
+            .frame(maxWidth: .infinity, minHeight: 24)
             .background(RoundedRectangle(cornerRadius: 5).fill(hovering ? Color.accentColor : .clear))
             .contentShape(Rectangle())
         }

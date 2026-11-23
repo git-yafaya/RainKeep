@@ -16,7 +16,8 @@ enum Theme {
     static let field = adaptive(light: (0, 0.03), dark: (1, 0.05))
     static let fieldFocus = adaptive(light: (0, 0.2), dark: (1, 0.2))
     static let focusRing = adaptive(light: (0, 0.22), dark: (1, 0.22))
-    static let window = Color(nsColor: .windowBackgroundColor)
+    static let sidebar = adaptive(light: (0.961, 1), dark: (0.145, 1))
+    static let content = adaptive(light: (1, 1), dark: (0.118, 1))
 
     /// (灰度, 透明度)，浅色 / 深色各一套
     private static func adaptive(light: (CGFloat, CGFloat), dark: (CGFloat, CGFloat)) -> Color {

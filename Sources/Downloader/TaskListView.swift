@@ -139,11 +139,12 @@ private struct ProgressLine: View {
 struct IconButton: View {
     let systemName: String
     let label: String
+    var font = Font.system(size: 12, weight: .semibold)
     let action: () -> Void
 
     var body: some View {
         Button(action: action) {
-            Image(systemName: systemName).font(.system(size: 12, weight: .semibold))
+            Image(systemName: systemName).font(font)
         }
         .buttonStyle(IconButtonStyle())
         .help(label)
@@ -161,12 +162,14 @@ private struct IconButtonBody: View {
     let configuration: ButtonStyleConfiguration
     @State private var hovering = false
     @Environment(\.isFocused) private var isFocused
+    @Environment(\.isEnabled) private var isEnabled
 
     var body: some View {
         configuration.label
-            .foregroundStyle(hovering ? .primary : .secondary)
+            .foregroundStyle(hovering && isEnabled ? .primary : .secondary)
+            .opacity(isEnabled ? 1 : 0.35)
             .frame(width: 28, height: 28)
-            .background(RoundedRectangle(cornerRadius: 6).fill(hovering || configuration.isPressed ? Theme.hover : .clear))
+            .background(RoundedRectangle(cornerRadius: 6).fill(isEnabled && (hovering || configuration.isPressed) ? Theme.hover : .clear))
             .overlay(RoundedRectangle(cornerRadius: 6).stroke(Theme.focusRing, lineWidth: isFocused ? 2 : 0))
             .contentShape(Rectangle())
             .onHover { hovering = $0 }

@@ -13,6 +13,7 @@ struct DownloaderApp: App {
                 .environment(store)
                 .frame(minWidth: 720, minHeight: 440)
         }
+        .windowStyle(.hiddenTitleBar)
         .defaultSize(width: 980, height: 640)
         .commands {
             CommandGroup(replacing: .newItem) {

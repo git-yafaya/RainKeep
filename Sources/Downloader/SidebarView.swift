@@ -35,7 +35,9 @@ struct SidebarView: View {
                        namespace: namespace) { store.present(.settings) }
                 .help("设置（⌘,）")
         }
-        .padding(10)
+        .padding(.horizontal, 10)
+        .padding(.bottom, 10)
+        .padding(.top, Layout.sidebarTop)
     }
 
     /// 同级用同一个匹配 id 让背景滑过去；跨级 id 不同，背景走淡入淡出
