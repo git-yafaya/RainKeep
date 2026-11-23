@@ -415,7 +415,8 @@ const TOAST_MS = 1800;
 const SIDEBAR_MIN = 160;
 const SIDEBAR_MAX = 340;
 const SIDEBAR_KEY = 'downloader.sidebarWidth';
-const STAGGER_CAP = 12;      // 列表入场动画最多错开 12 行，后面的同时出现
+const FADE_MS = 220;         // 侧栏跨级切换的淡入淡出时长
+const STAGGER_CAP = 12;     // 列表入场动画最多错开 12 行，后面的同时出现
 
 const CATEGORIES = [
   { id: 'video',     name: '视频',   exts: ['mp4', 'mkv', 'mov', 'avi', 'webm', 'm4v'] },
@@ -589,6 +590,23 @@ function buildSidebar() {
   $('settingsBtn').innerHTML = `${ICONS.sliders}<span>设置</span>`;
 }
 
+// 跨级切换：旧位置留个影子淡出，滑块瞬移到新位置淡入
+function fadeThumb(thumb, target) {
+  const duration = matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : FADE_MS;
+  const ghost = thumb.cloneNode();
+  ghost.removeAttribute('id');
+  thumb.after(ghost);
+  ghost.animate([{ opacity: 1 }, { opacity: 0 }], { duration, easing: 'ease-out' }).onfinish = () => ghost.remove();
+  thumb.style.transition = 'none';
+  moveThumb(thumb, target);
+  thumb.offsetWidth;   // 强制回流，让瞬移先生效再恢复过渡
+  thumb.style.transition = '';
+  thumb.animate([{ opacity: 0 }, { opacity: 1 }], { duration, easing: 'ease-out' });
+}
+
+const levelOf = (item) => (item.classList.contains('level-1') ? 1 : 2);
+let lastSideItem = null;
+
 function renderSidebar() {
   let current;
   for (const item of $('sidebar').querySelectorAll('[data-category]')) {
@@ -598,7 +616,10 @@ function renderSidebar() {
     item.setAttribute('aria-current', String(view.category === id));
     if (view.category === id) current = item;
   }
-  moveThumb($('sideThumb'), current);
+  const crossLevel = lastSideItem && lastSideItem !== current && levelOf(lastSideItem) !== levelOf(current);
+  if (crossLevel) fadeThumb($('sideThumb'), current);
+  else moveThumb($('sideThumb'), current);
+  lastSideItem = current;
 }
 
 function toggleAction(status) {
