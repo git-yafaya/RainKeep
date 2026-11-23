@@ -4,7 +4,7 @@
 
 一个 macOS 下载器（SwiftUI）：多线程分段、断点续传，下完按类型放进下载文件夹的子目录。
 
-目前完成的是界面：任务列表用模拟数据跑进度，还不会真正下载。
+已经能真正下载：服务器支持时分段并发，暂停或断网后从断点续传（网络类错误自动重试），按类型放进「下载」下的子文件夹。任务列表和设置存在 `~/Library/Application Support/Downloader/state.json`，重启后自动续传。
 
 ## 前置依赖
 
@@ -40,7 +40,7 @@ DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test
 
 ## 目录
 
-- `Sources/DownloaderCore`：不依赖界面的逻辑（分类、命名、调度、格式化）
+- `Sources/DownloaderCore`：不依赖界面的逻辑（下载引擎、重试策略、分类、命名、调度、格式化）
 - `Sources/Downloader`：SwiftUI 界面
 - `prototype/index.html`：界面的 HTML 原型，浏览器直接打开
 - `docs/UI.md`：界面规则

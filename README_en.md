@@ -4,7 +4,7 @@
 
 A macOS download manager (SwiftUI): multi-connection segmented downloads, resume support, and finished files sorted into subfolders of your Downloads folder by type.
 
-Current state: the interface is done; the task list runs on simulated progress and does not download real files yet.
+It downloads real files: segmented in parallel when the server allows it, resumes from where it stopped after a pause or a network drop (network errors are retried automatically), and sorts files into subfolders of Downloads by type. Tasks and settings are saved to `~/Library/Application Support/Downloader/state.json` and resume after a restart.
 
 ## Requirements
 
@@ -40,7 +40,7 @@ DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test
 
 ## Layout
 
-- `Sources/DownloaderCore`: UI-free logic (categories, naming, scheduling, formatting)
+- `Sources/DownloaderCore`: UI-free logic (download engine, retry policy, categories, naming, scheduling, formatting)
 - `Sources/Downloader`: SwiftUI interface
 - `prototype/index.html`: HTML prototype of the interface, open it in a browser
 - `docs/UI.md`: interface rules (Chinese)
