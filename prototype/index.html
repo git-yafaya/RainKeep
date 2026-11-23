@@ -11,6 +11,7 @@
     --window: #ffffff;
     --sidebar: #f5f5f7;
     --menu: #ffffff;
+    --card: #f6f6f8;
     --text: #1d1d1f;
     --text-2: #6e6e73;
     --text-3: #a1a1a6;
@@ -20,6 +21,7 @@
     --selected: rgba(0, 0, 0, .07);
     --track: rgba(0, 0, 0, .07);
     --accent: #007aff;
+    --on-accent: #ffffff;
     --danger: #ff3b30;
     --seg-bg: rgba(0, 0, 0, .05);
     --seg-on: #ffffff;
@@ -30,6 +32,12 @@
     --c-archive: #a2845e; --c-installer: #636366; --c-other: #8e8e93;
     --side-w: 210px;
     --ease: cubic-bezier(.3, .7, .2, 1);
+    /* 字号系统：所有字号都乘这个倍数 */
+    --scale: 1;
+    --fs: calc(13px * var(--scale));
+    --fs-sm: calc(11.5px * var(--scale));
+    --fs-xs: calc(12px * var(--scale));
+    --fs-title: calc(15px * var(--scale));
   }
   @media (prefers-color-scheme: dark) {
     :root {
@@ -37,6 +45,7 @@
       --window: #1e1e20;
       --sidebar: #252527;
       --menu: #2c2c2e;
+      --card: #2a2a2c;
       --text: #f5f5f7;
       --text-2: #98989d;
       --text-3: #636366;
@@ -56,13 +65,63 @@
     }
   }
 
+  /* 主题：热带雨林（深色，树冠下的绿） */
+  :root[data-theme="rainforest"] {
+    --page: #08130e; --window: #11211a; --sidebar: #0d1b14; --menu: #182d22; --card: #163024;
+    --text: #e4f1e8; --text-2: #97b5a3; --text-3: #5b7867;
+    --line: rgba(228, 241, 232, .08); --tree: rgba(228, 241, 232, .18);
+    --hover: rgba(228, 241, 232, .06); --selected: rgba(80, 210, 140, .16); --track: rgba(228, 241, 232, .1);
+    --accent: #3fcf8e; --on-accent: #06281a; --danger: #ff6b5b;
+    --seg-bg: rgba(228, 241, 232, .07); --seg-on: #23402f; --switch-off: rgba(228, 241, 232, .18);
+    --shadow: 0 0 0 .5px rgba(228, 241, 232, .1), 0 20px 60px rgba(0, 0, 0, .6);
+    --menu-shadow: 0 0 0 .5px rgba(228, 241, 232, .12), 0 8px 24px rgba(0, 0, 0, .5);
+    --c-installer: #a8b8ae;
+  }
+  /* 主题：初夏橙皮（暖奶油底，橙色点缀） */
+  :root[data-theme="orange"] {
+    --page: #f1e2d0; --window: #fffaf3; --sidebar: #fbefdf; --menu: #fffaf3; --card: #fbf0e2;
+    --text: #3b2a1c; --text-2: #8a6a50; --text-3: #c2a284;
+    --line: rgba(120, 70, 20, .1); --tree: rgba(120, 70, 20, .22);
+    --hover: rgba(244, 115, 33, .07); --selected: rgba(244, 115, 33, .15); --track: rgba(120, 70, 20, .1);
+    --accent: #f47321; --on-accent: #ffffff; --danger: #d93a2b;
+    --seg-bg: rgba(120, 70, 20, .07); --seg-on: #ffffff; --switch-off: rgba(120, 70, 20, .16);
+    --shadow: 0 0 0 .5px rgba(120, 70, 20, .14), 0 20px 60px rgba(120, 70, 20, .2);
+    --menu-shadow: 0 0 0 .5px rgba(120, 70, 20, .14), 0 8px 24px rgba(120, 70, 20, .16);
+    --c-installer: #8a6a50;
+  }
+  /* 主题：雨后栀子（象牙白花瓣，湿润的灰绿叶） */
+  :root[data-theme="gardenia"] {
+    --page: #dfe5e1; --window: #fbfbf7; --sidebar: #f0f3ee; --menu: #ffffff; --card: #f2f4ef;
+    --text: #26302b; --text-2: #69766f; --text-3: #a3aea8;
+    --line: rgba(40, 60, 50, .08); --tree: rgba(40, 60, 50, .18);
+    --hover: rgba(40, 60, 50, .05); --selected: rgba(94, 140, 120, .15); --track: rgba(40, 60, 50, .08);
+    --accent: #5e8c78; --on-accent: #ffffff; --danger: #c9594d;
+    --seg-bg: rgba(40, 60, 50, .05); --seg-on: #ffffff; --switch-off: rgba(40, 60, 50, .14);
+    --shadow: 0 0 0 .5px rgba(40, 60, 50, .12), 0 20px 60px rgba(40, 60, 50, .18);
+    --menu-shadow: 0 0 0 .5px rgba(40, 60, 50, .12), 0 8px 24px rgba(40, 60, 50, .14);
+  }
+  /* 背景图：按图片明暗切换文字深浅，再盖一层同色调的半透明蒙版保证看得清 */
+  :root[data-ink="dark"] {
+    --text: #1d1d1f; --text-2: #48484d; --text-3: #7c7c82;
+    --line: rgba(0, 0, 0, .08); --tree: rgba(0, 0, 0, .2); --hover: rgba(0, 0, 0, .06);
+    --selected: rgba(0, 0, 0, .09); --track: rgba(0, 0, 0, .1); --seg-bg: rgba(0, 0, 0, .06);
+    --veil: rgba(255, 255, 255, .66); --veil-strong: rgba(255, 255, 255, .78);
+  }
+  :root[data-ink="light"] {
+    --text: #f5f5f7; --text-2: #c7c7cc; --text-3: #8e8e93;
+    --line: rgba(255, 255, 255, .1); --tree: rgba(255, 255, 255, .22); --hover: rgba(255, 255, 255, .08);
+    --selected: rgba(255, 255, 255, .14); --track: rgba(255, 255, 255, .14); --seg-bg: rgba(255, 255, 255, .1);
+    --seg-on: rgba(255, 255, 255, .2);
+    --veil: rgba(0, 0, 0, .46); --veil-strong: rgba(0, 0, 0, .58);
+  }
+
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   ::selection { background: color-mix(in srgb, var(--accent) 25%, transparent); }
   html, body { height: 100%; margin: 0; }
   body {
     background: var(--page);
     color: var(--text);
-    font: 13px/1.4 -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", sans-serif;
+    font: var(--fs)/1.4 -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", sans-serif;
     -webkit-font-smoothing: antialiased;
     display: grid;
     place-items: center;
@@ -73,7 +132,7 @@
     font: inherit; color: inherit; background: none; border: 0; padding: 0;
     cursor: default; outline: none;
   }
-  textarea { outline: none; }
+  textarea, input { outline: none; }
   /* 只给键盘焦点一圈跟主题走的中性细环，不用蓝色 */
   button:focus-visible, [role="separator"]:focus-visible {
     outline: none;
@@ -85,14 +144,18 @@
   .window {
     position: relative;
     width: min(980px, calc(100vw - 48px));
-    height: min(640px, calc(100vh - 48px));
-    background: var(--window);
+    height: min(640px, calc(100vh - 80px));
+    margin-top: 24px;
+    background: var(--window) center / cover no-repeat;
     border-radius: 12px;
     box-shadow: var(--shadow);
     display: grid;
     grid-template-columns: var(--side-w) 1fr;
     overflow: hidden;
   }
+  .window.has-bg { background-image: var(--bg-image); }
+  .window.has-bg .sidebar { background: var(--veil-strong); backdrop-filter: blur(24px); }
+  .window.has-bg .main { background: var(--veil); backdrop-filter: blur(24px); }
   .window.dropping::after {
     content: "";
     position: absolute; inset: 6px;
@@ -112,6 +175,7 @@
   }
   .traffic { display: flex; gap: 8px; padding: 0 4px 18px; }
   .traffic i { width: 12px; height: 12px; border-radius: 50%; background: var(--text-3); opacity: .35; }
+  .side-scroll { position: relative; display: flex; flex-direction: column; gap: 1px; overflow-y: auto; min-height: 0; }
   .side-thumb {
     position: absolute; top: 0; left: 0;
     border-radius: 6px; background: var(--selected);
@@ -122,31 +186,37 @@
   .side-item {
     position: relative;
     display: flex; align-items: center; justify-content: space-between; gap: 8px;
-    height: 28px; padding: 0 10px; border-radius: 6px; text-align: left;
+    width: 100%; height: 28px; padding: 0 10px; border-radius: 6px; text-align: left;
     color: var(--text-2);
     transition: color .2s;
   }
   .side-item > span:first-child { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .side-item:hover { background: var(--hover); }
   .side-item[aria-current="true"] { color: var(--text); }
-  .side-item.level-1 { font-weight: 600; color: var(--text); }
-  .side-item .count { color: var(--text-3); font-size: 12px; font-variant-numeric: tabular-nums; font-weight: 400; }
+  .side-item[data-level="1"] { font-weight: 600; color: var(--text); }
+  .side-item .count { color: var(--text-3); font-size: var(--fs-xs); font-variant-numeric: tabular-nums; font-weight: 400; }
+  .side-item.drop-target { background: color-mix(in srgb, var(--accent) 18%, transparent); }
+  .side-item input {
+    width: 100%; height: 22px; margin-left: -4px; padding: 0 4px; border-radius: 5px;
+    border: 1px solid color-mix(in srgb, var(--text) 20%, transparent);
+    background: var(--window); color: var(--text); font: inherit; user-select: text;
+  }
+  .side-gap { height: 10px; flex: none; }
 
-  /* 二级分类：竖线 + 圆角折钩挂在“全部”下面 */
+  /* 子分类：竖线 + 圆角折钩挂在上一级下面，可以嵌套 */
   .side-children { display: flex; flex-direction: column; gap: 1px; margin-left: 18px; }
-  .side-children .side-item { margin-left: 14px; }
-  .side-children .side-item::before,
-  .side-children .side-item:not(:last-child)::after {
+  .node { position: relative; margin-left: 14px; display: flex; flex-direction: column; gap: 1px; }
+  .node::before, .node:not(:last-child)::after {
     content: ""; position: absolute; left: -14px; border-left: 1px solid var(--tree);
   }
-  .side-children .side-item::before {
-    top: -1px; height: calc(50% + 1px); width: 10px;
+  .node::before {
+    top: -1px; height: 15px; width: 10px;
     border-bottom: 1px solid var(--tree); border-bottom-left-radius: 6px;
   }
-  .side-children .side-item:not(:last-child)::after { top: 50%; bottom: -1px; }
+  .node:not(:last-child)::after { top: 14px; bottom: -1px; }
 
-  .side-bottom { margin-top: auto; }
-  .side-bottom .side-item { justify-content: flex-start; width: 100%; }
+  .side-bottom { margin-top: auto; padding-top: 8px; display: flex; flex-direction: column; gap: 1px; }
+  .side-bottom .side-item { justify-content: flex-start; color: var(--text-2); font-weight: 400; }
 
   .resizer {
     position: absolute; top: 0; bottom: 0; right: -4px; width: 8px;
@@ -159,14 +229,15 @@
   .resizer:hover::after, .resizing .resizer::after { opacity: .5; }
 
   /* 主区 */
-  .main { display: grid; grid-template-rows: 52px 1fr 32px; min-width: 0; }
+  .main { display: grid; grid-template-rows: 52px 1fr 32px; min-width: 0; min-height: 0; }
   .toolbar {
     display: flex; align-items: center; gap: 8px;
     padding: 0 14px 0 20px;
     border-bottom: 1px solid var(--line);
   }
-  .toolbar h1 { font-size: 15px; font-weight: 600; margin: 0; flex: 1; }
-  .segmented { position: relative; display: flex; background: var(--seg-bg); border-radius: 7px; padding: 2px; margin-right: 6px; }
+  .toolbar h1 { font-size: var(--fs-title); font-weight: 600; margin: 0; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .segmented { position: relative; display: flex; background: var(--seg-bg); border-radius: 7px; padding: 2px; }
+  .toolbar .segmented { margin-right: 6px; }
   .seg-thumb {
     position: absolute; top: 0; left: 0;
     background: var(--seg-on); border-radius: 5px;
@@ -175,11 +246,11 @@
   .ready .seg-thumb { transition: transform .28s var(--ease), width .28s var(--ease); }
   .segmented button {
     position: relative; height: 22px; padding: 0 12px; border-radius: 5px;
-    font-size: 12px; color: var(--text-2); transition: color .2s;
+    font-size: var(--fs-xs); color: var(--text-2); transition: color .2s;
   }
   .segmented button[aria-pressed="true"] { color: var(--text); }
   .icon-btn {
-    width: 28px; height: 28px; border-radius: 6px;
+    width: 28px; height: 28px; border-radius: 6px; flex: none;
     display: grid; place-items: center; color: var(--text-2);
   }
   .icon-btn:hover:not(:disabled) { background: var(--hover); color: var(--text); }
@@ -204,12 +275,12 @@
   .name { font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .bar { height: 3px; border-radius: 2px; background: var(--track); overflow: hidden; }
   .bar i { display: block; height: 100%; background: var(--accent); border-radius: 2px; transition: width .5s linear; }
-  .row[data-status="paused"] .bar i,
-  .row[data-status="queued"] .bar i { background: var(--text-3); }
-  .row[data-status="failed"] .bar i { background: var(--danger); }
-  .row[data-status="completed"] .bar { display: none; }
-  .meta { font-size: 11.5px; color: var(--text-2); font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .row[data-status="failed"] .meta { color: var(--danger); }
+  [data-status="paused"] .bar i,
+  [data-status="queued"] .bar i { background: var(--text-3); }
+  [data-status="failed"] .bar i { background: var(--danger); }
+  [data-status="completed"] .bar { display: none; }
+  .meta { font-size: var(--fs-sm); color: var(--text-2); font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  [data-status="failed"] .meta { color: var(--danger); }
   .actions { display: flex; gap: 2px; opacity: 0; transition: opacity .15s; }
   .row:hover .actions, .row:focus-within .actions { opacity: 1; }
 
@@ -217,7 +288,7 @@
   .statusbar {
     display: flex; align-items: center; justify-content: flex-end;
     padding: 0 20px; border-top: 1px solid var(--line);
-    font-size: 11.5px; color: var(--text-2); font-variant-numeric: tabular-nums;
+    font-size: var(--fs-sm); color: var(--text-2); font-variant-numeric: tabular-nums;
   }
 
   /* 弹窗：居中，淡入 + 轻微放大 */
@@ -231,40 +302,44 @@
   .dialog {
     width: min(460px, calc(100% - 40px));
     background: var(--window);
+    color: var(--text);
     border-radius: 12px;
     box-shadow: var(--shadow);
     padding: 16px;
     animation: pop-in .2s var(--ease);
   }
   @keyframes pop-in { from { opacity: 0; transform: scale(.96); } }
-  .dialog h2 { font-size: 13px; font-weight: 600; margin: 0 0 6px; }
+  .dialog h2 { font-size: var(--fs); font-weight: 600; margin: 0 0 6px; }
+  .dialog-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+  .dialog-head h2 { margin: 0; }
   .dialog textarea {
     width: 100%; height: 120px; resize: none;
     border: 1px solid var(--line); border-radius: 8px; padding: 10px;
     background: var(--sidebar); color: var(--text);
-    font: 12px/1.5 ui-monospace, "SF Mono", Menlo, monospace;
+    font: var(--fs-xs)/1.5 ui-monospace, "SF Mono", Menlo, monospace;
     user-select: text;
     transition: border-color .15s;
   }
   .dialog textarea:focus { border-color: color-mix(in srgb, var(--text) 20%, transparent); }
-  .dialog .error { color: var(--danger); font-size: 12px; min-height: 18px; padding-top: 4px; }
+  .dialog .error { color: var(--danger); font-size: var(--fs-xs); min-height: 18px; padding-top: 4px; }
   .dialog .buttons { display: flex; justify-content: flex-end; gap: 8px; }
   .btn { height: 26px; padding: 0 14px; border-radius: 6px; background: var(--seg-bg); }
-  .btn.small { height: 22px; padding: 0 10px; font-size: 12px; }
-  .btn.primary { background: var(--accent); color: #fff; }
+  .btn.small { height: 22px; padding: 0 10px; font-size: var(--fs-xs); }
+  .btn.primary { background: var(--accent); color: var(--on-accent); }
 
-  /* 设置项 */
+  /* 设置项：常规 / 外观两页，页签同样是滑块 */
   .settings { margin-bottom: 14px; }
+  .settings[hidden] { display: none; }
   .setting {
     display: flex; align-items: center; justify-content: space-between; gap: 12px;
     min-height: 42px; border-bottom: 1px solid var(--line);
   }
   .setting:last-child { border-bottom: 0; }
   .setting .value { display: flex; align-items: center; gap: 8px; min-width: 0; }
-  .setting .path { color: var(--text-2); font: 12px ui-monospace, "SF Mono", Menlo, monospace; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .setting .path { color: var(--text-2); font: var(--fs-xs) ui-monospace, "SF Mono", Menlo, monospace; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
   .switch {
-    position: relative; width: 32px; height: 19px; border-radius: 10px;
+    position: relative; width: 32px; height: 19px; border-radius: 10px; flex: none;
     background: var(--switch-off); transition: background .2s;
   }
   .switch::after {
@@ -280,13 +355,13 @@
   .dropdown { position: relative; }
   .dd-btn {
     display: flex; align-items: center; justify-content: space-between; gap: 10px;
-    min-width: 84px; height: 24px; padding: 0 8px 0 10px; border-radius: 6px;
-    background: var(--seg-bg); font-size: 12px;
+    min-width: 108px; height: 24px; padding: 0 8px 0 10px; border-radius: 6px;
+    background: var(--seg-bg); font-size: var(--fs-xs);
   }
   .dd-btn svg { color: var(--text-2); transition: transform .2s var(--ease); }
   .dd-btn[aria-expanded="true"] svg { transform: rotate(180deg); }
   .dd-list {
-    position: absolute; top: calc(100% + 4px); right: 0; z-index: 20;
+    position: absolute; top: calc(100% + 4px); left: 0; z-index: 20;
     min-width: 100%; padding: 4px; border-radius: 8px;
     background: var(--menu); box-shadow: var(--menu-shadow);
     display: none; flex-direction: column;
@@ -294,26 +369,85 @@
   .dd-list.open { display: flex; animation: menu-in .14s var(--ease); }
   @keyframes menu-in { from { opacity: 0; transform: translateY(-4px); } }
   .dd-opt {
-    display: flex; align-items: center; gap: 6px;
-    height: 24px; padding: 0 10px 0 6px; border-radius: 5px; font-size: 12px; text-align: left;
+    display: flex; align-items: center; justify-content: space-between; gap: 6px;
+    height: 24px; padding: 0 8px 0 6px; border-radius: 5px; font-size: var(--fs-xs); text-align: left; white-space: nowrap;
   }
-  .dd-opt::before { content: "✓"; width: 12px; font-size: 11px; visibility: hidden; }
-  .dd-opt[aria-selected="true"]::before { visibility: visible; }
-  .dd-opt:hover, .dd-opt:focus-visible { background: var(--accent); color: #fff; box-shadow: none; }
+  .dd-opt::after { content: "✓"; width: 12px; font-size: 11px; visibility: hidden; }
+  .dd-opt[aria-selected="true"]::after { visibility: visible; }
+  .dd-opt:hover, .dd-opt:focus-visible { background: var(--accent); color: var(--on-accent); box-shadow: none; }
+
+  /* 右键菜单：自绘，跟主题变色 */
+  .ctx {
+    position: fixed; z-index: 40; min-width: 160px; padding: 4px; border-radius: 8px;
+    background: var(--menu); color: var(--text); box-shadow: var(--menu-shadow);
+    display: none; flex-direction: column;
+  }
+  .ctx.open { display: flex; animation: menu-in .14s var(--ease); }
+  .ctx button { height: 24px; padding: 0 10px; border-radius: 5px; font-size: var(--fs-xs); text-align: left; white-space: nowrap; }
+  .ctx button:hover { background: var(--accent); color: var(--on-accent); }
+  .ctx button.danger { color: var(--danger); }
+  .ctx button.danger:hover { background: var(--danger); color: #fff; }
+  .ctx hr { border: 0; border-top: 1px solid var(--line); margin: 4px 6px; }
+  .ctx .heading { padding: 2px 10px; font-size: 11px; color: var(--text-3); }
 
   .toast {
     position: absolute; left: 50%; bottom: 44px; transform: translateX(-50%); z-index: 30;
     background: var(--text); color: var(--window);
-    padding: 6px 12px; border-radius: 8px; font-size: 12px;
+    padding: 6px 12px; border-radius: 8px; font-size: var(--fs-xs);
     opacity: 0; transition: opacity .2s; pointer-events: none; white-space: nowrap;
   }
   .toast.show { opacity: .92; }
 
+  /* 模拟菜单栏 + 状态栏面板（仿 Vorssaint：顶部图标、页签、小标题、卡片、底部两个按钮） */
+  .menubar {
+    position: fixed; top: 0; left: 0; right: 0; height: 24px; z-index: 50;
+    display: flex; align-items: center; justify-content: flex-end; gap: 4px; padding: 0 12px;
+    background: color-mix(in srgb, var(--page) 70%, #3478f6); color: #fff; font-size: 12px;
+  }
+  .menubar[hidden] { display: none; }
+  .mb-item {
+    display: flex; align-items: center; gap: 5px; height: 20px; padding: 0 7px; border-radius: 6px;
+    color: #fff; font-variant-numeric: tabular-nums;
+  }
+  .mb-item:hover, .mb-item[aria-expanded="true"] { background: rgba(255, 255, 255, .22); }
+  .mb-item .speed { font-size: 10.5px; line-height: 1; }
+  .panel {
+    position: fixed; top: 32px; z-index: 50; width: 320px;
+    background: var(--window); color: var(--text);
+    border-radius: 22px; box-shadow: var(--shadow);
+    padding: 18px 14px 14px;
+    display: none; flex-direction: column; gap: 10px;
+  }
+  .panel.open { display: flex; animation: pop-in .18s var(--ease); transform-origin: top center; }
+  .panel-logo { display: grid; place-items: center; color: var(--text); padding: 2px 0 4px; }
+  .panel-tabs { position: relative; display: flex; padding: 4px; border-radius: 12px; border: 1px solid var(--line); background: var(--card); }
+  .panel-tabs .tab-thumb { position: absolute; top: 0; left: 0; border-radius: 9px; background: color-mix(in srgb, var(--accent) 14%, transparent); }
+  .ready .panel-tabs .tab-thumb { transition: transform .28s var(--ease), width .28s var(--ease); }
+  .panel-tabs button { position: relative; flex: 1; height: 34px; border-radius: 9px; display: grid; place-items: center; color: var(--text-2); }
+  .panel-tabs button[aria-pressed="true"] { color: var(--accent); }
+  .panel-title { font-size: var(--fs-xs); font-weight: 600; color: var(--text-2); padding: 0 2px; }
+  .panel-card {
+    border-radius: 14px; border: 1px solid var(--line); background: var(--card);
+    padding: 4px; max-height: 300px; overflow-y: auto; display: grid; gap: 2px;
+  }
+  .p-row { display: grid; grid-template-columns: 28px 1fr auto; gap: 10px; align-items: center; padding: 8px; border-radius: 10px; }
+  .p-row:hover { background: var(--hover); }
+  .p-row .ficon { width: 28px; height: 28px; border-radius: 7px; font-size: 8px; }
+  .p-row .body { gap: 4px; }
+  .p-empty { padding: 22px 8px; text-align: center; color: var(--text-3); font-size: var(--fs-xs); }
+  .panel-foot { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .panel-foot button {
+    height: 32px; border-radius: 10px; border: 1px solid var(--line); background: var(--window);
+    display: flex; align-items: center; justify-content: center; gap: 6px; font-size: var(--fs-xs);
+  }
+  .panel-foot button:hover { background: var(--hover); }
+
   @media (max-width: 640px) {
-    .window { width: 100vw; height: 100vh; border-radius: 0; grid-template-columns: 1fr; }
+    .window { width: 100vw; height: calc(100vh - 24px); border-radius: 0; grid-template-columns: 1fr; }
     .sidebar { display: none; }
     .segmented button { padding: 0 8px; }
     .actions { opacity: 1; }
+    .panel { right: 8px !important; left: 8px !important; width: auto; }
   }
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { animation-duration: 0s !important; transition-duration: 0s !important; }
@@ -321,84 +455,146 @@
 </style>
 </head>
 <body>
+<div class="menubar" id="menubar">
+  <button class="mb-item" id="mbItem" aria-haspopup="dialog" aria-expanded="false"></button>
+</div>
+<div class="panel" id="panel" role="dialog">
+  <div class="panel-logo" id="panelLogo" aria-hidden="true"></div>
+  <div class="panel-tabs" role="group" id="panelTabs">
+    <div class="tab-thumb" id="tabThumb"></div>
+    <button data-tab="active" aria-pressed="true"></button>
+    <button data-tab="done" aria-pressed="false"></button>
+  </div>
+  <div class="panel-title" id="panelTitle"></div>
+  <div class="panel-card" id="panelList"></div>
+  <div class="panel-foot">
+    <button id="panelOpen"></button>
+    <button id="panelQuit"></button>
+  </div>
+</div>
+
 <div class="window" id="window">
-  <nav class="sidebar" id="sidebar" aria-label="分类">
+  <nav class="sidebar" id="sidebar">
     <div class="traffic" aria-hidden="true"><i></i><i></i><i></i></div>
-    <div class="side-thumb" id="sideThumb"></div>
-    <button class="side-item level-1" data-category="all"><span>全部</span><span class="count"></span></button>
-    <div class="side-children" id="sideChildren"></div>
-    <div class="side-bottom">
-      <button class="side-item" id="settingsBtn" title="设置（⌘,）"></button>
+    <div class="side-scroll" id="sideScroll">
+      <div class="side-thumb" id="sideThumb"></div>
+      <div id="sideTree"></div>
     </div>
-    <div class="resizer" id="resizer" role="separator" aria-orientation="vertical" aria-label="调整侧栏宽度" tabindex="0"></div>
+    <div class="side-bottom">
+      <button class="side-item" id="newGroupBtn"></button>
+      <button class="side-item" id="settingsBtn"></button>
+    </div>
+    <div class="resizer" id="resizer" role="separator" aria-orientation="vertical" tabindex="0"></div>
   </nav>
 
   <section class="main">
     <header class="toolbar">
-      <h1 id="title">全部</h1>
-      <div class="segmented" role="group" aria-label="状态筛选" id="segmented">
+      <h1 id="title"></h1>
+      <div class="segmented" role="group" id="segmented">
         <div class="seg-thumb" id="segThumb"></div>
-        <button data-status="all" aria-pressed="true">全部</button>
-        <button data-status="active" aria-pressed="false">进行中</button>
-        <button data-status="done" aria-pressed="false">已完成</button>
+        <button data-status="all" aria-pressed="true" data-i18n="filterAll"></button>
+        <button data-status="active" aria-pressed="false" data-i18n="filterActive"></button>
+        <button data-status="done" aria-pressed="false" data-i18n="filterDone"></button>
       </div>
-      <button class="icon-btn" id="pauseAll" aria-label="全部暂停" title="全部暂停"></button>
-      <button class="icon-btn" id="addBtn" aria-label="添加下载" title="添加下载（⌘N）"></button>
+      <button class="icon-btn" id="pauseAll"></button>
+      <button class="icon-btn" id="addBtn"></button>
     </header>
     <ul class="list" id="list"></ul>
     <footer class="statusbar" id="statusbar" aria-live="polite"></footer>
   </section>
 
   <div class="scrim" id="addScrim">
-    <div class="dialog" role="dialog" aria-modal="true" aria-label="添加下载">
-      <textarea id="urls" placeholder="粘贴链接，每行一个" aria-label="下载链接" spellcheck="false"></textarea>
+    <div class="dialog" role="dialog" aria-modal="true" data-i18n-label="addTitle">
+      <textarea id="urls" data-i18n-placeholder="addPlaceholder" data-i18n-label="addLinks" spellcheck="false"></textarea>
       <div class="error" id="urlError" role="alert"></div>
       <div class="buttons">
-        <button class="btn" data-close>取消</button>
-        <button class="btn primary" id="confirmAdd">下载</button>
+        <button class="btn" data-close data-i18n="cancel"></button>
+        <button class="btn primary" id="confirmAdd" data-i18n="download"></button>
       </div>
     </div>
   </div>
 
   <div class="scrim" id="settingsScrim">
     <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
-      <h2 id="settingsTitle">设置</h2>
-      <div class="settings">
+      <div class="dialog-head">
+        <h2 id="settingsTitle" data-i18n="settings"></h2>
+        <div class="segmented" role="group" id="settingsTabs">
+          <div class="seg-thumb" id="settingsThumb"></div>
+          <button data-page="general" aria-pressed="true" data-i18n="general"></button>
+          <button data-page="appearance" aria-pressed="false" data-i18n="appearance"></button>
+        </div>
+      </div>
+      <div class="settings" data-page="general">
         <div class="setting">
-          <span>下载位置</span>
+          <span data-i18n="downloadDir"></span>
           <div class="value">
             <span class="path" id="dirPath"></span>
-            <button class="btn small" id="changeDir">更改…</button>
+            <button class="btn small" id="changeDir" data-i18n="change"></button>
           </div>
         </div>
         <div class="setting">
-          <span id="maxActiveLabel">同时下载</span>
+          <span id="maxActiveLabel" data-i18n="maxActive"></span>
           <div class="dropdown" data-key="maxActive" data-label="maxActiveLabel"></div>
         </div>
         <div class="setting">
-          <span id="threadsLabel">每个任务分段</span>
+          <span id="threadsLabel" data-i18n="threads"></span>
           <div class="dropdown" data-key="threads" data-label="threadsLabel"></div>
         </div>
         <div class="setting">
-          <span id="classifyLabel">按类型放进子文件夹</span>
+          <span id="classifyLabel" data-i18n="classify"></span>
           <button class="switch" role="switch" data-key="classify" aria-labelledby="classifyLabel"></button>
         </div>
         <div class="setting">
-          <span id="notifyLabel">完成后通知</span>
+          <span id="learnLabel" data-i18n="learn"></span>
+          <button class="switch" role="switch" data-key="learn" aria-labelledby="learnLabel"></button>
+        </div>
+        <div class="setting">
+          <span id="notifyLabel" data-i18n="notify"></span>
           <button class="switch" role="switch" data-key="notify" aria-labelledby="notifyLabel"></button>
+        </div>
+        <div class="setting">
+          <span id="menuBarLabel" data-i18n="menuBar"></span>
+          <button class="switch" role="switch" data-key="menuBar" aria-labelledby="menuBarLabel"></button>
+        </div>
+        <div class="setting">
+          <span data-i18n="browser"></span>
+          <button class="btn small" id="browserHelp" data-i18n="howToInstall"></button>
+        </div>
+      </div>
+      <div class="settings" data-page="appearance" hidden>
+        <div class="setting">
+          <span id="themeLabel" data-i18n="theme"></span>
+          <div class="dropdown" data-key="theme" data-label="themeLabel"></div>
+        </div>
+        <div class="setting">
+          <span id="fontLabel" data-i18n="fontSize"></span>
+          <div class="dropdown" data-key="fontSize" data-label="fontLabel"></div>
+        </div>
+        <div class="setting">
+          <span data-i18n="background"></span>
+          <div class="value">
+            <button class="btn small" id="clearBg" data-i18n="remove" hidden></button>
+            <button class="btn small" id="pickBg" data-i18n="choose"></button>
+            <input type="file" id="bgFile" accept="image/*" hidden>
+          </div>
+        </div>
+        <div class="setting">
+          <span id="langLabel" data-i18n="language"></span>
+          <div class="dropdown" data-key="language" data-label="langLabel"></div>
         </div>
       </div>
       <div class="buttons">
-        <button class="btn primary" data-close>完成</button>
+        <button class="btn primary" data-close data-i18n="done"></button>
       </div>
     </div>
   </div>
 
   <div class="toast" id="toast" role="status"></div>
 </div>
+<div class="ctx" id="ctx" role="menu"></div>
 
 <template id="rowTpl">
-  <li class="row">
+  <li class="row" draggable="true">
     <div class="ficon" aria-hidden="true"></div>
     <div class="body">
       <div class="name"></div>
@@ -407,7 +603,7 @@
     </div>
     <div class="actions">
       <button class="icon-btn" data-act="toggle"></button>
-      <button class="icon-btn" data-act="remove" aria-label="移除" title="移除"></button>
+      <button class="icon-btn" data-act="remove"></button>
     </div>
   </li>
 </template>
@@ -421,20 +617,89 @@ const SIDEBAR_MAX = 340;
 const SIDEBAR_KEY = 'downloader.sidebarWidth';
 const FADE_MS = 220;         // 侧栏跨级切换的淡入淡出时长
 const STAGGER_CAP = 12;     // 列表入场动画最多错开 12 行，后面的同时出现
+const MAX_DEPTH = 3;        // 自定义分类最多三级
+const LEARN_THRESHOLD = 3;  // 同一来源 / 扩展名连续归到同一分类几次后，新任务自动归进去
+const PANEL_LIMIT = 6;      // 状态栏面板最多列几条
+const FONT_SCALES = { small: 0.92, standard: 1, large: 1.15 };
 
-const CATEGORIES = [
-  { id: 'video',     name: '视频',   exts: ['mp4', 'mkv', 'mov', 'avi', 'webm', 'm4v'] },
-  { id: 'audio',     name: '音频',   exts: ['mp3', 'flac', 'wav', 'm4a', 'aac', 'ogg'] },
-  { id: 'image',     name: '图片',   exts: ['jpg', 'jpeg', 'png', 'gif', 'webp', 'heic', 'svg'] },
-  { id: 'doc',       name: '文档',   exts: ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt', 'md', 'epub', 'pages', 'key', 'numbers'] },
-  { id: 'archive',   name: '压缩包', exts: ['zip', 'rar', '7z', 'tar', 'gz', 'bz2', 'xz'] },
-  { id: 'installer', name: '安装包', exts: ['dmg', 'pkg', 'ipa'] },
-  { id: 'other',     name: '其他',   exts: [] },
+/* ---------- 文案：中文 / English ---------- */
+
+const STRINGS = {
+  zh: {
+    all: '全部', video: '视频', audio: '音频', image: '图片', doc: '文档', archive: '压缩包', installer: '安装包', other: '其他',
+    filterAll: '全部', filterActive: '进行中', filterDone: '已完成',
+    pauseAll: '全部暂停', resumeAll: '全部继续', add: '添加下载（⌘N）', settings: '设置', newGroup: '新建分类',
+    addTitle: '添加下载', addPlaceholder: '粘贴链接，每行一个', addLinks: '下载链接', cancel: '取消', download: '下载', done: '完成',
+    noLinks: '没有识别到 http/https 链接', noLinksDrop: '没有识别到链接', added: (n) => `已添加 ${n} 个任务`,
+    general: '常规', appearance: '外观', downloadDir: '下载位置', change: '更改…',
+    maxActive: '同时下载', threads: '每个任务分段', classify: '按类型放进子文件夹', learn: '学习我的分类习惯',
+    notify: '完成后通知', menuBar: '在菜单栏显示', browser: '接管 Chrome 下载', howToInstall: '安装说明',
+    theme: '主题', fontSize: '字号', background: '背景图片', language: '语言', choose: '选择…', remove: '移除',
+    themeSystem: '跟随系统', themeRainforest: '热带雨林', themeOrange: '初夏橙皮', themeGardenia: '雨后栀子',
+    fontSmall: '小', fontStandard: '标准', fontLarge: '大', langAuto: '跟随系统',
+    count: (n) => `${n} 个`, segs: (n) => `${n} 段`, auto: '自动',
+    pause: '暂停', resume: '继续', retry: '重试', reveal: '在访达中显示', removeTask: '移除',
+    queued: '排队中', paused: '已暂停', failed: '连接中断', left: '剩',
+    sec: '秒', min: '分', hour: '小时',
+    emptyAll: '把链接拖进来，或按 ⌘N', emptyFilter: '没有符合条件的任务',
+    downloading: (n, speed) => `${n} 个下载中 · ${speed}/s`,
+    finished: (name) => `下载完成：${name}`,
+    newSub: '新建子分类', rename: '重命名', deleteGroup: '删除分类', moveTo: '移到分类', noGroup: '不放进分类',
+    untitled: '新分类', movedTo: (name) => `已移到「${name}」`, learned: (name) => `已按习惯放进「${name}」`,
+    deleted: (name) => `已删除「${name}」，里面的任务保留`,
+    browserTip: '在 Chrome 打开 chrome://extensions → 开发者模式 → 加载 browser/chrome',
+    panelActive: '进行中', panelDone: '最近完成', panelOpen: '打开下载器', panelQuit: '退出',
+    panelEmpty: '没有进行中的下载', panelEmptyDone: '还没有完成的下载',
+    panelTitle: (n, speed) => (n ? `进行中 · ${n} 个 · ${speed}/s` : '进行中'),
+    quitTip: '原型里不会真的退出',
+  },
+  en: {
+    all: 'All', video: 'Video', audio: 'Audio', image: 'Images', doc: 'Documents', archive: 'Archives', installer: 'Installers', other: 'Other',
+    filterAll: 'All', filterActive: 'Active', filterDone: 'Done',
+    pauseAll: 'Pause All', resumeAll: 'Resume All', add: 'Add Download (⌘N)', settings: 'Settings', newGroup: 'New Category',
+    addTitle: 'Add Download', addPlaceholder: 'Paste links, one per line', addLinks: 'Download links', cancel: 'Cancel', download: 'Download', done: 'Done',
+    noLinks: 'No http/https links found', noLinksDrop: 'No links found', added: (n) => `Added ${n} ${n === 1 ? 'task' : 'tasks'}`,
+    general: 'General', appearance: 'Appearance', downloadDir: 'Save to', change: 'Change…',
+    maxActive: 'Simultaneous', threads: 'Segments per task', classify: 'Sort into folders by type', learn: 'Learn my sorting habits',
+    notify: 'Notify when done', menuBar: 'Show in menu bar', browser: 'Take over Chrome downloads', howToInstall: 'How to install',
+    theme: 'Theme', fontSize: 'Text size', background: 'Background image', language: 'Language', choose: 'Choose…', remove: 'Remove',
+    themeSystem: 'System', themeRainforest: 'Rainforest', themeOrange: 'Orange Peel', themeGardenia: 'Gardenia',
+    fontSmall: 'Small', fontStandard: 'Standard', fontLarge: 'Large', langAuto: 'System',
+    count: (n) => String(n), segs: (n) => String(n), auto: 'Auto',
+    pause: 'Pause', resume: 'Resume', retry: 'Retry', reveal: 'Show in Finder', removeTask: 'Remove',
+    queued: 'Queued', paused: 'Paused', failed: 'Connection lost', left: '',
+    sec: 's', min: 'min', hour: 'h',
+    emptyAll: 'Drop links here, or press ⌘N', emptyFilter: 'No matching tasks',
+    downloading: (n, speed) => `${n} downloading · ${speed}/s`,
+    finished: (name) => `Downloaded: ${name}`,
+    newSub: 'New Subcategory', rename: 'Rename', deleteGroup: 'Delete Category', moveTo: 'Move to', noGroup: 'No category',
+    untitled: 'New Category', movedTo: (name) => `Moved to “${name}”`, learned: (name) => `Sorted into “${name}” by habit`,
+    deleted: (name) => `Deleted “${name}”; its tasks were kept`,
+    browserTip: 'In Chrome open chrome://extensions → Developer mode → Load browser/chrome',
+    panelActive: 'Active', panelDone: 'Recently done', panelOpen: 'Open Downloader', panelQuit: 'Quit',
+    panelEmpty: 'Nothing downloading', panelEmptyDone: 'Nothing finished yet',
+    panelTitle: (n, speed) => (n ? `Active · ${n} · ${speed}/s` : 'Active'),
+    quitTip: 'The prototype does not really quit',
+  },
+};
+
+const TYPES = [
+  { id: 'video',     exts: ['mp4', 'mkv', 'mov', 'avi', 'webm', 'm4v'] },
+  { id: 'audio',     exts: ['mp3', 'flac', 'wav', 'm4a', 'aac', 'ogg'] },
+  { id: 'image',     exts: ['jpg', 'jpeg', 'png', 'gif', 'webp', 'heic', 'svg'] },
+  { id: 'doc',       exts: ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt', 'md', 'epub', 'pages', 'key', 'numbers'] },
+  { id: 'archive',   exts: ['zip', 'rar', '7z', 'tar', 'gz', 'bz2', 'xz'] },
+  { id: 'installer', exts: ['dmg', 'pkg', 'ipa'] },
+  { id: 'other',     exts: [] },
 ];
 
 const SETTING_OPTIONS = {
-  maxActive: [1, 2, 3, 4, 5, 6, 8].map((v) => ({ value: v, label: `${v} 个` })),
-  threads: [{ value: 'auto', label: '自动' }, ...[2, 4, 8, 16].map((v) => ({ value: v, label: `${v} 段` }))],
+  maxActive: () => [1, 2, 3, 4, 5, 6, 8].map((v) => ({ value: v, label: t('count', v) })),
+  threads: () => [{ value: 'auto', label: t('auto') }, ...[2, 4, 8, 16].map((v) => ({ value: v, label: t('segs', v) }))],
+  theme: () => [['system', 'themeSystem'], ['rainforest', 'themeRainforest'], ['orange', 'themeOrange'], ['gardenia', 'themeGardenia']]
+    .map(([value, key]) => ({ value, label: t(key) })),
+  fontSize: () => [['small', 'fontSmall'], ['standard', 'fontStandard'], ['large', 'fontLarge']].map(([value, key]) => ({ value, label: t(key) })),
+  language: () => [{ value: 'auto', label: t('langAuto') }, { value: 'zh', label: '中文' }, { value: 'en', label: 'English' }],
 };
 
 const ICONS = {
@@ -443,28 +708,74 @@ const ICONS = {
   play:     '<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M5 3.2v9.6a.6.6 0 0 0 .9.5l7.6-4.8a.6.6 0 0 0 0-1L5.9 2.7a.6.6 0 0 0-.9.5z"/></svg>',
   retry:    '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M13 8a5 5 0 1 1-1.5-3.6M13 2.5v2.8h-2.8"/></svg>',
   folder:   '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M2 4.5c0-.6.4-1 1-1h3.2l1.5 1.6H13c.6 0 1 .4 1 1v5.9c0 .6-.4 1-1 1H3c-.6 0-1-.4-1-1z"/></svg>',
+  folderPlus: '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4.5c0-.6.4-1 1-1h3.2l1.5 1.6H13c.6 0 1 .4 1 1v5.9c0 .6-.4 1-1 1H3c-.6 0-1-.4-1-1z"/><path d="M8 7.5v3.5M6.25 9.25h3.5"/></svg>',
   close:    '<svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 4l8 8M12 4l-8 8"/></svg>',
   sliders:  '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M2.5 5h6M12.5 5h1M2.5 11h1M7.5 11h6"/><circle cx="10.5" cy="5" r="1.7"/><circle cx="5.5" cy="11" r="1.7"/></svg>',
   chevron:  '<svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6l4 4 4-4"/></svg>',
+  arrowDown: '<svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2.5v9M4 8l4 4 4-4"/></svg>',
+  check:    '<svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8.5l3.2 3L13 4.5"/></svg>',
+  power:    '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M8 2v5.5M4.6 4.2a5 5 0 1 0 6.8 0"/></svg>',
+  window:   '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><rect x="2" y="3" width="12" height="10" rx="2"/><path d="M2 6h12"/></svg>',
+  // 应用图标的线稿水滴，菜单栏和面板顶部共用
+  drop: (size) => `<svg width="${size}" height="${size}" viewBox="230 240 564 610" fill="none" stroke="currentColor" stroke-width="64" stroke-linecap="round" stroke-linejoin="round"><path d="M512 290 C462 368 382 460 382 568 a130 130 0 0 0 260 0 C642 460 562 368 512 290 Z"/><path d="M262 750 A250 46 0 0 0 762 750"/></svg>`,
 };
 
-const view = { category: 'all', status: 'all' };
-const settings = { dir: '~/Downloads', maxActive: 3, threads: 'auto', classify: true, notify: true };
+const view = { key: 'all', status: 'all' };   // key：'all' | 'type:video' | 'group:<id>'
+const settings = {
+  dir: '~/Downloads', maxActive: 3, threads: 'auto', classify: true, learn: true, notify: true, menuBar: true,
+  theme: 'system', fontSize: 'standard', language: 'auto', background: null,
+};
 let tasks = [];
+let groups = [];          // 自定义分类：{ id, name, parent }，parent 为 null 时和「全部」并列
+let habits = new Map();   // 学到的习惯：'host:x' / 'ext:x' → { group, count }
 let nextId = 1;
+let panelTab = 'active';
 
 const $ = (id) => document.getElementById(id);
 
-/* ---------- 数据 ---------- */
-
-// 按扩展名判断分类；.tar.gz 取最后一段 gz，同样归压缩包
-function categoryOf(name) {
-  const ext = name.includes('.') ? name.split('.').pop().toLowerCase() : '';
-  return (CATEGORIES.find((c) => c.exts.includes(ext)) || CATEGORIES.at(-1)).id;
+function lang() {
+  if (settings.language !== 'auto') return settings.language;
+  return navigator.language.toLowerCase().startsWith('zh') ? 'zh' : 'en';
 }
 
-function categoryName(id) {
-  return id === 'all' ? '全部' : CATEGORIES.find((c) => c.id === id).name;
+function t(key, ...args) {
+  const value = STRINGS[lang()][key] ?? STRINGS.zh[key];
+  return typeof value === 'function' ? value(...args) : value;
+}
+
+/* ---------- 数据 ---------- */
+
+// 按扩展名判断类型；.tar.gz 取最后一段 gz，同样归压缩包
+function typeOf(name) {
+  const ext = extOf(name);
+  return (TYPES.find((c) => c.exts.includes(ext)) || TYPES.at(-1)).id;
+}
+
+const extOf = (name) => (name.includes('.') ? name.split('.').pop().toLowerCase() : '');
+const groupById = (id) => groups.find((g) => g.id === id);
+const childrenOf = (parent) => groups.filter((g) => g.parent === parent);
+
+function depthOf(id) {
+  let depth = 0;
+  for (let g = groupById(id); g; g = groupById(g.parent)) depth++;
+  return depth;
+}
+
+// 分类自己 + 所有子孙，选中上级时显示整棵子树的任务
+function subtreeIds(id) {
+  return [id, ...childrenOf(id).flatMap((g) => subtreeIds(g.id))];
+}
+
+function groupPath(id) {
+  const names = [];
+  for (let g = groupById(id); g; g = groupById(g.parent)) names.unshift(g.name);
+  return names;
+}
+
+function titleOf(key) {
+  if (key === 'all') return t('all');
+  const [kind, id] = key.split(':');
+  return kind === 'type' ? t(id) : groupById(id)?.name ?? t('all');
 }
 
 function extLabel(name) {
@@ -472,10 +783,14 @@ function extLabel(name) {
   return ext.slice(0, 4).toUpperCase() || '—';
 }
 
-function makeTask(name, size, done = 0, status = 'queued', url = '') {
+function hostOf(url) {
+  try { return new URL(url).hostname.replace(/^www\./, ''); } catch { return ''; }
+}
+
+function makeTask(name, size, done = 0, status = 'queued', url = '', group = null) {
   return {
-    id: nextId++, name, url, size, done, status,
-    category: categoryOf(name),
+    id: nextId++, name, url, size, done, status, group,
+    type: typeOf(name),
     speed: 0,
     baseSpeed: (2 + Math.random() * 10) * MB,
   };
@@ -483,7 +798,7 @@ function makeTask(name, size, done = 0, status = 'queued', url = '') {
 
 // 重名时加 " (1)"，和真实下载器落盘规则一致
 function uniqueName(name) {
-  const taken = new Set(tasks.map((t) => t.name));
+  const taken = new Set(tasks.map((x) => x.name));
   if (!taken.has(name)) return name;
   const dot = name.lastIndexOf('.');
   const stem = dot > 0 ? name.slice(0, dot) : name;
@@ -506,31 +821,98 @@ function nameFromUrl(url) {
   try { return decodeURIComponent(last); } catch { return last; }
 }
 
-function savePath(t) {
-  return settings.classify ? `${settings.dir}/${categoryName(t.category)}/${t.name}` : `${settings.dir}/${t.name}`;
+// 有自定义分类就放进分类的文件夹，否则按类型分
+function savePath(task) {
+  if (task.group) return [settings.dir, ...groupPath(task.group), task.name].join('/');
+  return settings.classify ? `${settings.dir}/${t(task.type)}/${task.name}` : `${settings.dir}/${task.name}`;
 }
 
 function addUrls(urls) {
+  let learnedGroup = null;
   for (const url of urls) {
-    const size = (20 + Math.random() * 1500) * MB;
-    tasks.push(makeTask(uniqueName(nameFromUrl(url)), size, 0, 'queued', url));
+    const task = makeTask(uniqueName(nameFromUrl(url)), (20 + Math.random() * 1500) * MB, 0, 'queued', url);
+    const suggestion = settings.learn ? suggestGroup(task) : null;
+    if (suggestion) { task.group = suggestion; learnedGroup = suggestion; }
+    tasks.push(task);
   }
   schedule();
   renderAll();
-  toast(`已添加 ${urls.length} 个任务`);
+  toast(learnedGroup ? t('learned', groupById(learnedGroup).name) : t('added', urls.length));
+}
+
+/* ---------- 习惯学习：手动归类时记下来源网站和扩展名 ---------- */
+
+function habitKeys(task) {
+  const host = hostOf(task.url);
+  return [host && `host:${host}`, `ext:${extOf(task.name)}`].filter(Boolean);
+}
+
+function learn(task, group) {
+  for (const key of habitKeys(task)) {
+    const habit = habits.get(key);
+    habits.set(key, habit?.group === group ? { group, count: habit.count + 1 } : { group, count: 1 });
+  }
+}
+
+// 来源网站优先于扩展名；分类被删了就不再用
+function suggestGroup(task) {
+  for (const key of habitKeys(task)) {
+    const habit = habits.get(key);
+    if (habit && habit.count >= LEARN_THRESHOLD && groupById(habit.group)) return habit.group;
+  }
+  return null;
+}
+
+function moveToGroup(task, group) {
+  task.group = group;
+  if (group) learn(task, group);
+  renderAll();
+  toast(group ? t('movedTo', groupById(group).name) : t('noGroup'));
+}
+
+/* ---------- 分类管理 ---------- */
+
+let renamingId = null;
+
+function createGroup(parent) {
+  if (parent && depthOf(parent) >= MAX_DEPTH) return;
+  const group = { id: `g${Date.now()}`, name: t('untitled'), parent };
+  groups.push(group);
+  renamingId = group.id;
+  buildSidebar();
+}
+
+function deleteGroup(id) {
+  const ids = new Set(subtreeIds(id));
+  const name = groupById(id).name;
+  groups = groups.filter((g) => !ids.has(g.id));
+  for (const task of tasks) if (ids.has(task.group)) task.group = null;
+  if (view.key.startsWith('group:') && ids.has(view.key.slice(6))) view.key = 'all';
+  buildSidebar();
+  renderAll(true);
+  toast(t('deleted', name));
+}
+
+function commitRename(input, id) {
+  const name = input.value.trim();
+  const group = groupById(id);
+  if (group && name) group.name = name;
+  renamingId = null;
+  buildSidebar();
+  renderAll();
 }
 
 // 让下载中的任务数等于上限：超出的退回排队，空位从排队里补
 function schedule() {
   let active = 0;
-  for (const t of tasks) {
-    if (t.status !== 'downloading') continue;
+  for (const task of tasks) {
+    if (task.status !== 'downloading') continue;
     if (active < settings.maxActive) active++;
-    else { t.status = 'queued'; t.speed = 0; }
+    else { task.status = 'queued'; task.speed = 0; }
   }
-  for (const t of tasks) {
+  for (const task of tasks) {
     if (active >= settings.maxActive) break;
-    if (t.status === 'queued') { t.status = 'downloading'; active++; }
+    if (task.status === 'queued') { task.status = 'downloading'; active++; }
   }
 }
 
@@ -551,28 +933,92 @@ function fmtBytes(bytes) {
 }
 
 function fmtEta(seconds) {
-  if (seconds < 60) return `${Math.ceil(seconds)} 秒`;
-  if (seconds < 3600) return `${Math.ceil(seconds / 60)} 分`;
-  return `${(seconds / 3600).toFixed(1)} 小时`;
+  if (seconds < 60) return `${Math.ceil(seconds)} ${t('sec')}`;
+  if (seconds < 3600) return `${Math.ceil(seconds / 60)} ${t('min')}`;
+  return `${(seconds / 3600).toFixed(1)} ${t('hour')}`;
 }
 
-function metaText(t) {
-  const progress = `${fmtBytes(t.done)} / ${fmtBytes(t.size)}`;
-  switch (t.status) {
-    case 'downloading': return `${fmtBytes(t.speed)}/s · 剩 ${fmtEta((t.size - t.done) / (t.speed || 1))} · ${progress}`;
-    case 'queued':      return `排队中 · ${fmtBytes(t.size)}`;
-    case 'paused':      return `已暂停 · ${progress}`;
-    case 'failed':      return `连接中断 · ${progress}`;
-    default:            return `${fmtBytes(t.size)} · ${categoryName(t.category)}`;
+function metaText(task) {
+  const progress = `${fmtBytes(task.done)} / ${fmtBytes(task.size)}`;
+  switch (task.status) {
+    case 'downloading': return `${fmtBytes(task.speed)}/s · ${t('left')} ${fmtEta((task.size - task.done) / (task.speed || 1))} · ${progress}`.replace('·  ', '· ');
+    case 'queued':      return `${t('queued')} · ${fmtBytes(task.size)}`;
+    case 'paused':      return `${t('paused')} · ${progress}`;
+    case 'failed':      return `${t('failed')} · ${progress}`;
+    default:            return `${fmtBytes(task.size)} · ${task.group ? groupById(task.group).name : t(task.type)}`;
   }
+}
+
+const totalSpeed = () => tasks.filter((x) => x.status === 'downloading').reduce((sum, x) => sum + x.speed, 0);
+
+/* ---------- 外观：主题、字号、背景、语言 ---------- */
+
+function applyAppearance() {
+  const root = document.documentElement;
+  if (settings.theme === 'system') delete root.dataset.theme; else root.dataset.theme = settings.theme;
+  root.style.setProperty('--scale', FONT_SCALES[settings.fontSize]);
+  root.lang = lang() === 'zh' ? 'zh-CN' : 'en';
+  const win = $('window');
+  win.classList.toggle('has-bg', Boolean(settings.background));
+  if (settings.background) {
+    win.style.setProperty('--bg-image', `url("${settings.background.url}")`);
+    root.dataset.ink = settings.background.bright ? 'dark' : 'light';
+  } else {
+    delete root.dataset.ink;
+  }
+  $('clearBg').hidden = !settings.background;
+}
+
+// 取图片平均亮度：缩到 32×32 求相对亮度，亮图配深色字，暗图配浅色字
+function measureBrightness(url) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = canvas.height = 32;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, 32, 32);
+      const data = ctx.getImageData(0, 0, 32, 32).data;
+      let sum = 0;
+      for (let i = 0; i < data.length; i += 4) sum += 0.2126 * data[i] + 0.7152 * data[i + 1] + 0.0722 * data[i + 2];
+      resolve(sum / (data.length / 4) / 255);
+    };
+    img.onerror = () => reject(new Error('图片读不出来'));
+    img.src = url;
+  });
+}
+
+function translateStatic() {
+  for (const el of document.querySelectorAll('[data-i18n]')) el.textContent = t(el.dataset.i18n);
+  for (const el of document.querySelectorAll('[data-i18n-placeholder]')) el.placeholder = t(el.dataset.i18nPlaceholder);
+  for (const el of document.querySelectorAll('[data-i18n-label]')) el.setAttribute('aria-label', t(el.dataset.i18nLabel));
+  $('sidebar').setAttribute('aria-label', t('settings'));
+  $('resizer').setAttribute('aria-label', lang() === 'zh' ? '调整侧栏宽度' : 'Resize sidebar');
+  $('addBtn').setAttribute('aria-label', t('add'));
+  $('addBtn').title = t('add');
+  $('settingsBtn').innerHTML = `${ICONS.sliders}<span>${t('settings')}</span>`;
+  $('settingsBtn').title = `${t('settings')}（⌘,）`;
+  $('newGroupBtn').innerHTML = `${ICONS.folderPlus}<span>${t('newGroup')}</span>`;
+  const [activeTab, doneTab] = $('panelTabs').querySelectorAll('button');
+  activeTab.innerHTML = ICONS.arrowDown; activeTab.setAttribute('aria-label', t('panelActive'));
+  doneTab.innerHTML = ICONS.check; doneTab.setAttribute('aria-label', t('panelDone'));
+  $('panelOpen').innerHTML = `${ICONS.window}<span>${t('panelOpen')}</span>`;
+  $('panelQuit').innerHTML = `${ICONS.power}<span>${t('panelQuit')}</span>`;
+  document.querySelectorAll('.dropdown').forEach((dd) => dd.sync?.());
 }
 
 /* ---------- 渲染 ---------- */
 
 function visibleTasks() {
-  return tasks.filter((t) =>
-    (view.category === 'all' || t.category === view.category) &&
-    (view.status === 'all' || (view.status === 'done') === (t.status === 'completed')));
+  return tasks.filter((task) => matchesKey(task, view.key) &&
+    (view.status === 'all' || (view.status === 'done') === (task.status === 'completed')));
+}
+
+function matchesKey(task, key) {
+  if (key === 'all') return true;
+  const [kind, id] = key.split(':');
+  if (kind === 'type') return task.type === id;
+  return subtreeIds(id).includes(task.group);
 }
 
 // 把滑块移到目标元素位置，过渡动画由 CSS 负责
@@ -582,16 +1028,65 @@ function moveThumb(thumb, target) {
   thumb.style.height = `${target.offsetHeight}px`;
 }
 
-function buildSidebar() {
-  for (const c of CATEGORIES) {
-    const btn = document.createElement('button');
-    btn.className = 'side-item';
-    btn.dataset.category = c.id;
-    btn.innerHTML = '<span></span><span class="count"></span>';
-    btn.firstChild.textContent = c.name;
-    $('sideChildren').append(btn);
+function sideItem(key, label, level) {
+  const btn = document.createElement('button');
+  btn.className = 'side-item';
+  btn.dataset.key = key;
+  btn.dataset.level = level;
+  btn.innerHTML = '<span></span><span class="count"></span>';
+  btn.firstChild.textContent = label;
+  return btn;
+}
+
+// 一个节点 = 自己这一行 + 子节点容器，折钩画在节点上，子树多深都能接上线
+function groupNode(group, level) {
+  const node = document.createElement('div');
+  node.className = level === 1 ? '' : 'node';
+  const item = sideItem(`group:${group.id}`, group.name, level);
+  if (renamingId === group.id) {
+    const input = document.createElement('input');
+    input.value = group.name;
+    input.setAttribute('aria-label', t('rename'));
+    item.firstChild.replaceWith(input);
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') input.blur();
+      if (e.key === 'Escape') { input.value = group.name; input.blur(); }
+      e.stopPropagation();
+    });
+    input.addEventListener('blur', () => commitRename(input, group.id));
+    requestAnimationFrame(() => { input.focus(); input.select(); });
   }
-  $('settingsBtn').innerHTML = `${ICONS.sliders}<span>设置</span>`;
+  node.append(item);
+  const kids = childrenOf(group.id);
+  if (kids.length) {
+    const box = document.createElement('div');
+    box.className = 'side-children';
+    kids.forEach((kid) => box.append(groupNode(kid, level + 1)));
+    node.append(box);
+  }
+  return node;
+}
+
+function buildSidebar() {
+  const tree = $('sideTree');
+  tree.replaceChildren();
+  tree.append(sideItem('all', t('all'), 1));
+  const types = document.createElement('div');
+  types.className = 'side-children';
+  for (const type of TYPES) {
+    const node = document.createElement('div');
+    node.className = 'node';
+    node.append(sideItem(`type:${type.id}`, t(type.id), 2));
+    types.append(node);
+  }
+  tree.append(types);
+  for (const group of childrenOf(null)) {
+    const gap = document.createElement('div');
+    gap.className = 'side-gap';
+    tree.append(gap, groupNode(group, 1));
+  }
+  lastSideItem = null;
+  renderSidebar();
 }
 
 // 跨级切换：旧位置留个影子淡出，滑块瞬移到新位置淡入
@@ -608,19 +1103,19 @@ function fadeThumb(thumb, target) {
   thumb.animate([{ opacity: 0 }, { opacity: 1 }], { duration, easing: 'ease-out' });
 }
 
-const levelOf = (item) => (item.classList.contains('level-1') ? 1 : 2);
 let lastSideItem = null;
 
 function renderSidebar() {
   let current;
-  for (const item of $('sidebar').querySelectorAll('[data-category]')) {
-    const id = item.dataset.category;
-    const count = id === 'all' ? tasks.length : tasks.filter((t) => t.category === id).length;
+  for (const item of $('sideTree').querySelectorAll('[data-key]')) {
+    const key = item.dataset.key;
+    const count = tasks.filter((task) => matchesKey(task, key)).length;
     item.querySelector('.count').textContent = count || '';
-    item.setAttribute('aria-current', String(view.category === id));
-    if (view.category === id) current = item;
+    item.setAttribute('aria-current', String(view.key === key));
+    if (view.key === key) current = item;
   }
-  const crossLevel = lastSideItem && lastSideItem !== current && levelOf(lastSideItem) !== levelOf(current);
+  if (!current) return;
+  const crossLevel = lastSideItem && lastSideItem !== current && lastSideItem.dataset.level !== current.dataset.level;
   if (crossLevel) fadeThumb($('sideThumb'), current);
   else moveThumb($('sideThumb'), current);
   lastSideItem = current;
@@ -629,17 +1124,22 @@ function renderSidebar() {
 function toggleAction(status) {
   switch (status) {
     case 'downloading':
-    case 'queued':    return ['pause', '暂停'];
-    case 'paused':    return ['play', '继续'];
-    case 'failed':    return ['retry', '重试'];
-    default:          return ['folder', '在访达中显示'];
+    case 'queued':    return ['pause', t('pause')];
+    case 'paused':    return ['play', t('resume')];
+    case 'failed':    return ['retry', t('retry')];
+    default:          return ['folder', t('reveal')];
   }
 }
 
-function updateRow(row, t) {
-  row.dataset.status = t.status;
-  row.querySelector('.bar i').style.width = `${(t.done / t.size) * 100}%`;
-  row.querySelector('.meta').textContent = metaText(t);
+function updateRow(row, task) {
+  row.dataset.status = task.status;
+  row.querySelector('.bar i').style.width = `${(task.done / task.size) * 100}%`;
+  row.querySelector('.meta').textContent = metaText(task);
+}
+
+function fileIcon(el, task) {
+  el.textContent = extLabel(task.name);
+  el.style.setProperty('--c', `var(--c-${task.type})`);
 }
 
 // animate 只在切换筛选时为 true，状态变化引起的重绘不闪
@@ -650,45 +1150,46 @@ function renderList(animate) {
   if (!items.length) {
     const empty = document.createElement('li');
     empty.className = animate ? 'empty enter' : 'empty';
-    empty.textContent = tasks.length ? '没有符合条件的任务' : '把链接拖进来，或按 ⌘N';
+    empty.textContent = tasks.length ? t('emptyFilter') : t('emptyAll');
     list.append(empty);
     return;
   }
-  items.forEach((t, i) => {
+  items.forEach((task, i) => {
     const row = $('rowTpl').content.firstElementChild.cloneNode(true);
-    row.dataset.id = t.id;
+    row.dataset.id = task.id;
     if (animate) {
       row.classList.add('enter');
       row.style.setProperty('--i', Math.min(i, STAGGER_CAP));
     }
-    const ficon = row.querySelector('.ficon');
-    ficon.textContent = extLabel(t.name);
-    ficon.style.setProperty('--c', `var(--c-${t.category})`);
-    row.querySelector('.name').textContent = t.name;
-    row.querySelector('.name').title = t.name;
-    const [icon, label] = toggleAction(t.status);
+    fileIcon(row.querySelector('.ficon'), task);
+    row.querySelector('.name').textContent = task.name;
+    row.querySelector('.name').title = task.name;
+    const [icon, label] = toggleAction(task.status);
     const toggle = row.querySelector('[data-act="toggle"]');
     toggle.innerHTML = ICONS[icon];
     toggle.setAttribute('aria-label', label);
     toggle.title = label;
-    row.querySelector('[data-act="remove"]').innerHTML = ICONS.close;
-    updateRow(row, t);
+    const remove = row.querySelector('[data-act="remove"]');
+    remove.innerHTML = ICONS.close;
+    remove.setAttribute('aria-label', t('removeTask'));
+    remove.title = t('removeTask');
+    updateRow(row, task);
     list.append(row);
   });
 }
 
 function renderToolbar() {
-  $('title').textContent = categoryName(view.category);
+  $('title').textContent = titleOf(view.key);
   let current;
   for (const b of $('segmented').querySelectorAll('button')) {
     b.setAttribute('aria-pressed', String(b.dataset.status === view.status));
     if (b.dataset.status === view.status) current = b;
   }
   moveThumb($('segThumb'), current);
-  const running = tasks.some((t) => t.status === 'downloading' || t.status === 'queued');
-  const paused = tasks.some((t) => t.status === 'paused');
+  const running = tasks.some((x) => x.status === 'downloading' || x.status === 'queued');
+  const paused = tasks.some((x) => x.status === 'paused');
   const btn = $('pauseAll');
-  const label = running ? '全部暂停' : '全部继续';
+  const label = running ? t('pauseAll') : t('resumeAll');
   btn.innerHTML = running ? ICONS.pause : ICONS.play;
   btn.setAttribute('aria-label', label);
   btn.title = label;
@@ -696,9 +1197,51 @@ function renderToolbar() {
 }
 
 function renderStatusbar() {
-  const active = tasks.filter((t) => t.status === 'downloading');
-  const total = active.reduce((sum, t) => sum + t.speed, 0);
-  $('statusbar').textContent = active.length ? `${active.length} 个下载中 · ${fmtBytes(total)}/s` : '';
+  const active = tasks.filter((x) => x.status === 'downloading');
+  $('statusbar').textContent = active.length ? t('downloading', active.length, fmtBytes(totalSpeed())) : '';
+}
+
+function renderMenuBar() {
+  $('menubar').hidden = !settings.menuBar;
+  if (!settings.menuBar) closePanel();
+  const active = tasks.some((x) => x.status === 'downloading');
+  $('mbItem').innerHTML = ICONS.drop(14) + (active ? `<span class="speed">${fmtBytes(totalSpeed())}/s</span>` : '');
+  $('mbItem').setAttribute('aria-label', t('panelActive'));
+}
+
+function renderPanel() {
+  if (!$('panel').classList.contains('open')) return;
+  let current;
+  for (const b of $('panelTabs').querySelectorAll('button')) {
+    b.setAttribute('aria-pressed', String(b.dataset.tab === panelTab));
+    if (b.dataset.tab === panelTab) current = b;
+  }
+  moveThumb($('tabThumb'), current);
+  const active = tasks.filter((x) => x.status === 'downloading' || x.status === 'queued');
+  const done = tasks.filter((x) => x.status === 'completed');
+  const items = (panelTab === 'active' ? active : done.slice().reverse()).slice(0, PANEL_LIMIT);
+  const downloading = tasks.filter((x) => x.status === 'downloading').length;
+  $('panelTitle').textContent = panelTab === 'active' ? t('panelTitle', downloading, fmtBytes(totalSpeed())) : t('panelDone');
+  const list = $('panelList');
+  list.replaceChildren();
+  if (!items.length) {
+    list.innerHTML = `<div class="p-empty">${panelTab === 'active' ? t('panelEmpty') : t('panelEmptyDone')}</div>`;
+    return;
+  }
+  for (const task of items) {
+    const row = document.createElement('div');
+    row.className = 'p-row';
+    row.dataset.id = task.id;
+    row.innerHTML = '<div class="ficon"></div><div class="body"><div class="name"></div><div class="bar"><i></i></div><div class="meta"></div></div><button class="icon-btn" data-act="toggle"></button>';
+    fileIcon(row.querySelector('.ficon'), task);
+    row.querySelector('.name').textContent = task.name;
+    const [icon, label] = toggleAction(task.status);
+    const toggle = row.querySelector('[data-act="toggle"]');
+    toggle.innerHTML = ICONS[icon];
+    toggle.setAttribute('aria-label', label);
+    updateRow(row, task);
+    list.append(row);
+  }
 }
 
 function renderAll(animate = false) {
@@ -706,6 +1249,8 @@ function renderAll(animate = false) {
   renderToolbar();
   renderList(animate);
   renderStatusbar();
+  renderMenuBar();
+  renderPanel();
 }
 
 let toastTimer;
@@ -721,28 +1266,33 @@ function toast(text) {
 
 function tick() {
   const finished = [];
-  for (const t of tasks) {
-    if (t.status !== 'downloading') continue;
-    t.speed = t.baseSpeed * (0.7 + Math.random() * 0.6);
-    t.done += t.speed * TICK_MS / 1000;
-    if (t.done >= t.size) {
-      t.done = t.size;
-      t.status = 'completed';
-      t.speed = 0;
-      finished.push(t);
+  for (const task of tasks) {
+    if (task.status !== 'downloading') continue;
+    task.speed = task.baseSpeed * (0.7 + Math.random() * 0.6);
+    task.done += task.speed * TICK_MS / 1000;
+    if (task.done >= task.size) {
+      task.done = task.size;
+      task.status = 'completed';
+      task.speed = 0;
+      finished.push(task);
     }
   }
   if (finished.length) {
     schedule();
     renderAll();
-    if (settings.notify) toast(`下载完成：${finished[0].name}`);
+    if (settings.notify) toast(t('finished', finished[0].name));
     return;
   }
-  for (const row of $('list').querySelectorAll('.row')) {
-    const t = tasks.find((x) => x.id === Number(row.dataset.id));
-    if (t && t.status === 'downloading') updateRow(row, t);
+  for (const row of document.querySelectorAll('.row, .p-row')) {
+    const task = tasks.find((x) => x.id === Number(row.dataset.id));
+    if (task && task.status === 'downloading') updateRow(row, task);
   }
   renderStatusbar();
+  renderMenuBar();
+  if ($('panel').classList.contains('open') && panelTab === 'active') {
+    const downloading = tasks.filter((x) => x.status === 'downloading').length;
+    $('panelTitle').textContent = t('panelTitle', downloading, fmtBytes(totalSpeed()));
+  }
 }
 
 /* ---------- 侧栏拖宽 ---------- */
@@ -751,7 +1301,7 @@ function setSidebarWidth(px) {
   const width = Math.round(Math.min(SIDEBAR_MAX, Math.max(SIDEBAR_MIN, px)));
   document.documentElement.style.setProperty('--side-w', `${width}px`);
   $('resizer').setAttribute('aria-valuenow', width);
-  const current = $('sidebar').querySelector('[aria-current="true"]');
+  const current = $('sideTree').querySelector('[aria-current="true"]');
   if (current) moveThumb($('sideThumb'), current);   // 启动时还没渲染选中项
   return width;
 }
@@ -796,6 +1346,7 @@ let lastFocus = null;
 
 function openDialog(id) {
   closeDialog();
+  closePanel();
   lastFocus = document.activeElement;
   openScrim = $(id);
   openScrim.classList.add('open');
@@ -819,15 +1370,29 @@ function openAdd() {
 function confirmAdd() {
   const urls = parseUrls($('urls').value);
   if (!urls.length) {
-    $('urlError').textContent = '没有识别到 http/https 链接';
+    $('urlError').textContent = t('noLinks');
     return;
   }
   closeDialog();
   addUrls(urls);
 }
 
+let settingsPage = 'general';
+
+function showSettingsPage(page) {
+  settingsPage = page;
+  let current;
+  for (const b of $('settingsTabs').querySelectorAll('button')) {
+    b.setAttribute('aria-pressed', String(b.dataset.page === page));
+    if (b.dataset.page === page) current = b;
+  }
+  moveThumb($('settingsThumb'), current);
+  for (const p of $('settingsScrim').querySelectorAll('.settings')) p.hidden = p.dataset.page !== page;
+}
+
 function openSettings() {
   openDialog('settingsScrim');
+  showSettingsPage(settingsPage);
   $('settingsScrim').querySelector('[data-close]').focus();
 }
 
@@ -835,6 +1400,11 @@ for (const scrim of document.querySelectorAll('.scrim')) {
   scrim.addEventListener('mousedown', (e) => { if (e.target === scrim) closeDialog(); });
   scrim.querySelectorAll('[data-close]').forEach((b) => b.addEventListener('click', closeDialog));
 }
+
+$('settingsTabs').addEventListener('click', (e) => {
+  const btn = e.target.closest('button');
+  if (btn && btn.dataset.page !== settingsPage) showSettingsPage(btn.dataset.page);
+});
 
 /* ---------- 设置控件 ---------- */
 
@@ -855,31 +1425,30 @@ function openDropdown(dd) {
   (dd.querySelector('[aria-selected="true"]') || dd.querySelector('.dd-opt')).focus();
 }
 
+// 选项文案跟语言走，所以每次 sync 都重建列表
 function setupDropdown(dd) {
   const key = dd.dataset.key;
-  const options = SETTING_OPTIONS[key];
   dd.innerHTML = `<button class="dd-btn" aria-haspopup="listbox" aria-expanded="false" aria-labelledby="${dd.dataset.label}"><span></span>${ICONS.chevron}</button><div class="dd-list" role="listbox"></div>`;
   const btn = dd.querySelector('.dd-btn');
   const list = dd.querySelector('.dd-list');
-  for (const o of options) {
-    const opt = document.createElement('button');
-    opt.className = 'dd-opt';
-    opt.setAttribute('role', 'option');
-    opt.dataset.value = o.value;
-    opt.textContent = o.label;
-    list.append(opt);
-  }
-  const sync = () => {
+  dd.sync = () => {
+    const options = SETTING_OPTIONS[key]();
+    list.replaceChildren(...options.map((o) => {
+      const opt = document.createElement('button');
+      opt.className = 'dd-opt';
+      opt.setAttribute('role', 'option');
+      opt.dataset.value = o.value;
+      opt.textContent = o.label;
+      opt.setAttribute('aria-selected', String(o.value === settings[key]));
+      return opt;
+    }));
     btn.firstElementChild.textContent = options.find((o) => o.value === settings[key]).label;
-    list.querySelectorAll('.dd-opt').forEach((o) =>
-      o.setAttribute('aria-selected', String(o.dataset.value === String(settings[key]))));
   };
   btn.addEventListener('click', () => (openDd === dd ? closeDropdown() : openDropdown(dd)));
   list.addEventListener('click', (e) => {
     const opt = e.target.closest('.dd-opt');
     if (!opt) return;
-    settings[key] = options.find((o) => String(o.value) === opt.dataset.value).value;
-    sync();
+    settings[key] = SETTING_OPTIONS[key]().find((o) => String(o.value) === opt.dataset.value).value;
     closeDropdown();
     btn.focus();
     applySettings();
@@ -890,35 +1459,187 @@ function setupDropdown(dd) {
     if (e.key === 'ArrowDown') { e.preventDefault(); opts[Math.min(i + 1, opts.length - 1)].focus(); }
     if (e.key === 'ArrowUp') { e.preventDefault(); opts[Math.max(i - 1, 0)].focus(); }
   });
-  sync();
+  dd.sync();
 }
 
 function setupSwitch(sw) {
   const key = sw.dataset.key;
-  const sync = () => sw.setAttribute('aria-checked', String(settings[key]));
-  sw.addEventListener('click', () => { settings[key] = !settings[key]; sync(); applySettings(); });
-  sync();
+  sw.sync = () => sw.setAttribute('aria-checked', String(settings[key]));
+  sw.addEventListener('click', () => { settings[key] = !settings[key]; applySettings(); });
+  sw.sync();
 }
 
 function applySettings() {
   schedule();
+  applyAppearance();
+  translateStatic();
+  document.querySelectorAll('.switch').forEach((sw) => sw.sync());
+  buildSidebar();
   renderAll();
+  if (openScrim?.id === 'settingsScrim') showSettingsPage(settingsPage);
 }
 
 document.querySelectorAll('.dropdown').forEach(setupDropdown);
 document.querySelectorAll('.switch').forEach(setupSwitch);
 $('dirPath').textContent = settings.dir;
 $('changeDir').addEventListener('click', () => toast('SwiftUI 版这里会弹出访达选择文件夹'));
+$('browserHelp').addEventListener('click', () => toast(t('browserTip')));
+$('pickBg').addEventListener('click', () => $('bgFile').click());
+$('clearBg').addEventListener('click', () => { settings.background = null; applySettings(); });
+$('bgFile').addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  e.target.value = '';
+  if (!file) return;
+  const url = URL.createObjectURL(file);
+  try {
+    settings.background = { url, bright: (await measureBrightness(url)) > 0.55 };
+    applySettings();
+  } catch (error) {
+    toast(error.message);
+  }
+});
 document.addEventListener('mousedown', (e) => { if (openDd && !openDd.contains(e.target)) closeDropdown(); });
+
+/* ---------- 右键菜单 ---------- */
+
+function openContext(x, y, entries) {
+  const menu = $('ctx');
+  menu.replaceChildren();
+  for (const entry of entries) {
+    if (entry === '-') { menu.append(document.createElement('hr')); continue; }
+    if (entry.heading) {
+      const h = document.createElement('div');
+      h.className = 'heading';
+      h.textContent = entry.heading;
+      menu.append(h);
+      continue;
+    }
+    const b = document.createElement('button');
+    b.setAttribute('role', 'menuitem');
+    b.textContent = entry.label;
+    if (entry.danger) b.className = 'danger';
+    if (entry.indent) b.style.paddingLeft = `${10 + entry.indent * 12}px`;
+    b.addEventListener('click', () => { closeContext(); entry.run(); });
+    menu.append(b);
+  }
+  menu.classList.add('open');
+  const rect = menu.getBoundingClientRect();
+  menu.style.left = `${Math.min(x, innerWidth - rect.width - 8)}px`;
+  menu.style.top = `${Math.min(y, innerHeight - rect.height - 8)}px`;
+  menu.querySelector('button')?.focus();
+}
+
+function closeContext() { $('ctx').classList.remove('open'); }
+
+// 分类树按层级展开成缩进列表，给「移到分类」用
+function flatGroups(parent = null, depth = 0) {
+  return childrenOf(parent).flatMap((g) => [{ group: g, depth }, ...flatGroups(g.id, depth + 1)]);
+}
+
+$('sidebar').addEventListener('contextmenu', (e) => {
+  e.preventDefault();
+  const item = e.target.closest('[data-key]');
+  const key = item?.dataset.key ?? '';
+  if (!key.startsWith('group:')) {
+    openContext(e.clientX, e.clientY, [{ label: t('newGroup'), run: () => createGroup(null) }]);
+    return;
+  }
+  const id = key.slice(6);
+  const entries = [];
+  if (depthOf(id) < MAX_DEPTH) entries.push({ label: t('newSub'), run: () => createGroup(id) });
+  entries.push({ label: t('rename'), run: () => { renamingId = id; buildSidebar(); } }, '-',
+    { label: t('deleteGroup'), danger: true, run: () => deleteGroup(id) });
+  openContext(e.clientX, e.clientY, entries);
+});
+
+$('list').addEventListener('contextmenu', (e) => {
+  const row = e.target.closest('.row');
+  if (!row) return;
+  e.preventDefault();
+  const task = tasks.find((x) => x.id === Number(row.dataset.id));
+  const entries = [{ heading: t('moveTo') }, ...flatGroups().map(({ group, depth }) =>
+    ({ label: group.name, indent: depth, run: () => moveToGroup(task, group.id) }))];
+  if (task.group) entries.push('-', { label: t('noGroup'), run: () => moveToGroup(task, null) });
+  entries.push('-', { label: t('removeTask'), danger: true, run: () => removeTask(task.id) });
+  openContext(e.clientX, e.clientY, entries);
+});
+
+document.addEventListener('mousedown', (e) => { if (!$('ctx').contains(e.target)) closeContext(); });
+
+/* ---------- 拖任务到分类 ---------- */
+
+const TASK_MIME = 'application/x-downloader-task';
+
+$('list').addEventListener('dragstart', (e) => {
+  const row = e.target.closest('.row');
+  if (!row) return;
+  e.dataTransfer.setData(TASK_MIME, row.dataset.id);
+  e.dataTransfer.effectAllowed = 'move';
+});
+
+const groupItemAt = (target) => target.closest?.('[data-key^="group:"]');
+
+$('sidebar').addEventListener('dragover', (e) => {
+  const item = groupItemAt(e.target);
+  if (!item || !e.dataTransfer.types.includes(TASK_MIME)) return;
+  e.preventDefault();
+  e.stopPropagation();
+  document.querySelectorAll('.drop-target').forEach((el) => el !== item && el.classList.remove('drop-target'));
+  item.classList.add('drop-target');
+});
+$('sidebar').addEventListener('dragleave', (e) => groupItemAt(e.target)?.classList.remove('drop-target'));
+$('sidebar').addEventListener('drop', (e) => {
+  const item = groupItemAt(e.target);
+  if (!item || !e.dataTransfer.types.includes(TASK_MIME)) return;
+  e.preventDefault();
+  e.stopPropagation();
+  item.classList.remove('drop-target');
+  const task = tasks.find((x) => x.id === Number(e.dataTransfer.getData(TASK_MIME)));
+  if (task) moveToGroup(task, item.dataset.key.slice(6));
+});
+
+/* ---------- 状态栏面板 ---------- */
+
+function openPanel() {
+  const rect = $('mbItem').getBoundingClientRect();
+  const panel = $('panel');
+  panel.style.left = `${Math.max(8, Math.min(rect.left + rect.width / 2 - 160, innerWidth - 328))}px`;
+  panel.classList.add('open');
+  $('mbItem').setAttribute('aria-expanded', 'true');
+  renderPanel();
+}
+
+function closePanel() {
+  $('panel').classList.remove('open');
+  $('mbItem').setAttribute('aria-expanded', 'false');
+}
+
+$('mbItem').addEventListener('click', () => ($('panel').classList.contains('open') ? closePanel() : openPanel()));
+$('panelTabs').addEventListener('click', (e) => {
+  const btn = e.target.closest('button');
+  if (!btn || btn.dataset.tab === panelTab) return;
+  panelTab = btn.dataset.tab;
+  renderPanel();
+});
+$('panelList').addEventListener('click', (e) => {
+  const btn = e.target.closest('[data-act]');
+  if (btn) toggleTask(tasks.find((x) => x.id === Number(btn.closest('.p-row').dataset.id)));
+});
+$('panelOpen').addEventListener('click', closePanel);
+$('panelQuit').addEventListener('click', () => toast(t('quitTip')));
+document.addEventListener('mousedown', (e) => {
+  if ($('panel').classList.contains('open') && !$('panel').contains(e.target) && !$('mbItem').contains(e.target)) closePanel();
+});
 
 /* ---------- 事件 ---------- */
 
 $('sidebar').addEventListener('click', (e) => {
-  const item = e.target.closest('[data-category]');
-  if (!item || item.dataset.category === view.category) return;
-  view.category = item.dataset.category;
+  const item = e.target.closest('[data-key]');
+  if (!item || e.target.tagName === 'INPUT' || item.dataset.key === view.key) return;
+  view.key = item.dataset.key;
   renderAll(true);
 });
+$('newGroupBtn').addEventListener('click', () => createGroup(null));
 
 $('segmented').addEventListener('click', (e) => {
   const btn = e.target.closest('button');
@@ -927,31 +1648,35 @@ $('segmented').addEventListener('click', (e) => {
   renderAll(true);
 });
 
+function removeTask(id) {
+  tasks = tasks.filter((x) => x.id !== id);
+  schedule();
+  renderAll();
+}
+
+function toggleTask(task) {
+  switch (task.status) {
+    case 'downloading':
+    case 'queued':   setStatus(task, 'paused'); break;
+    case 'paused':
+    case 'failed':   setStatus(task, 'queued'); break;
+    default:         toast(savePath(task));
+  }
+}
+
 $('list').addEventListener('click', (e) => {
   const btn = e.target.closest('[data-act]');
   if (!btn) return;
   const id = Number(btn.closest('.row').dataset.id);
-  const t = tasks.find((x) => x.id === id);
-  if (btn.dataset.act === 'remove') {
-    tasks = tasks.filter((x) => x.id !== id);
-    schedule();
-    renderAll();
-    return;
-  }
-  switch (t.status) {
-    case 'downloading':
-    case 'queued':   setStatus(t, 'paused'); break;
-    case 'paused':
-    case 'failed':   setStatus(t, 'queued'); break;
-    default:         toast(savePath(t));
-  }
+  if (btn.dataset.act === 'remove') removeTask(id);
+  else toggleTask(tasks.find((x) => x.id === id));
 });
 
 $('pauseAll').addEventListener('click', () => {
-  const running = tasks.some((t) => t.status === 'downloading' || t.status === 'queued');
-  for (const t of tasks) {
-    if (running && (t.status === 'downloading' || t.status === 'queued')) { t.status = 'paused'; t.speed = 0; }
-    if (!running && t.status === 'paused') t.status = 'queued';
+  const running = tasks.some((x) => x.status === 'downloading' || x.status === 'queued');
+  for (const task of tasks) {
+    if (running && (task.status === 'downloading' || task.status === 'queued')) { task.status = 'paused'; task.speed = 0; }
+    if (!running && task.status === 'paused') task.status = 'queued';
   }
   schedule();
   renderAll();
@@ -964,7 +1689,9 @@ $('settingsBtn').addEventListener('click', openSettings);
 document.addEventListener('keydown', (e) => {
   const cmd = e.metaKey || e.ctrlKey;
   if (e.key === 'Escape') {
-    if (openDd) { const btn = openDd.querySelector('.dd-btn'); closeDropdown(); btn.focus(); }
+    if ($('ctx').classList.contains('open')) closeContext();
+    else if (openDd) { const btn = openDd.querySelector('.dd-btn'); closeDropdown(); btn.focus(); }
+    else if ($('panel').classList.contains('open')) closePanel();
     else closeDialog();
     return;
   }
@@ -974,16 +1701,21 @@ document.addEventListener('keydown', (e) => {
   if (cmd && e.key === ',') { e.preventDefault(); openSettings(); }
 });
 
-// 拖链接进窗口直接添加
+// 拖链接进窗口直接添加；任务行拖到侧栏的情况由侧栏自己处理
 const win = $('window');
-win.addEventListener('dragover', (e) => { e.preventDefault(); win.classList.add('dropping'); });
+win.addEventListener('dragover', (e) => {
+  if (e.dataTransfer.types.includes(TASK_MIME)) return;
+  e.preventDefault();
+  win.classList.add('dropping');
+});
 win.addEventListener('dragleave', (e) => { if (!win.contains(e.relatedTarget)) win.classList.remove('dropping'); });
 win.addEventListener('drop', (e) => {
+  if (e.dataTransfer.types.includes(TASK_MIME)) return;
   e.preventDefault();
   win.classList.remove('dropping');
   const text = e.dataTransfer.getData('text/uri-list') || e.dataTransfer.getData('text/plain');
   const urls = parseUrls(text);
-  if (urls.length) addUrls(urls); else toast('没有识别到链接');
+  if (urls.length) addUrls(urls); else toast(t('noLinksDrop'));
 });
 
 window.addEventListener('resize', () => renderAll());
@@ -991,17 +1723,27 @@ window.addEventListener('resize', () => renderAll());
 /* ---------- 启动 ---------- */
 
 $('addBtn').innerHTML = ICONS.plus;
-buildSidebar();
-tasks = [
-  makeTask('WWDC26-Keynote.mp4', 1.9 * 1024 * MB, 1.18 * 1024 * MB, 'downloading'),
-  makeTask('macOS-Wallpapers.zip', 820 * MB, 210 * MB, 'downloading'),
-  makeTask('Podcast-Ep42.mp3', 96 * MB, 40 * MB, 'downloading'),
-  makeTask('node-v24.11.0.pkg', 78 * MB, 0, 'queued'),
-  makeTask('Xcode_27.dmg', 12.4 * 1024 * MB, 3.1 * 1024 * MB, 'paused'),
-  makeTask('dataset-2026.tar.gz', 640 * MB, 233 * MB, 'failed'),
-  makeTask('年度报告-Q3.pdf', 18 * MB, 18 * MB, 'completed'),
-  makeTask('IMG_2048.heic', 4.2 * MB, 4.2 * MB, 'completed'),
+$('panelLogo').innerHTML = ICONS.drop(46);
+groups = [
+  { id: 'work', name: '工作', parent: null },
+  { id: 'proj', name: '项目 A', parent: 'work' },
+  { id: 'design', name: '设计稿', parent: 'proj' },
+  { id: 'study', name: '学习', parent: null },
 ];
+tasks = [
+  makeTask('WWDC26-Keynote.mp4', 1.9 * 1024 * MB, 1.18 * 1024 * MB, 'downloading', 'https://developer.apple.com/videos/WWDC26-Keynote.mp4', 'study'),
+  makeTask('macOS-Wallpapers.zip', 820 * MB, 210 * MB, 'downloading', 'https://example.com/macOS-Wallpapers.zip'),
+  makeTask('Podcast-Ep42.mp3', 96 * MB, 40 * MB, 'downloading', 'https://example.com/Podcast-Ep42.mp3'),
+  makeTask('node-v24.11.0.pkg', 78 * MB, 0, 'queued', 'https://nodejs.org/dist/node-v24.11.0.pkg'),
+  makeTask('Xcode_27.dmg', 12.4 * 1024 * MB, 3.1 * 1024 * MB, 'paused', 'https://developer.apple.com/Xcode_27.dmg'),
+  makeTask('dataset-2026.tar.gz', 640 * MB, 233 * MB, 'failed', 'https://example.com/dataset-2026.tar.gz'),
+  makeTask('年度报告-Q3.pdf', 18 * MB, 18 * MB, 'completed', 'https://intranet.example.com/年度报告-Q3.pdf', 'work'),
+  makeTask('首页-v3.fig', 42 * MB, 42 * MB, 'completed', 'https://figma.example.com/首页-v3.fig', 'design'),
+  makeTask('IMG_2048.heic', 4.2 * MB, 4.2 * MB, 'completed', 'https://example.com/IMG_2048.heic'),
+];
+applyAppearance();
+translateStatic();
+buildSidebar();
 setSidebarWidth(loadSidebarWidth() || 210);
 renderAll(true);
 requestAnimationFrame(() => document.body.classList.add('ready'));   // 首次定位后再开滑块过渡，避免开场乱飞
