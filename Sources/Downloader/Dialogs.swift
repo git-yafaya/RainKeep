@@ -42,7 +42,8 @@ private struct AddDialog: View {
             TextEditor(text: $text)
                 .font(.system(size: 12, design: .monospaced))
                 .scrollContentBackground(.hidden)
-                .padding(6)
+                .padding(.horizontal, 6)
+                .padding(.vertical, 12)
                 .frame(height: 120)
                 .focused($focused)
                 .background(RoundedRectangle(cornerRadius: 8).fill(Theme.field))
@@ -51,9 +52,9 @@ private struct AddDialog: View {
                     if text.isEmpty {
                         Text("粘贴链接，每行一个")
                             .font(.system(size: 12))
-                            .foregroundStyle(.tertiary)
+                            .foregroundStyle(.secondary)
                             .padding(.leading, 11)
-                            .padding(.top, 6)
+                            .padding(.top, 12)
                             .allowsHitTesting(false)
                     }
                 }
@@ -68,9 +69,10 @@ private struct AddDialog: View {
                 Spacer()
                 Button("取消") { store.dismissDialog() }
                     .keyboardShortcut(.cancelAction)
+                    .buttonStyle(DialogButtonStyle())
                 Button("下载") { confirm() }
                     .keyboardShortcut(.return, modifiers: .command)
-                    .buttonStyle(.borderedProminent)
+                    .buttonStyle(DialogButtonStyle(isPrimary: true))
             }
         }
         .onAppear { focused = true }
@@ -109,7 +111,7 @@ private struct SettingsDialog: View {
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
                     .truncationMode(.head)
-                Button("更改…", action: chooseFolder).controlSize(.small)
+                Button("更改…", action: chooseFolder).buttonStyle(DialogButtonStyle(isSmall: true))
             }
             Theme.line.frame(height: 1)
             SettingRow(title: "同时下载") {
@@ -139,7 +141,7 @@ private struct SettingsDialog: View {
                     if openMenu != nil { openMenu = nil } else { store.dismissDialog() }
                 }
                 .keyboardShortcut(.cancelAction)
-                .buttonStyle(.borderedProminent)
+                .buttonStyle(DialogButtonStyle(isPrimary: true))
             }
             .padding(.top, 14)
         }
@@ -165,6 +167,35 @@ private struct SettingsDialog: View {
         if panel.runModal() == .OK, let url = panel.url {
             store.settings.downloadDir = url
         }
+    }
+}
+
+/// 弹窗按钮：扁平圆角，普通灰底、主按钮强调色；small 用在设置行里（不用系统按钮，样式对不上原型）
+private struct DialogButtonStyle: ButtonStyle {
+    var isPrimary = false
+    var isSmall = false
+
+    func makeBody(configuration: Configuration) -> some View {
+        DialogButtonBody(configuration: configuration, isPrimary: isPrimary, isSmall: isSmall)
+    }
+}
+
+private struct DialogButtonBody: View {
+    let configuration: ButtonStyleConfiguration
+    let isPrimary: Bool
+    let isSmall: Bool
+    @Environment(\.isFocused) private var isFocused
+
+    var body: some View {
+        configuration.label
+            .font(.system(size: isSmall ? 12 : 13))
+            .foregroundStyle(isPrimary ? Color.white : Color.primary)
+            .padding(.horizontal, isSmall ? 10 : 14)
+            .frame(height: isSmall ? 22 : 26)
+            .background(RoundedRectangle(cornerRadius: 6).fill(isPrimary ? Color.accentColor : Theme.segmentBackground))
+            .overlay(RoundedRectangle(cornerRadius: 6).stroke(Theme.focusRing, lineWidth: isFocused ? 2 : 0))
+            .opacity(configuration.isPressed ? 0.8 : 1)
+            .contentShape(Rectangle())
     }
 }
 
