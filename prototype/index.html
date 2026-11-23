@@ -10,10 +10,12 @@
     --page: #e9e9ed;
     --window: #ffffff;
     --sidebar: #f5f5f7;
+    --menu: #ffffff;
     --text: #1d1d1f;
     --text-2: #6e6e73;
     --text-3: #a1a1a6;
     --line: rgba(0, 0, 0, .07);
+    --tree: rgba(0, 0, 0, .16);
     --hover: rgba(0, 0, 0, .05);
     --selected: rgba(0, 0, 0, .07);
     --track: rgba(0, 0, 0, .07);
@@ -21,19 +23,25 @@
     --danger: #ff3b30;
     --seg-bg: rgba(0, 0, 0, .05);
     --seg-on: #ffffff;
+    --switch-off: rgba(0, 0, 0, .12);
     --shadow: 0 0 0 .5px rgba(0, 0, 0, .12), 0 20px 60px rgba(0, 0, 0, .18);
+    --menu-shadow: 0 0 0 .5px rgba(0, 0, 0, .12), 0 8px 24px rgba(0, 0, 0, .14);
     --c-video: #a463f2; --c-audio: #ff375f; --c-image: #ff9f0a; --c-doc: #007aff;
     --c-archive: #a2845e; --c-installer: #636366; --c-other: #8e8e93;
+    --side-w: 210px;
+    --ease: cubic-bezier(.3, .7, .2, 1);
   }
   @media (prefers-color-scheme: dark) {
     :root {
       --page: #0e0e10;
       --window: #1e1e20;
       --sidebar: #252527;
+      --menu: #2c2c2e;
       --text: #f5f5f7;
       --text-2: #98989d;
       --text-3: #636366;
       --line: rgba(255, 255, 255, .07);
+      --tree: rgba(255, 255, 255, .16);
       --hover: rgba(255, 255, 255, .06);
       --selected: rgba(255, 255, 255, .09);
       --track: rgba(255, 255, 255, .09);
@@ -41,7 +49,9 @@
       --danger: #ff453a;
       --seg-bg: rgba(255, 255, 255, .06);
       --seg-on: #3a3a3c;
+      --switch-off: rgba(255, 255, 255, .16);
       --shadow: 0 0 0 .5px rgba(255, 255, 255, .1), 0 20px 60px rgba(0, 0, 0, .6);
+      --menu-shadow: 0 0 0 .5px rgba(255, 255, 255, .12), 0 8px 24px rgba(0, 0, 0, .5);
       --c-installer: #aeaeb2;
     }
   }
@@ -58,11 +68,13 @@
     place-items: center;
     user-select: none;
   }
+  body.resizing { cursor: col-resize; }
   button {
     font: inherit; color: inherit; background: none; border: 0; padding: 0;
     cursor: default; outline: none;
   }
-  button:focus-visible, textarea:focus-visible {
+  button:focus-visible, textarea:focus-visible, [role="separator"]:focus-visible {
+    outline: none;
     box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 45%, transparent);
   }
   svg { display: block; }
@@ -70,13 +82,13 @@
   /* 窗口 */
   .window {
     position: relative;
-    width: min(960px, calc(100vw - 48px));
-    height: min(620px, calc(100vh - 48px));
+    width: min(980px, calc(100vw - 48px));
+    height: min(640px, calc(100vh - 48px));
     background: var(--window);
     border-radius: 12px;
     box-shadow: var(--shadow);
     display: grid;
-    grid-template-columns: 200px 1fr;
+    grid-template-columns: var(--side-w) 1fr;
     overflow: hidden;
   }
   .window.dropping::after {
@@ -89,20 +101,60 @@
 
   /* 侧栏 */
   .sidebar {
+    position: relative;
     background: var(--sidebar);
     border-right: 1px solid var(--line);
-    padding: 14px 10px;
+    padding: 14px 10px 10px;
     display: flex; flex-direction: column; gap: 1px;
+    min-width: 0;
   }
   .traffic { display: flex; gap: 8px; padding: 0 4px 18px; }
   .traffic i { width: 12px; height: 12px; border-radius: 50%; background: var(--text-3); opacity: .35; }
-  .side-item {
-    display: flex; align-items: center; justify-content: space-between;
-    height: 28px; padding: 0 10px; border-radius: 6px; text-align: left;
+  .side-thumb {
+    position: absolute; top: 0; left: 0;
+    border-radius: 6px; background: var(--selected);
+    pointer-events: none;
   }
+  .ready .side-thumb { transition: transform .28s var(--ease), width .28s var(--ease), height .28s var(--ease); }
+  .resizing .side-thumb { transition: none; }
+  .side-item {
+    position: relative;
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    height: 28px; padding: 0 10px; border-radius: 6px; text-align: left;
+    color: var(--text-2);
+    transition: color .2s;
+  }
+  .side-item > span:first-child { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .side-item:hover { background: var(--hover); }
-  .side-item[aria-current="true"] { background: var(--selected); font-weight: 600; }
+  .side-item[aria-current="true"] { color: var(--text); }
+  .side-item.level-1 { font-weight: 600; color: var(--text); }
   .side-item .count { color: var(--text-3); font-size: 12px; font-variant-numeric: tabular-nums; font-weight: 400; }
+
+  /* 二级分类：竖线 + 圆角折钩挂在“全部”下面 */
+  .side-children { display: flex; flex-direction: column; gap: 1px; margin-left: 18px; }
+  .side-children .side-item { margin-left: 14px; }
+  .side-children .side-item::before,
+  .side-children .side-item:not(:last-child)::after {
+    content: ""; position: absolute; left: -14px; border-left: 1px solid var(--tree);
+  }
+  .side-children .side-item::before {
+    top: -1px; height: calc(50% + 1px); width: 10px;
+    border-bottom: 1px solid var(--tree); border-bottom-left-radius: 6px;
+  }
+  .side-children .side-item:not(:last-child)::after { top: 50%; bottom: -1px; }
+
+  .side-bottom { margin-top: auto; }
+  .side-bottom .side-item { justify-content: flex-start; width: 100%; }
+
+  .resizer {
+    position: absolute; top: 0; bottom: 0; right: -4px; width: 8px;
+    cursor: col-resize; z-index: 2;
+  }
+  .resizer::after {
+    content: ""; position: absolute; top: 0; bottom: 0; left: 3px; width: 2px;
+    background: var(--accent); opacity: 0; transition: opacity .15s;
+  }
+  .resizer:hover::after, .resizing .resizer::after { opacity: .5; }
 
   /* 主区 */
   .main { display: grid; grid-template-rows: 52px 1fr 32px; min-width: 0; }
@@ -112,12 +164,18 @@
     border-bottom: 1px solid var(--line);
   }
   .toolbar h1 { font-size: 15px; font-weight: 600; margin: 0; flex: 1; }
-  .segmented { display: flex; background: var(--seg-bg); border-radius: 7px; padding: 2px; margin-right: 6px; }
-  .segmented button { height: 22px; padding: 0 12px; border-radius: 5px; font-size: 12px; color: var(--text-2); }
-  .segmented button[aria-pressed="true"] {
-    background: var(--seg-on); color: var(--text);
+  .segmented { position: relative; display: flex; background: var(--seg-bg); border-radius: 7px; padding: 2px; margin-right: 6px; }
+  .seg-thumb {
+    position: absolute; top: 0; left: 0;
+    background: var(--seg-on); border-radius: 5px;
     box-shadow: 0 1px 2px rgba(0, 0, 0, .12);
   }
+  .ready .seg-thumb { transition: transform .28s var(--ease), width .28s var(--ease); }
+  .segmented button {
+    position: relative; height: 22px; padding: 0 12px; border-radius: 5px;
+    font-size: 12px; color: var(--text-2); transition: color .2s;
+  }
+  .segmented button[aria-pressed="true"] { color: var(--text); }
   .icon-btn {
     width: 28px; height: 28px; border-radius: 6px;
     display: grid; place-items: center; color: var(--text-2);
@@ -129,9 +187,11 @@
   .list { list-style: none; margin: 0; padding: 6px 10px; overflow-y: auto; }
   .row {
     display: grid; grid-template-columns: 36px 1fr auto; gap: 12px; align-items: center;
-    padding: 10px 10px; border-radius: 8px;
+    padding: 10px; border-radius: 8px;
   }
   .row:hover { background: var(--hover); }
+  .row.enter, .empty.enter { animation: row-in .26s var(--ease) both; animation-delay: calc(var(--i, 0) * 22ms); }
+  @keyframes row-in { from { opacity: 0; transform: translateY(6px); } }
   .ficon {
     width: 36px; height: 36px; border-radius: 8px;
     display: grid; place-items: center;
@@ -148,7 +208,7 @@
   .row[data-status="completed"] .bar { display: none; }
   .meta { font-size: 11.5px; color: var(--text-2); font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .row[data-status="failed"] .meta { color: var(--danger); }
-  .actions { display: flex; gap: 2px; opacity: 0; }
+  .actions { display: flex; gap: 2px; opacity: 0; transition: opacity .15s; }
   .row:hover .actions, .row:focus-within .actions { opacity: 1; }
 
   .empty { display: grid; place-items: center; color: var(--text-3); height: 100%; }
@@ -158,33 +218,87 @@
     font-size: 11.5px; color: var(--text-2); font-variant-numeric: tabular-nums;
   }
 
-  /* 添加面板：模仿 macOS sheet 从窗口顶部落下 */
-  .scrim { position: absolute; inset: 0; background: rgba(0, 0, 0, .12); display: none; }
-  .scrim.open { display: block; }
-  .sheet {
-    position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+  /* 弹窗：居中，淡入 + 轻微放大 */
+  .scrim {
+    position: absolute; inset: 0; z-index: 10;
+    background: rgba(0, 0, 0, .18);
+    display: none; place-items: center;
+  }
+  .scrim.open { display: grid; animation: fade-in .16s ease-out; }
+  @keyframes fade-in { from { opacity: 0; } }
+  .dialog {
     width: min(460px, calc(100% - 40px));
     background: var(--window);
-    border-radius: 0 0 12px 12px;
+    border-radius: 12px;
     box-shadow: var(--shadow);
     padding: 16px;
-    animation: drop .18s ease-out;
+    animation: pop-in .2s var(--ease);
   }
-  @keyframes drop { from { transform: translate(-50%, -100%); } }
-  .sheet textarea {
+  @keyframes pop-in { from { opacity: 0; transform: scale(.96); } }
+  .dialog h2 { font-size: 13px; font-weight: 600; margin: 0 0 6px; }
+  .dialog textarea {
     width: 100%; height: 120px; resize: none;
     border: 1px solid var(--line); border-radius: 8px; padding: 10px;
     background: var(--sidebar); color: var(--text);
     font: 12px/1.5 ui-monospace, "SF Mono", Menlo, monospace;
     outline: none; user-select: text;
   }
-  .sheet .error { color: var(--danger); font-size: 12px; min-height: 18px; padding-top: 4px; }
-  .sheet .buttons { display: flex; justify-content: flex-end; gap: 8px; }
+  .dialog .error { color: var(--danger); font-size: 12px; min-height: 18px; padding-top: 4px; }
+  .dialog .buttons { display: flex; justify-content: flex-end; gap: 8px; }
   .btn { height: 26px; padding: 0 14px; border-radius: 6px; background: var(--seg-bg); }
+  .btn.small { height: 22px; padding: 0 10px; font-size: 12px; }
   .btn.primary { background: var(--accent); color: #fff; }
 
+  /* 设置项 */
+  .settings { margin-bottom: 14px; }
+  .setting {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    min-height: 42px; border-bottom: 1px solid var(--line);
+  }
+  .setting:last-child { border-bottom: 0; }
+  .setting .value { display: flex; align-items: center; gap: 8px; min-width: 0; }
+  .setting .path { color: var(--text-2); font: 12px ui-monospace, "SF Mono", Menlo, monospace; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  .switch {
+    position: relative; width: 32px; height: 19px; border-radius: 10px;
+    background: var(--switch-off); transition: background .2s;
+  }
+  .switch::after {
+    content: ""; position: absolute; top: 2px; left: 2px;
+    width: 15px; height: 15px; border-radius: 50%;
+    background: #fff; box-shadow: 0 1px 2px rgba(0, 0, 0, .25);
+    transition: transform .2s var(--ease);
+  }
+  .switch[aria-checked="true"] { background: var(--accent); }
+  .switch[aria-checked="true"]::after { transform: translateX(13px); }
+
+  /* 自绘下拉：按钮 + 下方列表，Esc / 点外面收起 */
+  .dropdown { position: relative; }
+  .dd-btn {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    min-width: 84px; height: 24px; padding: 0 8px 0 10px; border-radius: 6px;
+    background: var(--seg-bg); font-size: 12px;
+  }
+  .dd-btn svg { color: var(--text-2); transition: transform .2s var(--ease); }
+  .dd-btn[aria-expanded="true"] svg { transform: rotate(180deg); }
+  .dd-list {
+    position: absolute; top: calc(100% + 4px); right: 0; z-index: 20;
+    min-width: 100%; padding: 4px; border-radius: 8px;
+    background: var(--menu); box-shadow: var(--menu-shadow);
+    display: none; flex-direction: column;
+  }
+  .dd-list.open { display: flex; animation: menu-in .14s var(--ease); }
+  @keyframes menu-in { from { opacity: 0; transform: translateY(-4px); } }
+  .dd-opt {
+    display: flex; align-items: center; gap: 6px;
+    height: 24px; padding: 0 10px 0 6px; border-radius: 5px; font-size: 12px; text-align: left;
+  }
+  .dd-opt::before { content: "✓"; width: 12px; font-size: 11px; visibility: hidden; }
+  .dd-opt[aria-selected="true"]::before { visibility: visible; }
+  .dd-opt:hover, .dd-opt:focus-visible { background: var(--accent); color: #fff; box-shadow: none; }
+
   .toast {
-    position: absolute; left: 50%; bottom: 44px; transform: translateX(-50%);
+    position: absolute; left: 50%; bottom: 44px; transform: translateX(-50%); z-index: 30;
     background: var(--text); color: var(--window);
     padding: 6px 12px; border-radius: 8px; font-size: 12px;
     opacity: 0; transition: opacity .2s; pointer-events: none; white-space: nowrap;
@@ -197,18 +311,29 @@
     .segmented button { padding: 0 8px; }
     .actions { opacity: 1; }
   }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: 0s !important; transition-duration: 0s !important; }
+  }
 </style>
 </head>
 <body>
 <div class="window" id="window">
   <nav class="sidebar" id="sidebar" aria-label="分类">
     <div class="traffic" aria-hidden="true"><i></i><i></i><i></i></div>
+    <div class="side-thumb" id="sideThumb"></div>
+    <button class="side-item level-1" data-category="all"><span>全部</span><span class="count"></span></button>
+    <div class="side-children" id="sideChildren"></div>
+    <div class="side-bottom">
+      <button class="side-item" id="settingsBtn" title="设置（⌘,）"></button>
+    </div>
+    <div class="resizer" id="resizer" role="separator" aria-orientation="vertical" aria-label="调整侧栏宽度" tabindex="0"></div>
   </nav>
 
   <section class="main">
     <header class="toolbar">
       <h1 id="title">全部</h1>
       <div class="segmented" role="group" aria-label="状态筛选" id="segmented">
+        <div class="seg-thumb" id="segThumb"></div>
         <button data-status="all" aria-pressed="true">全部</button>
         <button data-status="active" aria-pressed="false">进行中</button>
         <button data-status="done" aria-pressed="false">已完成</button>
@@ -220,13 +345,47 @@
     <footer class="statusbar" id="statusbar" aria-live="polite"></footer>
   </section>
 
-  <div class="scrim" id="scrim">
-    <div class="sheet" role="dialog" aria-modal="true" aria-label="添加下载">
+  <div class="scrim" id="addScrim">
+    <div class="dialog" role="dialog" aria-modal="true" aria-label="添加下载">
       <textarea id="urls" placeholder="粘贴链接，每行一个" aria-label="下载链接" spellcheck="false"></textarea>
       <div class="error" id="urlError" role="alert"></div>
       <div class="buttons">
-        <button class="btn" id="cancelAdd">取消</button>
+        <button class="btn" data-close>取消</button>
         <button class="btn primary" id="confirmAdd">下载</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="scrim" id="settingsScrim">
+    <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+      <h2 id="settingsTitle">设置</h2>
+      <div class="settings">
+        <div class="setting">
+          <span>下载位置</span>
+          <div class="value">
+            <span class="path" id="dirPath"></span>
+            <button class="btn small" id="changeDir">更改…</button>
+          </div>
+        </div>
+        <div class="setting">
+          <span id="maxActiveLabel">同时下载</span>
+          <div class="dropdown" data-key="maxActive" data-label="maxActiveLabel"></div>
+        </div>
+        <div class="setting">
+          <span id="threadsLabel">每个任务分段</span>
+          <div class="dropdown" data-key="threads" data-label="threadsLabel"></div>
+        </div>
+        <div class="setting">
+          <span id="classifyLabel">按类型放进子文件夹</span>
+          <button class="switch" role="switch" data-key="classify" aria-labelledby="classifyLabel"></button>
+        </div>
+        <div class="setting">
+          <span id="notifyLabel">完成后通知</span>
+          <button class="switch" role="switch" data-key="notify" aria-labelledby="notifyLabel"></button>
+        </div>
+      </div>
+      <div class="buttons">
+        <button class="btn primary" data-close>完成</button>
       </div>
     </div>
   </div>
@@ -250,10 +409,13 @@
 </template>
 
 <script>
-const MAX_ACTIVE = 3;        // 同时下载的任务上限，多出的排队
 const TICK_MS = 500;
 const MB = 1024 ** 2;
 const TOAST_MS = 1800;
+const SIDEBAR_MIN = 160;
+const SIDEBAR_MAX = 340;
+const SIDEBAR_KEY = 'downloader.sidebarWidth';
+const STAGGER_CAP = 12;      // 列表入场动画最多错开 12 行，后面的同时出现
 
 const CATEGORIES = [
   { id: 'video',     name: '视频',   exts: ['mp4', 'mkv', 'mov', 'avi', 'webm', 'm4v'] },
@@ -265,16 +427,24 @@ const CATEGORIES = [
   { id: 'other',     name: '其他',   exts: [] },
 ];
 
+const SETTING_OPTIONS = {
+  maxActive: [1, 2, 3, 4, 5, 6, 8].map((v) => ({ value: v, label: `${v} 个` })),
+  threads: [{ value: 'auto', label: '自动' }, ...[2, 4, 8, 16].map((v) => ({ value: v, label: `${v} 段` }))],
+};
+
 const ICONS = {
-  plus:   '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M8 3v10M3 8h10"/></svg>',
-  pause:  '<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><rect x="4" y="3" width="2.6" height="10" rx="1"/><rect x="9.4" y="3" width="2.6" height="10" rx="1"/></svg>',
-  play:   '<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M5 3.2v9.6a.6.6 0 0 0 .9.5l7.6-4.8a.6.6 0 0 0 0-1L5.9 2.7a.6.6 0 0 0-.9.5z"/></svg>',
-  retry:  '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M13 8a5 5 0 1 1-1.5-3.6M13 2.5v2.8h-2.8"/></svg>',
-  folder: '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M2 4.5c0-.6.4-1 1-1h3.2l1.5 1.6H13c.6 0 1 .4 1 1v5.9c0 .6-.4 1-1 1H3c-.6 0-1-.4-1-1z"/></svg>',
-  close:  '<svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 4l8 8M12 4l-8 8"/></svg>',
+  plus:     '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M8 3v10M3 8h10"/></svg>',
+  pause:    '<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><rect x="4" y="3" width="2.6" height="10" rx="1"/><rect x="9.4" y="3" width="2.6" height="10" rx="1"/></svg>',
+  play:     '<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M5 3.2v9.6a.6.6 0 0 0 .9.5l7.6-4.8a.6.6 0 0 0 0-1L5.9 2.7a.6.6 0 0 0-.9.5z"/></svg>',
+  retry:    '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M13 8a5 5 0 1 1-1.5-3.6M13 2.5v2.8h-2.8"/></svg>',
+  folder:   '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M2 4.5c0-.6.4-1 1-1h3.2l1.5 1.6H13c.6 0 1 .4 1 1v5.9c0 .6-.4 1-1 1H3c-.6 0-1-.4-1-1z"/></svg>',
+  close:    '<svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 4l8 8M12 4l-8 8"/></svg>',
+  sliders:  '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M2.5 5h6M12.5 5h1M2.5 11h1M7.5 11h6"/><circle cx="10.5" cy="5" r="1.7"/><circle cx="5.5" cy="11" r="1.7"/></svg>',
+  chevron:  '<svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6l4 4 4-4"/></svg>',
 };
 
 const view = { category: 'all', status: 'all' };
+const settings = { dir: '~/Downloads', maxActive: 3, threads: 'auto', classify: true, notify: true };
 let tasks = [];
 let nextId = 1;
 
@@ -286,6 +456,10 @@ const $ = (id) => document.getElementById(id);
 function categoryOf(name) {
   const ext = name.includes('.') ? name.split('.').pop().toLowerCase() : '';
   return (CATEGORIES.find((c) => c.exts.includes(ext)) || CATEGORIES.at(-1)).id;
+}
+
+function categoryName(id) {
+  return id === 'all' ? '全部' : CATEGORIES.find((c) => c.id === id).name;
 }
 
 function extLabel(name) {
@@ -327,6 +501,10 @@ function nameFromUrl(url) {
   try { return decodeURIComponent(last); } catch { return last; }
 }
 
+function savePath(t) {
+  return settings.classify ? `${settings.dir}/${categoryName(t.category)}/${t.name}` : `${settings.dir}/${t.name}`;
+}
+
 function addUrls(urls) {
   for (const url of urls) {
     const size = (20 + Math.random() * 1500) * MB;
@@ -337,11 +515,16 @@ function addUrls(urls) {
   toast(`已添加 ${urls.length} 个任务`);
 }
 
-// 把排队的任务补进空出来的下载位
+// 让下载中的任务数等于上限：超出的退回排队，空位从排队里补
 function schedule() {
-  let active = tasks.filter((t) => t.status === 'downloading').length;
+  let active = 0;
   for (const t of tasks) {
-    if (active >= MAX_ACTIVE) break;
+    if (t.status !== 'downloading') continue;
+    if (active < settings.maxActive) active++;
+    else { t.status = 'queued'; t.speed = 0; }
+  }
+  for (const t of tasks) {
+    if (active >= settings.maxActive) break;
     if (t.status === 'queued') { t.status = 'downloading'; active++; }
   }
 }
@@ -375,7 +558,7 @@ function metaText(t) {
     case 'queued':      return `排队中 · ${fmtBytes(t.size)}`;
     case 'paused':      return `已暂停 · ${progress}`;
     case 'failed':      return `连接中断 · ${progress}`;
-    default:            return `${fmtBytes(t.size)} · ${CATEGORIES.find((c) => c.id === t.category).name}`;
+    default:            return `${fmtBytes(t.size)} · ${categoryName(t.category)}`;
   }
 }
 
@@ -387,20 +570,35 @@ function visibleTasks() {
     (view.status === 'all' || (view.status === 'done') === (t.status === 'completed')));
 }
 
-function renderSidebar() {
-  const nav = $('sidebar');
-  nav.querySelectorAll('.side-item').forEach((el) => el.remove());
-  for (const c of [{ id: 'all', name: '全部' }, ...CATEGORIES]) {
-    const count = c.id === 'all' ? tasks.length : tasks.filter((t) => t.category === c.id).length;
+// 把滑块移到目标元素位置，过渡动画由 CSS 负责
+function moveThumb(thumb, target) {
+  thumb.style.transform = `translate(${target.offsetLeft}px, ${target.offsetTop}px)`;
+  thumb.style.width = `${target.offsetWidth}px`;
+  thumb.style.height = `${target.offsetHeight}px`;
+}
+
+function buildSidebar() {
+  for (const c of CATEGORIES) {
     const btn = document.createElement('button');
     btn.className = 'side-item';
     btn.dataset.category = c.id;
-    btn.setAttribute('aria-current', String(view.category === c.id));
     btn.innerHTML = '<span></span><span class="count"></span>';
     btn.firstChild.textContent = c.name;
-    btn.lastChild.textContent = count || '';
-    nav.append(btn);
+    $('sideChildren').append(btn);
   }
+  $('settingsBtn').innerHTML = `${ICONS.sliders}<span>设置</span>`;
+}
+
+function renderSidebar() {
+  let current;
+  for (const item of $('sidebar').querySelectorAll('[data-category]')) {
+    const id = item.dataset.category;
+    const count = id === 'all' ? tasks.length : tasks.filter((t) => t.category === id).length;
+    item.querySelector('.count').textContent = count || '';
+    item.setAttribute('aria-current', String(view.category === id));
+    if (view.category === id) current = item;
+  }
+  moveThumb($('sideThumb'), current);
 }
 
 function toggleAction(status) {
@@ -419,20 +617,25 @@ function updateRow(row, t) {
   row.querySelector('.meta').textContent = metaText(t);
 }
 
-function renderList() {
+// animate 只在切换筛选时为 true，状态变化引起的重绘不闪
+function renderList(animate) {
   const list = $('list');
   const items = visibleTasks();
   list.replaceChildren();
   if (!items.length) {
     const empty = document.createElement('li');
-    empty.className = 'empty';
+    empty.className = animate ? 'empty enter' : 'empty';
     empty.textContent = tasks.length ? '没有符合条件的任务' : '把链接拖进来，或按 ⌘N';
     list.append(empty);
     return;
   }
-  for (const t of items) {
+  items.forEach((t, i) => {
     const row = $('rowTpl').content.firstElementChild.cloneNode(true);
     row.dataset.id = t.id;
+    if (animate) {
+      row.classList.add('enter');
+      row.style.setProperty('--i', Math.min(i, STAGGER_CAP));
+    }
     const ficon = row.querySelector('.ficon');
     ficon.textContent = extLabel(t.name);
     ficon.style.setProperty('--c', `var(--c-${t.category})`);
@@ -446,13 +649,17 @@ function renderList() {
     row.querySelector('[data-act="remove"]').innerHTML = ICONS.close;
     updateRow(row, t);
     list.append(row);
-  }
+  });
 }
 
 function renderToolbar() {
-  $('title').textContent = view.category === 'all' ? '全部' : CATEGORIES.find((c) => c.id === view.category).name;
-  $('segmented').querySelectorAll('button').forEach((b) =>
-    b.setAttribute('aria-pressed', String(b.dataset.status === view.status)));
+  $('title').textContent = categoryName(view.category);
+  let current;
+  for (const b of $('segmented').querySelectorAll('button')) {
+    b.setAttribute('aria-pressed', String(b.dataset.status === view.status));
+    if (b.dataset.status === view.status) current = b;
+  }
+  moveThumb($('segThumb'), current);
   const running = tasks.some((t) => t.status === 'downloading' || t.status === 'queued');
   const paused = tasks.some((t) => t.status === 'paused');
   const btn = $('pauseAll');
@@ -469,10 +676,10 @@ function renderStatusbar() {
   $('statusbar').textContent = active.length ? `${active.length} 个下载中 · ${fmtBytes(total)}/s` : '';
 }
 
-function renderAll() {
+function renderAll(animate = false) {
   renderSidebar();
   renderToolbar();
-  renderList();
+  renderList(animate);
   renderStatusbar();
 }
 
@@ -488,7 +695,7 @@ function toast(text) {
 /* ---------- 模拟下载 ---------- */
 
 function tick() {
-  let finished = false;
+  const finished = [];
   for (const t of tasks) {
     if (t.status !== 'downloading') continue;
     t.speed = t.baseSpeed * (0.7 + Math.random() * 0.6);
@@ -497,59 +704,202 @@ function tick() {
       t.done = t.size;
       t.status = 'completed';
       t.speed = 0;
-      finished = true;
+      finished.push(t);
     }
   }
-  if (finished) {
+  if (finished.length) {
     schedule();
     renderAll();
-  } else {
-    for (const row of $('list').querySelectorAll('.row')) {
-      const t = tasks.find((x) => x.id === Number(row.dataset.id));
-      if (t && t.status === 'downloading') updateRow(row, t);
-    }
-    renderStatusbar();
+    if (settings.notify) toast(`下载完成：${finished[0].name}`);
+    return;
   }
+  for (const row of $('list').querySelectorAll('.row')) {
+    const t = tasks.find((x) => x.id === Number(row.dataset.id));
+    if (t && t.status === 'downloading') updateRow(row, t);
+  }
+  renderStatusbar();
 }
 
-/* ---------- 添加面板 ---------- */
+/* ---------- 侧栏拖宽 ---------- */
 
-function openSheet() {
-  $('scrim').classList.add('open');
+function setSidebarWidth(px) {
+  const width = Math.round(Math.min(SIDEBAR_MAX, Math.max(SIDEBAR_MIN, px)));
+  document.documentElement.style.setProperty('--side-w', `${width}px`);
+  $('resizer').setAttribute('aria-valuenow', width);
+  const current = $('sidebar').querySelector('[aria-current="true"]');
+  if (current) moveThumb($('sideThumb'), current);   // 启动时还没渲染选中项
+  return width;
+}
+
+function saveSidebarWidth(width) {
+  try { localStorage.setItem(SIDEBAR_KEY, String(width)); } catch { /* 隐私模式下存不了，下次用默认宽度 */ }
+}
+
+function loadSidebarWidth() {
+  try { return Number(localStorage.getItem(SIDEBAR_KEY)) || null; } catch { return null; }
+}
+
+$('resizer').addEventListener('pointerdown', (e) => {
+  e.preventDefault();
+  const resizer = e.currentTarget;
+  const left = $('sidebar').getBoundingClientRect().left;
+  resizer.setPointerCapture(e.pointerId);
+  document.body.classList.add('resizing');
+  let width;
+  const onMove = (ev) => { width = setSidebarWidth(ev.clientX - left); };
+  const onUp = () => {
+    document.body.classList.remove('resizing');
+    resizer.removeEventListener('pointermove', onMove);
+    resizer.removeEventListener('pointerup', onUp);
+    if (width) saveSidebarWidth(width);
+  };
+  resizer.addEventListener('pointermove', onMove);
+  resizer.addEventListener('pointerup', onUp);
+});
+
+$('resizer').addEventListener('keydown', (e) => {
+  const step = e.key === 'ArrowLeft' ? -10 : e.key === 'ArrowRight' ? 10 : 0;
+  if (!step) return;
+  e.preventDefault();
+  saveSidebarWidth(setSidebarWidth($('sidebar').offsetWidth + step));
+});
+
+/* ---------- 弹窗 ---------- */
+
+let openScrim = null;
+let lastFocus = null;
+
+function openDialog(id) {
+  closeDialog();
+  lastFocus = document.activeElement;
+  openScrim = $(id);
+  openScrim.classList.add('open');
+}
+
+function closeDialog() {
+  if (!openScrim) return;
+  closeDropdown();
+  openScrim.classList.remove('open');
+  openScrim = null;
+  lastFocus?.focus();
+}
+
+function openAdd() {
+  openDialog('addScrim');
   $('urlError').textContent = '';
   $('urls').value = '';
   $('urls').focus();
 }
 
-function closeSheet() {
-  $('scrim').classList.remove('open');
-  $('addBtn').focus();
-}
-
-function confirmSheet() {
+function confirmAdd() {
   const urls = parseUrls($('urls').value);
   if (!urls.length) {
     $('urlError').textContent = '没有识别到 http/https 链接';
     return;
   }
-  closeSheet();
+  closeDialog();
   addUrls(urls);
 }
+
+function openSettings() {
+  openDialog('settingsScrim');
+  $('settingsScrim').querySelector('[data-close]').focus();
+}
+
+for (const scrim of document.querySelectorAll('.scrim')) {
+  scrim.addEventListener('mousedown', (e) => { if (e.target === scrim) closeDialog(); });
+  scrim.querySelectorAll('[data-close]').forEach((b) => b.addEventListener('click', closeDialog));
+}
+
+/* ---------- 设置控件 ---------- */
+
+let openDd = null;
+
+function closeDropdown() {
+  if (!openDd) return;
+  openDd.querySelector('.dd-list').classList.remove('open');
+  openDd.querySelector('.dd-btn').setAttribute('aria-expanded', 'false');
+  openDd = null;
+}
+
+function openDropdown(dd) {
+  closeDropdown();
+  openDd = dd;
+  dd.querySelector('.dd-list').classList.add('open');
+  dd.querySelector('.dd-btn').setAttribute('aria-expanded', 'true');
+  (dd.querySelector('[aria-selected="true"]') || dd.querySelector('.dd-opt')).focus();
+}
+
+function setupDropdown(dd) {
+  const key = dd.dataset.key;
+  const options = SETTING_OPTIONS[key];
+  dd.innerHTML = `<button class="dd-btn" aria-haspopup="listbox" aria-expanded="false" aria-labelledby="${dd.dataset.label}"><span></span>${ICONS.chevron}</button><div class="dd-list" role="listbox"></div>`;
+  const btn = dd.querySelector('.dd-btn');
+  const list = dd.querySelector('.dd-list');
+  for (const o of options) {
+    const opt = document.createElement('button');
+    opt.className = 'dd-opt';
+    opt.setAttribute('role', 'option');
+    opt.dataset.value = o.value;
+    opt.textContent = o.label;
+    list.append(opt);
+  }
+  const sync = () => {
+    btn.firstElementChild.textContent = options.find((o) => o.value === settings[key]).label;
+    list.querySelectorAll('.dd-opt').forEach((o) =>
+      o.setAttribute('aria-selected', String(o.dataset.value === String(settings[key]))));
+  };
+  btn.addEventListener('click', () => (openDd === dd ? closeDropdown() : openDropdown(dd)));
+  list.addEventListener('click', (e) => {
+    const opt = e.target.closest('.dd-opt');
+    if (!opt) return;
+    settings[key] = options.find((o) => String(o.value) === opt.dataset.value).value;
+    sync();
+    closeDropdown();
+    btn.focus();
+    applySettings();
+  });
+  list.addEventListener('keydown', (e) => {
+    const opts = [...list.querySelectorAll('.dd-opt')];
+    const i = opts.indexOf(document.activeElement);
+    if (e.key === 'ArrowDown') { e.preventDefault(); opts[Math.min(i + 1, opts.length - 1)].focus(); }
+    if (e.key === 'ArrowUp') { e.preventDefault(); opts[Math.max(i - 1, 0)].focus(); }
+  });
+  sync();
+}
+
+function setupSwitch(sw) {
+  const key = sw.dataset.key;
+  const sync = () => sw.setAttribute('aria-checked', String(settings[key]));
+  sw.addEventListener('click', () => { settings[key] = !settings[key]; sync(); applySettings(); });
+  sync();
+}
+
+function applySettings() {
+  schedule();
+  renderAll();
+}
+
+document.querySelectorAll('.dropdown').forEach(setupDropdown);
+document.querySelectorAll('.switch').forEach(setupSwitch);
+$('dirPath').textContent = settings.dir;
+$('changeDir').addEventListener('click', () => toast('SwiftUI 版这里会弹出访达选择文件夹'));
+document.addEventListener('mousedown', (e) => { if (openDd && !openDd.contains(e.target)) closeDropdown(); });
 
 /* ---------- 事件 ---------- */
 
 $('sidebar').addEventListener('click', (e) => {
-  const item = e.target.closest('.side-item');
-  if (!item) return;
+  const item = e.target.closest('[data-category]');
+  if (!item || item.dataset.category === view.category) return;
   view.category = item.dataset.category;
-  renderAll();
+  renderAll(true);
 });
 
 $('segmented').addEventListener('click', (e) => {
   const btn = e.target.closest('button');
-  if (!btn) return;
+  if (!btn || btn.dataset.status === view.status) return;
   view.status = btn.dataset.status;
-  renderAll();
+  renderAll(true);
 });
 
 $('list').addEventListener('click', (e) => {
@@ -568,10 +918,7 @@ $('list').addEventListener('click', (e) => {
     case 'queued':   setStatus(t, 'paused'); break;
     case 'paused':
     case 'failed':   setStatus(t, 'queued'); break;
-    default: {
-      const dir = CATEGORIES.find((c) => c.id === t.category).name;
-      toast(`~/Downloads/${dir}/${t.name}`);
-    }
+    default:         toast(savePath(t));
   }
 });
 
@@ -585,19 +932,21 @@ $('pauseAll').addEventListener('click', () => {
   renderAll();
 });
 
-$('addBtn').addEventListener('click', openSheet);
-$('cancelAdd').addEventListener('click', closeSheet);
-$('confirmAdd').addEventListener('click', confirmSheet);
-$('scrim').addEventListener('mousedown', (e) => { if (e.target === e.currentTarget) closeSheet(); });
+$('addBtn').addEventListener('click', openAdd);
+$('confirmAdd').addEventListener('click', confirmAdd);
+$('settingsBtn').addEventListener('click', openSettings);
 
 document.addEventListener('keydown', (e) => {
-  const sheetOpen = $('scrim').classList.contains('open');
-  if (sheetOpen && e.key === 'Escape') closeSheet();
-  if (sheetOpen && e.key === 'Enter' && (e.metaKey || e.ctrlKey)) confirmSheet();
-  if (!sheetOpen && e.key.toLowerCase() === 'n' && (e.metaKey || e.ctrlKey)) {
-    e.preventDefault();
-    openSheet();
+  const cmd = e.metaKey || e.ctrlKey;
+  if (e.key === 'Escape') {
+    if (openDd) { const btn = openDd.querySelector('.dd-btn'); closeDropdown(); btn.focus(); }
+    else closeDialog();
+    return;
   }
+  if (openScrim?.id === 'addScrim' && e.key === 'Enter' && cmd) confirmAdd();
+  if (openScrim) return;
+  if (cmd && e.key.toLowerCase() === 'n') { e.preventDefault(); openAdd(); }
+  if (cmd && e.key === ',') { e.preventDefault(); openSettings(); }
 });
 
 // 拖链接进窗口直接添加
@@ -612,9 +961,12 @@ win.addEventListener('drop', (e) => {
   if (urls.length) addUrls(urls); else toast('没有识别到链接');
 });
 
+window.addEventListener('resize', () => renderAll());
+
 /* ---------- 启动 ---------- */
 
 $('addBtn').innerHTML = ICONS.plus;
+buildSidebar();
 tasks = [
   makeTask('WWDC26-Keynote.mp4', 1.9 * 1024 * MB, 1.18 * 1024 * MB, 'downloading'),
   makeTask('macOS-Wallpapers.zip', 820 * MB, 210 * MB, 'downloading'),
@@ -625,7 +977,9 @@ tasks = [
   makeTask('年度报告-Q3.pdf', 18 * MB, 18 * MB, 'completed'),
   makeTask('IMG_2048.heic', 4.2 * MB, 4.2 * MB, 'completed'),
 ];
-renderAll();
+setSidebarWidth(loadSidebarWidth() || 210);
+renderAll(true);
+requestAnimationFrame(() => document.body.classList.add('ready'));   // 首次定位后再开滑块过渡，避免开场乱飞
 setInterval(tick, TICK_MS);
 </script>
 </body>
