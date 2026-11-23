@@ -1,0 +1,14 @@
+.DS_Store
+.env
+.env.*
+
+# Swift / Xcode
+.build/
+.swiftpm/
+DerivedData/
+xcuserdata/
+*.xcuserstate
+
+# 下载中的临时分段
+*.part
+*.part.json

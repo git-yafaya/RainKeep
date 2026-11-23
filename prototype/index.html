@@ -1,0 +1,632 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>下载器原型</title>
+<!-- 下载器界面原型：用模拟数据跑一遍外观和交互，定稿后照此搬到 SwiftUI -->
+<style>
+  :root {
+    --page: #e9e9ed;
+    --window: #ffffff;
+    --sidebar: #f5f5f7;
+    --text: #1d1d1f;
+    --text-2: #6e6e73;
+    --text-3: #a1a1a6;
+    --line: rgba(0, 0, 0, .07);
+    --hover: rgba(0, 0, 0, .05);
+    --selected: rgba(0, 0, 0, .07);
+    --track: rgba(0, 0, 0, .07);
+    --accent: #007aff;
+    --danger: #ff3b30;
+    --seg-bg: rgba(0, 0, 0, .05);
+    --seg-on: #ffffff;
+    --shadow: 0 0 0 .5px rgba(0, 0, 0, .12), 0 20px 60px rgba(0, 0, 0, .18);
+    --c-video: #a463f2; --c-audio: #ff375f; --c-image: #ff9f0a; --c-doc: #007aff;
+    --c-archive: #a2845e; --c-installer: #636366; --c-other: #8e8e93;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --page: #0e0e10;
+      --window: #1e1e20;
+      --sidebar: #252527;
+      --text: #f5f5f7;
+      --text-2: #98989d;
+      --text-3: #636366;
+      --line: rgba(255, 255, 255, .07);
+      --hover: rgba(255, 255, 255, .06);
+      --selected: rgba(255, 255, 255, .09);
+      --track: rgba(255, 255, 255, .09);
+      --accent: #0a84ff;
+      --danger: #ff453a;
+      --seg-bg: rgba(255, 255, 255, .06);
+      --seg-on: #3a3a3c;
+      --shadow: 0 0 0 .5px rgba(255, 255, 255, .1), 0 20px 60px rgba(0, 0, 0, .6);
+      --c-installer: #aeaeb2;
+    }
+  }
+
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  ::selection { background: color-mix(in srgb, var(--accent) 25%, transparent); }
+  html, body { height: 100%; margin: 0; }
+  body {
+    background: var(--page);
+    color: var(--text);
+    font: 13px/1.4 -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", sans-serif;
+    -webkit-font-smoothing: antialiased;
+    display: grid;
+    place-items: center;
+    user-select: none;
+  }
+  button {
+    font: inherit; color: inherit; background: none; border: 0; padding: 0;
+    cursor: default; outline: none;
+  }
+  button:focus-visible, textarea:focus-visible {
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 45%, transparent);
+  }
+  svg { display: block; }
+
+  /* 窗口 */
+  .window {
+    position: relative;
+    width: min(960px, calc(100vw - 48px));
+    height: min(620px, calc(100vh - 48px));
+    background: var(--window);
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+    display: grid;
+    grid-template-columns: 200px 1fr;
+    overflow: hidden;
+  }
+  .window.dropping::after {
+    content: "";
+    position: absolute; inset: 6px;
+    border: 2px solid var(--accent);
+    border-radius: 9px;
+    pointer-events: none;
+  }
+
+  /* 侧栏 */
+  .sidebar {
+    background: var(--sidebar);
+    border-right: 1px solid var(--line);
+    padding: 14px 10px;
+    display: flex; flex-direction: column; gap: 1px;
+  }
+  .traffic { display: flex; gap: 8px; padding: 0 4px 18px; }
+  .traffic i { width: 12px; height: 12px; border-radius: 50%; background: var(--text-3); opacity: .35; }
+  .side-item {
+    display: flex; align-items: center; justify-content: space-between;
+    height: 28px; padding: 0 10px; border-radius: 6px; text-align: left;
+  }
+  .side-item:hover { background: var(--hover); }
+  .side-item[aria-current="true"] { background: var(--selected); font-weight: 600; }
+  .side-item .count { color: var(--text-3); font-size: 12px; font-variant-numeric: tabular-nums; font-weight: 400; }
+
+  /* 主区 */
+  .main { display: grid; grid-template-rows: 52px 1fr 32px; min-width: 0; }
+  .toolbar {
+    display: flex; align-items: center; gap: 8px;
+    padding: 0 14px 0 20px;
+    border-bottom: 1px solid var(--line);
+  }
+  .toolbar h1 { font-size: 15px; font-weight: 600; margin: 0; flex: 1; }
+  .segmented { display: flex; background: var(--seg-bg); border-radius: 7px; padding: 2px; margin-right: 6px; }
+  .segmented button { height: 22px; padding: 0 12px; border-radius: 5px; font-size: 12px; color: var(--text-2); }
+  .segmented button[aria-pressed="true"] {
+    background: var(--seg-on); color: var(--text);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, .12);
+  }
+  .icon-btn {
+    width: 28px; height: 28px; border-radius: 6px;
+    display: grid; place-items: center; color: var(--text-2);
+  }
+  .icon-btn:hover:not(:disabled) { background: var(--hover); color: var(--text); }
+  .icon-btn:disabled { opacity: .35; }
+
+  /* 任务列表 */
+  .list { list-style: none; margin: 0; padding: 6px 10px; overflow-y: auto; }
+  .row {
+    display: grid; grid-template-columns: 36px 1fr auto; gap: 12px; align-items: center;
+    padding: 10px 10px; border-radius: 8px;
+  }
+  .row:hover { background: var(--hover); }
+  .ficon {
+    width: 36px; height: 36px; border-radius: 8px;
+    display: grid; place-items: center;
+    font-size: 9.5px; font-weight: 700; letter-spacing: .02em;
+    color: var(--c); background: color-mix(in srgb, var(--c) 14%, transparent);
+  }
+  .body { min-width: 0; display: grid; gap: 5px; }
+  .name { font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .bar { height: 3px; border-radius: 2px; background: var(--track); overflow: hidden; }
+  .bar i { display: block; height: 100%; background: var(--accent); border-radius: 2px; transition: width .5s linear; }
+  .row[data-status="paused"] .bar i,
+  .row[data-status="queued"] .bar i { background: var(--text-3); }
+  .row[data-status="failed"] .bar i { background: var(--danger); }
+  .row[data-status="completed"] .bar { display: none; }
+  .meta { font-size: 11.5px; color: var(--text-2); font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .row[data-status="failed"] .meta { color: var(--danger); }
+  .actions { display: flex; gap: 2px; opacity: 0; }
+  .row:hover .actions, .row:focus-within .actions { opacity: 1; }
+
+  .empty { display: grid; place-items: center; color: var(--text-3); height: 100%; }
+  .statusbar {
+    display: flex; align-items: center; justify-content: flex-end;
+    padding: 0 20px; border-top: 1px solid var(--line);
+    font-size: 11.5px; color: var(--text-2); font-variant-numeric: tabular-nums;
+  }
+
+  /* 添加面板：模仿 macOS sheet 从窗口顶部落下 */
+  .scrim { position: absolute; inset: 0; background: rgba(0, 0, 0, .12); display: none; }
+  .scrim.open { display: block; }
+  .sheet {
+    position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+    width: min(460px, calc(100% - 40px));
+    background: var(--window);
+    border-radius: 0 0 12px 12px;
+    box-shadow: var(--shadow);
+    padding: 16px;
+    animation: drop .18s ease-out;
+  }
+  @keyframes drop { from { transform: translate(-50%, -100%); } }
+  .sheet textarea {
+    width: 100%; height: 120px; resize: none;
+    border: 1px solid var(--line); border-radius: 8px; padding: 10px;
+    background: var(--sidebar); color: var(--text);
+    font: 12px/1.5 ui-monospace, "SF Mono", Menlo, monospace;
+    outline: none; user-select: text;
+  }
+  .sheet .error { color: var(--danger); font-size: 12px; min-height: 18px; padding-top: 4px; }
+  .sheet .buttons { display: flex; justify-content: flex-end; gap: 8px; }
+  .btn { height: 26px; padding: 0 14px; border-radius: 6px; background: var(--seg-bg); }
+  .btn.primary { background: var(--accent); color: #fff; }
+
+  .toast {
+    position: absolute; left: 50%; bottom: 44px; transform: translateX(-50%);
+    background: var(--text); color: var(--window);
+    padding: 6px 12px; border-radius: 8px; font-size: 12px;
+    opacity: 0; transition: opacity .2s; pointer-events: none; white-space: nowrap;
+  }
+  .toast.show { opacity: .92; }
+
+  @media (max-width: 640px) {
+    .window { width: 100vw; height: 100vh; border-radius: 0; grid-template-columns: 1fr; }
+    .sidebar { display: none; }
+    .segmented button { padding: 0 8px; }
+    .actions { opacity: 1; }
+  }
+</style>
+</head>
+<body>
+<div class="window" id="window">
+  <nav class="sidebar" id="sidebar" aria-label="分类">
+    <div class="traffic" aria-hidden="true"><i></i><i></i><i></i></div>
+  </nav>
+
+  <section class="main">
+    <header class="toolbar">
+      <h1 id="title">全部</h1>
+      <div class="segmented" role="group" aria-label="状态筛选" id="segmented">
+        <button data-status="all" aria-pressed="true">全部</button>
+        <button data-status="active" aria-pressed="false">进行中</button>
+        <button data-status="done" aria-pressed="false">已完成</button>
+      </div>
+      <button class="icon-btn" id="pauseAll" aria-label="全部暂停" title="全部暂停"></button>
+      <button class="icon-btn" id="addBtn" aria-label="添加下载" title="添加下载（⌘N）"></button>
+    </header>
+    <ul class="list" id="list"></ul>
+    <footer class="statusbar" id="statusbar" aria-live="polite"></footer>
+  </section>
+
+  <div class="scrim" id="scrim">
+    <div class="sheet" role="dialog" aria-modal="true" aria-label="添加下载">
+      <textarea id="urls" placeholder="粘贴链接，每行一个" aria-label="下载链接" spellcheck="false"></textarea>
+      <div class="error" id="urlError" role="alert"></div>
+      <div class="buttons">
+        <button class="btn" id="cancelAdd">取消</button>
+        <button class="btn primary" id="confirmAdd">下载</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" role="status"></div>
+</div>
+
+<template id="rowTpl">
+  <li class="row">
+    <div class="ficon" aria-hidden="true"></div>
+    <div class="body">
+      <div class="name"></div>
+      <div class="bar"><i></i></div>
+      <div class="meta"></div>
+    </div>
+    <div class="actions">
+      <button class="icon-btn" data-act="toggle"></button>
+      <button class="icon-btn" data-act="remove" aria-label="移除" title="移除"></button>
+    </div>
+  </li>
+</template>
+
+<script>
+const MAX_ACTIVE = 3;        // 同时下载的任务上限，多出的排队
+const TICK_MS = 500;
+const MB = 1024 ** 2;
+const TOAST_MS = 1800;
+
+const CATEGORIES = [
+  { id: 'video',     name: '视频',   exts: ['mp4', 'mkv', 'mov', 'avi', 'webm', 'm4v'] },
+  { id: 'audio',     name: '音频',   exts: ['mp3', 'flac', 'wav', 'm4a', 'aac', 'ogg'] },
+  { id: 'image',     name: '图片',   exts: ['jpg', 'jpeg', 'png', 'gif', 'webp', 'heic', 'svg'] },
+  { id: 'doc',       name: '文档',   exts: ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt', 'md', 'epub', 'pages', 'key', 'numbers'] },
+  { id: 'archive',   name: '压缩包', exts: ['zip', 'rar', '7z', 'tar', 'gz', 'bz2', 'xz'] },
+  { id: 'installer', name: '安装包', exts: ['dmg', 'pkg', 'ipa'] },
+  { id: 'other',     name: '其他',   exts: [] },
+];
+
+const ICONS = {
+  plus:   '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M8 3v10M3 8h10"/></svg>',
+  pause:  '<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><rect x="4" y="3" width="2.6" height="10" rx="1"/><rect x="9.4" y="3" width="2.6" height="10" rx="1"/></svg>',
+  play:   '<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M5 3.2v9.6a.6.6 0 0 0 .9.5l7.6-4.8a.6.6 0 0 0 0-1L5.9 2.7a.6.6 0 0 0-.9.5z"/></svg>',
+  retry:  '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M13 8a5 5 0 1 1-1.5-3.6M13 2.5v2.8h-2.8"/></svg>',
+  folder: '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M2 4.5c0-.6.4-1 1-1h3.2l1.5 1.6H13c.6 0 1 .4 1 1v5.9c0 .6-.4 1-1 1H3c-.6 0-1-.4-1-1z"/></svg>',
+  close:  '<svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 4l8 8M12 4l-8 8"/></svg>',
+};
+
+const view = { category: 'all', status: 'all' };
+let tasks = [];
+let nextId = 1;
+
+const $ = (id) => document.getElementById(id);
+
+/* ---------- 数据 ---------- */
+
+// 按扩展名判断分类；.tar.gz 取最后一段 gz，同样归压缩包
+function categoryOf(name) {
+  const ext = name.includes('.') ? name.split('.').pop().toLowerCase() : '';
+  return (CATEGORIES.find((c) => c.exts.includes(ext)) || CATEGORIES.at(-1)).id;
+}
+
+function extLabel(name) {
+  const ext = name.includes('.') ? name.split('.').pop() : '';
+  return ext.slice(0, 4).toUpperCase() || '—';
+}
+
+function makeTask(name, size, done = 0, status = 'queued', url = '') {
+  return {
+    id: nextId++, name, url, size, done, status,
+    category: categoryOf(name),
+    speed: 0,
+    baseSpeed: (2 + Math.random() * 10) * MB,
+  };
+}
+
+// 重名时加 " (1)"，和真实下载器落盘规则一致
+function uniqueName(name) {
+  const taken = new Set(tasks.map((t) => t.name));
+  if (!taken.has(name)) return name;
+  const dot = name.lastIndexOf('.');
+  const stem = dot > 0 ? name.slice(0, dot) : name;
+  const ext = dot > 0 ? name.slice(dot) : '';
+  for (let n = 1; ; n++) {
+    const candidate = `${stem} (${n})${ext}`;
+    if (!taken.has(candidate)) return candidate;
+  }
+}
+
+function parseUrls(text) {
+  return text.split(/\s+/).filter((s) => {
+    try { return /^https?:$/.test(new URL(s).protocol); } catch { return false; }
+  });
+}
+
+function nameFromUrl(url) {
+  const last = new URL(url).pathname.split('/').filter(Boolean).pop();
+  if (!last) return 'download';
+  try { return decodeURIComponent(last); } catch { return last; }
+}
+
+function addUrls(urls) {
+  for (const url of urls) {
+    const size = (20 + Math.random() * 1500) * MB;
+    tasks.push(makeTask(uniqueName(nameFromUrl(url)), size, 0, 'queued', url));
+  }
+  schedule();
+  renderAll();
+  toast(`已添加 ${urls.length} 个任务`);
+}
+
+// 把排队的任务补进空出来的下载位
+function schedule() {
+  let active = tasks.filter((t) => t.status === 'downloading').length;
+  for (const t of tasks) {
+    if (active >= MAX_ACTIVE) break;
+    if (t.status === 'queued') { t.status = 'downloading'; active++; }
+  }
+}
+
+function setStatus(task, status) {
+  task.status = status;
+  task.speed = 0;
+  schedule();
+  renderAll();
+}
+
+/* ---------- 格式化 ---------- */
+
+function fmtBytes(bytes) {
+  const units = ['B', 'KB', 'MB', 'GB'];
+  let i = 0;
+  while (bytes >= 1024 && i < units.length - 1) { bytes /= 1024; i++; }
+  return `${bytes.toFixed(i < 2 ? 0 : 1)} ${units[i]}`;
+}
+
+function fmtEta(seconds) {
+  if (seconds < 60) return `${Math.ceil(seconds)} 秒`;
+  if (seconds < 3600) return `${Math.ceil(seconds / 60)} 分`;
+  return `${(seconds / 3600).toFixed(1)} 小时`;
+}
+
+function metaText(t) {
+  const progress = `${fmtBytes(t.done)} / ${fmtBytes(t.size)}`;
+  switch (t.status) {
+    case 'downloading': return `${fmtBytes(t.speed)}/s · 剩 ${fmtEta((t.size - t.done) / (t.speed || 1))} · ${progress}`;
+    case 'queued':      return `排队中 · ${fmtBytes(t.size)}`;
+    case 'paused':      return `已暂停 · ${progress}`;
+    case 'failed':      return `连接中断 · ${progress}`;
+    default:            return `${fmtBytes(t.size)} · ${CATEGORIES.find((c) => c.id === t.category).name}`;
+  }
+}
+
+/* ---------- 渲染 ---------- */
+
+function visibleTasks() {
+  return tasks.filter((t) =>
+    (view.category === 'all' || t.category === view.category) &&
+    (view.status === 'all' || (view.status === 'done') === (t.status === 'completed')));
+}
+
+function renderSidebar() {
+  const nav = $('sidebar');
+  nav.querySelectorAll('.side-item').forEach((el) => el.remove());
+  for (const c of [{ id: 'all', name: '全部' }, ...CATEGORIES]) {
+    const count = c.id === 'all' ? tasks.length : tasks.filter((t) => t.category === c.id).length;
+    const btn = document.createElement('button');
+    btn.className = 'side-item';
+    btn.dataset.category = c.id;
+    btn.setAttribute('aria-current', String(view.category === c.id));
+    btn.innerHTML = '<span></span><span class="count"></span>';
+    btn.firstChild.textContent = c.name;
+    btn.lastChild.textContent = count || '';
+    nav.append(btn);
+  }
+}
+
+function toggleAction(status) {
+  switch (status) {
+    case 'downloading':
+    case 'queued':    return ['pause', '暂停'];
+    case 'paused':    return ['play', '继续'];
+    case 'failed':    return ['retry', '重试'];
+    default:          return ['folder', '在访达中显示'];
+  }
+}
+
+function updateRow(row, t) {
+  row.dataset.status = t.status;
+  row.querySelector('.bar i').style.width = `${(t.done / t.size) * 100}%`;
+  row.querySelector('.meta').textContent = metaText(t);
+}
+
+function renderList() {
+  const list = $('list');
+  const items = visibleTasks();
+  list.replaceChildren();
+  if (!items.length) {
+    const empty = document.createElement('li');
+    empty.className = 'empty';
+    empty.textContent = tasks.length ? '没有符合条件的任务' : '把链接拖进来，或按 ⌘N';
+    list.append(empty);
+    return;
+  }
+  for (const t of items) {
+    const row = $('rowTpl').content.firstElementChild.cloneNode(true);
+    row.dataset.id = t.id;
+    const ficon = row.querySelector('.ficon');
+    ficon.textContent = extLabel(t.name);
+    ficon.style.setProperty('--c', `var(--c-${t.category})`);
+    row.querySelector('.name').textContent = t.name;
+    row.querySelector('.name').title = t.name;
+    const [icon, label] = toggleAction(t.status);
+    const toggle = row.querySelector('[data-act="toggle"]');
+    toggle.innerHTML = ICONS[icon];
+    toggle.setAttribute('aria-label', label);
+    toggle.title = label;
+    row.querySelector('[data-act="remove"]').innerHTML = ICONS.close;
+    updateRow(row, t);
+    list.append(row);
+  }
+}
+
+function renderToolbar() {
+  $('title').textContent = view.category === 'all' ? '全部' : CATEGORIES.find((c) => c.id === view.category).name;
+  $('segmented').querySelectorAll('button').forEach((b) =>
+    b.setAttribute('aria-pressed', String(b.dataset.status === view.status)));
+  const running = tasks.some((t) => t.status === 'downloading' || t.status === 'queued');
+  const paused = tasks.some((t) => t.status === 'paused');
+  const btn = $('pauseAll');
+  const label = running ? '全部暂停' : '全部继续';
+  btn.innerHTML = running ? ICONS.pause : ICONS.play;
+  btn.setAttribute('aria-label', label);
+  btn.title = label;
+  btn.disabled = !running && !paused;
+}
+
+function renderStatusbar() {
+  const active = tasks.filter((t) => t.status === 'downloading');
+  const total = active.reduce((sum, t) => sum + t.speed, 0);
+  $('statusbar').textContent = active.length ? `${active.length} 个下载中 · ${fmtBytes(total)}/s` : '';
+}
+
+function renderAll() {
+  renderSidebar();
+  renderToolbar();
+  renderList();
+  renderStatusbar();
+}
+
+let toastTimer;
+function toast(text) {
+  const el = $('toast');
+  el.textContent = text;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), TOAST_MS);
+}
+
+/* ---------- 模拟下载 ---------- */
+
+function tick() {
+  let finished = false;
+  for (const t of tasks) {
+    if (t.status !== 'downloading') continue;
+    t.speed = t.baseSpeed * (0.7 + Math.random() * 0.6);
+    t.done += t.speed * TICK_MS / 1000;
+    if (t.done >= t.size) {
+      t.done = t.size;
+      t.status = 'completed';
+      t.speed = 0;
+      finished = true;
+    }
+  }
+  if (finished) {
+    schedule();
+    renderAll();
+  } else {
+    for (const row of $('list').querySelectorAll('.row')) {
+      const t = tasks.find((x) => x.id === Number(row.dataset.id));
+      if (t && t.status === 'downloading') updateRow(row, t);
+    }
+    renderStatusbar();
+  }
+}
+
+/* ---------- 添加面板 ---------- */
+
+function openSheet() {
+  $('scrim').classList.add('open');
+  $('urlError').textContent = '';
+  $('urls').value = '';
+  $('urls').focus();
+}
+
+function closeSheet() {
+  $('scrim').classList.remove('open');
+  $('addBtn').focus();
+}
+
+function confirmSheet() {
+  const urls = parseUrls($('urls').value);
+  if (!urls.length) {
+    $('urlError').textContent = '没有识别到 http/https 链接';
+    return;
+  }
+  closeSheet();
+  addUrls(urls);
+}
+
+/* ---------- 事件 ---------- */
+
+$('sidebar').addEventListener('click', (e) => {
+  const item = e.target.closest('.side-item');
+  if (!item) return;
+  view.category = item.dataset.category;
+  renderAll();
+});
+
+$('segmented').addEventListener('click', (e) => {
+  const btn = e.target.closest('button');
+  if (!btn) return;
+  view.status = btn.dataset.status;
+  renderAll();
+});
+
+$('list').addEventListener('click', (e) => {
+  const btn = e.target.closest('[data-act]');
+  if (!btn) return;
+  const id = Number(btn.closest('.row').dataset.id);
+  const t = tasks.find((x) => x.id === id);
+  if (btn.dataset.act === 'remove') {
+    tasks = tasks.filter((x) => x.id !== id);
+    schedule();
+    renderAll();
+    return;
+  }
+  switch (t.status) {
+    case 'downloading':
+    case 'queued':   setStatus(t, 'paused'); break;
+    case 'paused':
+    case 'failed':   setStatus(t, 'queued'); break;
+    default: {
+      const dir = CATEGORIES.find((c) => c.id === t.category).name;
+      toast(`~/Downloads/${dir}/${t.name}`);
+    }
+  }
+});
+
+$('pauseAll').addEventListener('click', () => {
+  const running = tasks.some((t) => t.status === 'downloading' || t.status === 'queued');
+  for (const t of tasks) {
+    if (running && (t.status === 'downloading' || t.status === 'queued')) { t.status = 'paused'; t.speed = 0; }
+    if (!running && t.status === 'paused') t.status = 'queued';
+  }
+  schedule();
+  renderAll();
+});
+
+$('addBtn').addEventListener('click', openSheet);
+$('cancelAdd').addEventListener('click', closeSheet);
+$('confirmAdd').addEventListener('click', confirmSheet);
+$('scrim').addEventListener('mousedown', (e) => { if (e.target === e.currentTarget) closeSheet(); });
+
+document.addEventListener('keydown', (e) => {
+  const sheetOpen = $('scrim').classList.contains('open');
+  if (sheetOpen && e.key === 'Escape') closeSheet();
+  if (sheetOpen && e.key === 'Enter' && (e.metaKey || e.ctrlKey)) confirmSheet();
+  if (!sheetOpen && e.key.toLowerCase() === 'n' && (e.metaKey || e.ctrlKey)) {
+    e.preventDefault();
+    openSheet();
+  }
+});
+
+// 拖链接进窗口直接添加
+const win = $('window');
+win.addEventListener('dragover', (e) => { e.preventDefault(); win.classList.add('dropping'); });
+win.addEventListener('dragleave', (e) => { if (!win.contains(e.relatedTarget)) win.classList.remove('dropping'); });
+win.addEventListener('drop', (e) => {
+  e.preventDefault();
+  win.classList.remove('dropping');
+  const text = e.dataTransfer.getData('text/uri-list') || e.dataTransfer.getData('text/plain');
+  const urls = parseUrls(text);
+  if (urls.length) addUrls(urls); else toast('没有识别到链接');
+});
+
+/* ---------- 启动 ---------- */
+
+$('addBtn').innerHTML = ICONS.plus;
+tasks = [
+  makeTask('WWDC26-Keynote.mp4', 1.9 * 1024 * MB, 1.18 * 1024 * MB, 'downloading'),
+  makeTask('macOS-Wallpapers.zip', 820 * MB, 210 * MB, 'downloading'),
+  makeTask('Podcast-Ep42.mp3', 96 * MB, 40 * MB, 'downloading'),
+  makeTask('node-v24.11.0.pkg', 78 * MB, 0, 'queued'),
+  makeTask('Xcode_27.dmg', 12.4 * 1024 * MB, 3.1 * 1024 * MB, 'paused'),
+  makeTask('dataset-2026.tar.gz', 640 * MB, 233 * MB, 'failed'),
+  makeTask('年度报告-Q3.pdf', 18 * MB, 18 * MB, 'completed'),
+  makeTask('IMG_2048.heic', 4.2 * MB, 4.2 * MB, 'completed'),
+];
+renderAll();
+setInterval(tick, TICK_MS);
+</script>
+</body>
+</html>
