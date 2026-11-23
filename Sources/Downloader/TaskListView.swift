@@ -26,7 +26,8 @@ struct TaskListView: View {
             }
         }
         .id(store.filterKey)        // 筛选变了整块重建，触发逐行入场
-        .transition(.identity)      // 旧列表立刻换掉，不跟着侧栏动画淡出
+        // 只在筛选变化这一下去掉动画：旧列表立刻换掉，不跟着侧栏动画淡出；行入场动画在之后的 onAppear 里，不受影响
+        .transaction(value: store.filterKey) { $0.animation = nil }
     }
 }
 
@@ -71,6 +72,7 @@ private struct TaskRow: View {
                     .foregroundStyle(item.status == .failed ? AnyShapeStyle(.red) : AnyShapeStyle(.secondary))
                     .lineLimit(1)
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
             HStack(spacing: 2) {
                 let (icon, label) = toggleAction
                 IconButton(systemName: icon, label: label) { store.toggle(item.id) }

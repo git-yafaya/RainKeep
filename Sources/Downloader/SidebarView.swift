@@ -15,14 +15,16 @@ struct SidebarView: View {
             VStack(spacing: 0) {
                 let categories = FileCategory.allCases
                 ForEach(categories) { category in
-                    HStack(spacing: 0) {
-                        TreeConnector(isLast: category == categories.last)
-                            .stroke(Theme.tree, lineWidth: 1)
-                            .frame(width: 14)
-                        SidebarRow(title: category.displayName, count: store.count(for: category), level: 2,
-                                   isSelected: store.category == category, namespace: namespace) { select(category) }
-                            .padding(.vertical, 0.5)
-                    }
+                    // 折钩挂在背景上：Shape 会占满可用高度，放进 HStack 会把行撑高
+                    SidebarRow(title: category.displayName, count: store.count(for: category), level: 2,
+                               isSelected: store.category == category, namespace: namespace) { select(category) }
+                        .padding(.vertical, 0.5)
+                        .padding(.leading, 14)
+                        .background(alignment: .leading) {
+                            TreeConnector(isLast: category == categories.last)
+                                .stroke(Theme.tree, lineWidth: 1)
+                                .frame(width: 14)
+                        }
                 }
             }
             .padding(.leading, 18)

@@ -19,6 +19,12 @@ DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift run Downloader
 
 已经用 `sudo xcode-select -s /Applications/Xcode.app` 切换过的，直接 `swift run Downloader` 即可。也可以 `open Package.swift` 用 Xcode 打开。
 
+打包成 `.app`（有 Dock 图标和正式的应用身份）：
+
+```bash
+./scripts/make-app.sh && open .build/Downloader.app
+```
+
 运行测试：
 
 ```bash

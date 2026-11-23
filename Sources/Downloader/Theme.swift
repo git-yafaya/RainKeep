@@ -12,6 +12,7 @@ enum Theme {
     static let segmentBackground = adaptive(light: (0, 0.05), dark: (1, 0.06))
     static let segmentThumb = adaptive(light: (1, 1), dark: (0.23, 1))
     static let menu = adaptive(light: (1, 1), dark: (0.17, 1))
+    static let card = adaptive(light: (1, 1), dark: (0.14, 1))
     static let field = adaptive(light: (0, 0.03), dark: (1, 0.05))
     static let fieldFocus = adaptive(light: (0, 0.2), dark: (1, 0.2))
     static let focusRing = adaptive(light: (0, 0.22), dark: (1, 0.22))

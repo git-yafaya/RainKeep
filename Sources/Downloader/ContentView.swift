@@ -39,21 +39,26 @@ struct ContentView: View {
     private var toolbarContent: some ToolbarContent {
         ToolbarItemGroup(placement: .primaryAction) {
             StatusSegmented()
+                .disabled(dialogOpen)
             Button {
                 store.pauseOrResumeAll()
             } label: {
                 Label(store.isRunning ? "全部暂停" : "全部继续", systemImage: store.isRunning ? "pause.fill" : "play.fill")
             }
             .help(store.isRunning ? "全部暂停" : "全部继续")
-            .disabled(!store.isRunning && !store.hasPaused)
+            .disabled(dialogOpen || (!store.isRunning && !store.hasPaused))
             Button {
                 store.present(.add)
             } label: {
                 Label("添加下载", systemImage: "plus")
             }
             .help("添加下载（⌘N）")
+            .disabled(dialogOpen)
         }
     }
+
+    /// 遮罩盖不到窗口工具栏，弹窗打开时直接禁用工具栏按钮
+    private var dialogOpen: Bool { store.dialog != nil }
 }
 
 /// 全部 / 进行中 / 已完成，选中背景滑动

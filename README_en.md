@@ -19,6 +19,12 @@ DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift run Downloader
 
 If you have switched with `sudo xcode-select -s /Applications/Xcode.app`, plain `swift run Downloader` works. You can also `open Package.swift` in Xcode.
 
+Build a `.app` bundle (Dock icon and a proper app identity):
+
+```bash
+./scripts/make-app.sh && open .build/Downloader.app
+```
+
 Run tests:
 
 ```bash

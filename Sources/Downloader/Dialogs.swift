@@ -22,7 +22,7 @@ struct DialogHost: View {
                 }
                 .padding(16)
                 .frame(width: 460)
-                .background(RoundedRectangle(cornerRadius: 12).fill(Theme.window))
+                .background(RoundedRectangle(cornerRadius: 12).fill(Theme.card))
                 .shadow(color: .black.opacity(0.18), radius: 30, y: 10)
                 .transition(.opacity.combined(with: .scale(scale: 0.96)))
             }
