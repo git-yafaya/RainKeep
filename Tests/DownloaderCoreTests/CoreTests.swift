@@ -43,3 +43,22 @@ import Testing
     #expect(Format.eta(59.2) == "60 秒")
     #expect(Format.eta(90) == "2 分")
 }
+
+@Test func retryOnlyTransientErrors() {
+    #expect(Retry.isTransient(URLError(.networkConnectionLost)))
+    #expect(Retry.isTransient(URLError(.timedOut)))
+    #expect(!Retry.isTransient(URLError(.badURL)))
+    #expect(!Retry.isTransient(CancellationError()))
+    #expect(Retry.delay(attempt: 1) == .seconds(2))
+    #expect(Retry.delay(attempt: 3) == .seconds(8))
+    #expect(Retry.delay(attempt: 20) == .seconds(60))
+}
+
+@Test func summaryShowsRetryMessage() {
+    var item = DownloadItem(name: "a.zip", size: 2048, received: 1024, status: .downloading)
+    item.message = "网络中断，正在重试"
+    #expect(Format.summary(item) == "网络中断，正在重试 · 1 KB / 2 KB")
+    item.status = .failed
+    item.message = "服务器返回 404"
+    #expect(Format.summary(item) == "服务器返回 404 · 1 KB / 2 KB")
+}

@@ -58,7 +58,7 @@ struct ContentView: View {
             return true
         } isTargeted: { isDropTargeted = $0 }
         .focusEffectDisabled()
-        .onAppear { store.startSimulation() }
+        .onAppear { store.start() }
     }
 }
 

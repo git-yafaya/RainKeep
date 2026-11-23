@@ -5,7 +5,7 @@ import SwiftUI
 @main
 struct DownloaderApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
-    @State private var store = DownloadStore.demo()
+    @State private var store = DownloadStore()
 
     var body: some Scene {
         WindowGroup {

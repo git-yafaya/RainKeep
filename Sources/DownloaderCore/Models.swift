@@ -37,11 +37,11 @@ public enum FileCategory: String, CaseIterable, Identifiable, Sendable {
     }
 }
 
-public enum TaskStatus: Sendable {
+public enum TaskStatus: String, Codable, Sendable {
     case downloading, queued, paused, failed, completed
 }
 
-public struct DownloadItem: Identifiable, Sendable {
+public struct DownloadItem: Identifiable, Codable, Sendable {
     public let id: UUID
     public var name: String
     public var url: URL?
@@ -50,11 +50,17 @@ public struct DownloadItem: Identifiable, Sendable {
     public var status: TaskStatus
     /// 当前速度，字节/秒
     public var speed: Double = 0
+    /// 最终文件路径，添加时按当时的下载位置和分类定下
+    public var destination: URL?
+    /// 失败原因或重试提示，显示在灰色小字里
+    public var message: String?
 
-    public init(id: UUID = UUID(), name: String, url: URL? = nil, size: Int64, received: Int64 = 0, status: TaskStatus = .queued) {
+    public init(id: UUID = UUID(), name: String, url: URL? = nil, destination: URL? = nil,
+                size: Int64, received: Int64 = 0, status: TaskStatus = .queued) {
         self.id = id
         self.name = name
         self.url = url
+        self.destination = destination
         self.size = size
         self.received = received
         self.status = status

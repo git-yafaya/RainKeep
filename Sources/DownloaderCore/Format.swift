@@ -25,11 +25,14 @@ public enum Format {
         let progress = "\(bytes(Double(item.received))) / \(total)"
         switch item.status {
         case .downloading:
+            if let message = item.message { return "\(message) · \(progress)" }
+            // 服务器没给长度时只能显示已下多少
+            guard item.size > 0 else { return "\(bytes(item.speed))/s · 已下 \(bytes(Double(item.received)))" }
             let remaining = Double(item.size - item.received) / max(item.speed, 1)
             return "\(bytes(item.speed))/s · 剩 \(eta(remaining)) · \(progress)"
         case .queued: return "排队中 · \(total)"
         case .paused: return "已暂停 · \(progress)"
-        case .failed: return "连接中断 · \(progress)"
+        case .failed: return "\(item.message ?? "连接中断") · \(progress)"
         case .completed: return "\(total) · \(item.category.displayName)"
         }
     }
