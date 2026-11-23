@@ -55,7 +55,7 @@
 
 | 原型 | SwiftUI |
 |---|---|
-| 侧栏 + 主区 | `NavigationSplitView` |
+| 侧栏 + 主区 | 隐藏标题栏 + 自绘 `HStack`（不用 `NavigationSplitView` 和系统工具栏：浮动侧栏会错位、按钮样式和动画对不上原型） |
 | 同级滑块 | `matchedGeometryEffect` |
 | 跨级淡入淡出 | `.transition(.opacity)` |
 | 居中弹窗 | 自定义 overlay + `.scaleEffect` / `.opacity` 过渡 |
