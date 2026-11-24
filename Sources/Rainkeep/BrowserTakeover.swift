@@ -1,6 +1,6 @@
 // 浏览器接管：启动时注册宿主；设置里一键把扩展放进下载文件夹，打开访达和浏览器扩展页，拖进去由用户自己来
 import AppKit
-import DownloaderCore
+import RainkeepCore
 
 extension DownloadStore {
     private static var support: URL? {
@@ -10,7 +10,7 @@ extension DownloadStore {
     /// 每次启动都注册一遍，App 挪了位置也能自动修好；swift run 启动时没有宿主，跳过
     func installBrowserHost() {
         guard let support = Self.support,
-              let host = Bundle.main.executableURL?.deletingLastPathComponent().appending(path: "DownloaderHost"),
+              let host = Bundle.main.executableURL?.deletingLastPathComponent().appending(path: "RainkeepHost"),
               FileManager.default.isExecutableFile(atPath: host.path) else { return }
         do {
             _ = try BrowserHost.install(hostPath: host, support: support)
@@ -59,8 +59,8 @@ extension DownloadStore {
             }
             // 浏览器第一次启动才建数据目录，打开后再注册一次宿主
             installBrowserHost()
-            showToast(language.pick("打开扩展页右上角的「开发者模式」，把访达里的「下载器扩展」文件夹拖进去",
-                                    "Turn on Developer mode on the extensions page, then drag the “Downloader Extension” folder from Finder onto it"))
+            showToast(language.pick("打开扩展页右上角的「开发者模式」，把访达里的「拾雨扩展」拖进去",
+                                    "Turn on Developer mode on the extensions page, then drag “Rainkeep Extension” from Finder onto it"))
         }
     }
 
@@ -75,11 +75,12 @@ extension DownloadStore {
         return pick.map { (app: $0.1, page: $0.0.extensionsPage) }
     }
 
-    /// 放到下载文件夹的「下载器扩展」；同名文件夹是旧版扩展就覆盖，是别的东西就换个名字
+    /// 放到下载文件夹的「拾雨扩展.bundle」：.bundle 让访达把它显示成一个整体、双击打不开，用户只能整个拖进浏览器，
+    /// 拖不到里面的单个文件；浏览器照样当文件夹加载。同名的是旧版扩展就覆盖，是别的东西就换个名字
     private func placeExtension(from source: URL) throws -> URL {
         let files = FileManager.default
         let root = settings.downloadDir
-        var target = root.appending(path: language.pick("下载器扩展", "Downloader Extension"))
+        var target = root.appending(path: language.pick("拾雨扩展", "Rainkeep Extension") + ".bundle")
         try files.createDirectory(at: root, withIntermediateDirectories: true)
         if files.fileExists(atPath: target.path), !isOurExtension(target) {
             target = root.appending(path: Naming.uniqueName(target.lastPathComponent, taken: takenNames(in: root)))

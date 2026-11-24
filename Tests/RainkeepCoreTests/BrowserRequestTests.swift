@@ -1,7 +1,7 @@
 // 验证浏览器请求的往返编码和 URL scheme 的信任边界。
 import Foundation
 import Testing
-import DownloaderCore
+import RainkeepCore
 
 /// 查询串内的分隔符、Unicode 和可选字段均应原样保留。
 @Test func browserRequestRoundTrip() throws {
@@ -19,12 +19,12 @@ import DownloaderCore
 
 /// 外部调用者不能指定其他协议、歧义目标、危险文件名或多行请求头。
 @Test(arguments: [
-    "https://add?url=https://example.org", "downloader://other?url=https://example.org",
-    "downloader://add?url=file:///tmp/file", "downloader://add?url=data:text/plain,abc",
-    "downloader://add?url=blob:https://example.org/id", "downloader://add?url=https:///file",
-    "downloader://add", "downloader://add?url=https://one.test&url=https://two.test",
-    "downloader://add?url=https://example.org&cookies=a%0D%0AX-Header:1",
-    "downloader://add?url=https://example.org&filename=..%2Foutside",
+    "https://add?url=https://example.org", "rainkeep://other?url=https://example.org",
+    "rainkeep://add?url=file:///tmp/file", "rainkeep://add?url=data:text/plain,abc",
+    "rainkeep://add?url=blob:https://example.org/id", "rainkeep://add?url=https:///file",
+    "rainkeep://add", "rainkeep://add?url=https://one.test&url=https://two.test",
+    "rainkeep://add?url=https://example.org&cookies=a%0D%0AX-Header:1",
+    "rainkeep://add?url=https://example.org&filename=..%2Foutside",
 ])
 func rejectsInvalidBrowserRequests(_ raw: String) throws {
     let url = try #require(URL(string: raw))

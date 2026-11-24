@@ -1,6 +1,6 @@
 // 设计 token：配色（跟随系统 + 三套主题 + 背景图时自适应字色）、字号倍数、动效；数值对应 prototype/index.html
 import AppKit
-import DownloaderCore
+import RainkeepCore
 import SwiftUI
 
 enum ThemeChoice: String, Codable, CaseIterable {

@@ -32,7 +32,7 @@ public struct BrowserRequest: Equatable, Sendable {
     /// 将浏览器字段逐项编码，保留原下载链接的查询参数和片段。
     public static func url(for request: Self) -> URL {
         var parts = URLComponents()
-        parts.scheme = "downloader"
+        parts.scheme = "rainkeep"
         parts.host = "add"
         var items = [URLQueryItem(name: "url", value: request.url.absoluteString)]
         for (name, value) in [("referrer", request.referrer), ("filename", request.filename),
@@ -46,7 +46,7 @@ public struct BrowserRequest: Equatable, Sendable {
     /// 只接受指向 add 的下载命令，拒绝重复参数和无效链接。
     public static func parse(_ url: URL) -> Self? {
         guard let parts = URLComponents(url: url, resolvingAgainstBaseURL: false),
-              parts.scheme?.lowercased() == "downloader", parts.host?.lowercased() == "add",
+              parts.scheme?.lowercased() == "rainkeep", parts.host?.lowercased() == "add",
               parts.user == nil, parts.password == nil, parts.port == nil, parts.path.isEmpty,
               parts.fragment == nil else { return nil }
         var fields: [String: String] = [:]

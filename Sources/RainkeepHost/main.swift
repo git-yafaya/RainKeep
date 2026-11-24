@@ -1,6 +1,6 @@
 // 读取一条 Native Messaging 消息，记录扩展连接或转交下载。
 import Darwin
-import DownloaderCore
+import RainkeepCore
 import Foundation
 
 private struct MessageHeader: Decodable {
@@ -25,7 +25,7 @@ private enum HostError: String, LocalizedError {
     case size = "消息长度无效"
     case payload = "下载参数无效"
     case messageType = "不支持的消息类型"
-    case open = "无法打开下载器 App"
+    case open = "无法打开拾雨 App"
 
     var errorDescription: String? { rawValue }
 }
@@ -57,7 +57,7 @@ private func handleMessage() throws {
     guard (1...1_048_576).contains(length) else { throw HostError.size }
     let body = try readExactly(Int(length))
     let decoder = JSONDecoder()
-    let dryRun = ProcessInfo.processInfo.environment["DOWNLOADER_HOST_DRY_RUN"] == "1"
+    let dryRun = ProcessInfo.processInfo.environment["RAINKEEP_HOST_DRY_RUN"] == "1"
     if let type = try decoder.decode(MessageHeader.self, from: body).type {
         guard type == "hello" else { throw HostError.messageType }
         if !dryRun {
@@ -75,13 +75,13 @@ private func handleMessage() throws {
     // 旧版 App 即使收到 open 事件也不会建任务，先确认包内已注册下载协议。
     let executable = URL(fileURLWithPath: CommandLine.arguments[0]).standardizedFileURL
     let app = executable.deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
-    guard let bundle = Bundle(url: app), bundle.bundleIdentifier == "local.downloader",
+    guard let bundle = Bundle(url: app), bundle.bundleIdentifier == "com.yafaya.rainkeep",
           let types = bundle.object(forInfoDictionaryKey: "CFBundleURLTypes") as? [[String: Any]],
-          types.contains(where: { ($0["CFBundleURLSchemes"] as? [String])?.contains("downloader") == true })
+          types.contains(where: { ($0["CFBundleURLSchemes"] as? [String])?.contains("rainkeep") == true })
     else { throw HostError.open }
     let process = Process()
     process.executableURL = URL(fileURLWithPath: "/usr/bin/open")
-    // 指定下载器，避免把含 Cookie 的 URL 交给其他同 scheme 应用。
+    // 指定拾雨 App，避免把含 Cookie 的 URL 交给其他同 scheme 应用。
     process.arguments = ["-g", "-a", app.path, url.absoluteString]
     process.standardOutput = FileHandle.nullDevice
     process.standardError = FileHandle.nullDevice

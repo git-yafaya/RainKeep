@@ -1,4 +1,4 @@
-import DownloaderCore
+import RainkeepCore
 import Foundation
 import Testing
 
@@ -20,19 +20,19 @@ private func withSupportDirectory(_ body: (URL) throws -> Void) throws {
         for profile in profiles {
             try manager.createDirectory(at: profile, withIntermediateDirectories: true)
         }
-        let host = support.appending(path: "下载器.app/Contents/MacOS/DownloaderHost")
+        let host = support.appending(path: "拾雨.app/Contents/MacOS/RainkeepHost")
         let installed = try BrowserHost.install(hostPath: host, support: support)
         #expect(installed.map(\.name) == ["Chrome", "Arc"])
         for path in ["Microsoft Edge", "BraveSoftware/Brave-Browser"] {
             #expect(!manager.fileExists(atPath: support.appending(path: path).path))
         }
-        let files = profiles.map { $0.appending(path: "NativeMessagingHosts/local.downloader.json") }
+        let files = profiles.map { $0.appending(path: "NativeMessagingHosts/com.yafaya.rainkeep.json") }
         let oldDate = Date(timeIntervalSince1970: 1_000_000)
         for file in files {
             let object = try JSONSerialization.jsonObject(with: Data(contentsOf: file))
             let manifest = try #require(object as? [String: Any])
-            #expect(manifest["name"] as? String == "local.downloader")
-            #expect(manifest["description"] as? String == "下载器浏览器宿主")
+            #expect(manifest["name"] as? String == "com.yafaya.rainkeep")
+            #expect(manifest["description"] as? String == "拾雨浏览器宿主")
             #expect(manifest["type"] as? String == "stdio")
             #expect(manifest["path"] as? String == host.path)
             #expect(manifest["allowed_origins"] as? [String] == ["chrome-extension://fhfcdggihhigpphnfagldelhdcehnkoa/"])
@@ -43,7 +43,7 @@ private func withSupportDirectory(_ body: (URL) throws -> Void) throws {
         for file in files {
             #expect(try file.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate == oldDate)
         }
-        let moved = support.appending(path: "Moved/DownloaderHost")
+        let moved = support.appending(path: "Moved/RainkeepHost")
         #expect(try BrowserHost.install(hostPath: moved, support: support) == installed)
         for file in files {
             let object = try JSONSerialization.jsonObject(with: Data(contentsOf: file))
@@ -54,7 +54,7 @@ private func withSupportDirectory(_ body: (URL) throws -> Void) throws {
 
 @Test func installsNoHostsWithoutBrowserData() throws {
     try withSupportDirectory { support in
-        let installed = try BrowserHost.install(hostPath: support.appending(path: "DownloaderHost"), support: support)
+        let installed = try BrowserHost.install(hostPath: support.appending(path: "RainkeepHost"), support: support)
         let contents = try FileManager.default.contentsOfDirectory(atPath: support.path)
         #expect(installed.isEmpty)
         #expect(contents.isEmpty)
@@ -63,7 +63,7 @@ private func withSupportDirectory(_ body: (URL) throws -> Void) throws {
 
 @Test func extensionLinkLoadsLatestRecordAndReportsCorruption() throws {
     try withSupportDirectory { support in
-        let file = support.appending(path: "Downloader/extension.json")
+        let file = support.appending(path: "Rainkeep/extension.json")
         #expect(ExtensionLink.file(in: support) == file)
         #expect(try ExtensionLink.load(from: support) == nil)
         for browser in ["Google Chrome", nil] {

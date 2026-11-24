@@ -1,6 +1,6 @@
 // 菜单栏小图标和下拉面板（仿 Vorssaint）：顶部水滴图标、页签、小标题、圆角卡片、底部两个按钮
 import AppKit
-import DownloaderCore
+import RainkeepCore
 import SwiftUI
 
 /// 应用图标里的线稿水滴，做成模板图跟随菜单栏深浅
@@ -65,8 +65,8 @@ struct MenuBarPanel: View {
                 .padding(.horizontal, 2)
             card
             HStack(spacing: 8) {
-                FooterButton(systemName: "macwindow", title: language.pick("打开下载器", "Open Downloader")) {
-                    openWindow(id: DownloaderApp.mainWindow)
+                FooterButton(systemName: "macwindow", title: language.pick("打开拾雨", "Open Rainkeep")) {
+                    openWindow(id: RainkeepApp.mainWindow)
                     NSApp.activate()
                 }
                 FooterButton(systemName: "power", title: language.pick("退出", "Quit")) {

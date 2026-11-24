@@ -1,0 +1,11 @@
+{
+  "name": {
+    "message": "Rainkeep"
+  },
+  "description": {
+    "message": "Hands web downloads to Rainkeep on this Mac."
+  },
+  "takeOver": {
+    "message": "Take over downloads"
+  }
+}

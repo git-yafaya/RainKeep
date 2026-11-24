@@ -1,14 +1,14 @@
 // swift-tools-version: 6.0
-// 工程结构：DownloaderCore 放不依赖界面的逻辑（以后的下载引擎也放这里），Downloader 是 SwiftUI 应用
+// 工程结构：RainkeepCore 放不依赖界面的逻辑，Rainkeep 是 SwiftUI 应用，RainkeepHost 是浏览器扩展的本机宿主
 import PackageDescription
 
 let package = Package(
-    name: "Downloader",
+    name: "Rainkeep",
     platforms: [.macOS(.v14)],
     targets: [
-        .target(name: "DownloaderCore"),
-        .executableTarget(name: "Downloader", dependencies: ["DownloaderCore"]),
-        .executableTarget(name: "DownloaderHost", dependencies: ["DownloaderCore"]),
-        .testTarget(name: "DownloaderCoreTests", dependencies: ["DownloaderCore"]),
+        .target(name: "RainkeepCore"),
+        .executableTarget(name: "Rainkeep", dependencies: ["RainkeepCore"]),
+        .executableTarget(name: "RainkeepHost", dependencies: ["RainkeepCore"]),
+        .testTarget(name: "RainkeepCoreTests", dependencies: ["RainkeepCore"]),
     ]
 )

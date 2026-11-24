@@ -1,7 +1,7 @@
-// DownloaderCore 的分类、命名、链接解析、调度测试
+// RainkeepCore 的分类、命名、链接解析、调度测试
 import Foundation
 import Testing
-@testable import DownloaderCore
+@testable import RainkeepCore
 
 @Test func categoryByExtension() {
     #expect(FileCategory.of(fileName: "a.MP4") == .video)

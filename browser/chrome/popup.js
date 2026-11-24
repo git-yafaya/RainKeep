@@ -17,3 +17,5 @@ toggle.addEventListener("change", async () => {
     toggle.disabled = false;
   }
 });
+
+document.getElementById("label").textContent = chrome.i18n.getMessage("takeOver");

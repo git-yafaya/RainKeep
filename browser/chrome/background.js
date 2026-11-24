@@ -1,13 +1,13 @@
 // 接管网页下载，宿主失败时把下载交回原浏览器。
 const browserRetries = new Map();
-const hostName = "local.downloader";
+const hostName = "com.yafaya.rainkeep";
 
 async function hello() {
   try {
     const reply = await chrome.runtime.sendNativeMessage(hostName, { type: "hello" });
     if (reply?.ok !== true) throw new Error(reply?.error || "宿主未确认连接");
   } catch (error) {
-    console.error("下载器宿主连接失败。", error.message);
+    console.error("拾雨宿主连接失败。", error.message);
   }
 }
 
@@ -61,7 +61,7 @@ async function takeOver(item) {
     });
     if (response?.ok !== true) throw new Error(response?.error || "宿主未确认接管");
   } catch (error) {
-    console.error("下载器接管失败，交回浏览器。", error.message);
+    console.error("拾雨接管失败，交回浏览器。", error.message);
     await returnToBrowser(item.url);
   }
 }

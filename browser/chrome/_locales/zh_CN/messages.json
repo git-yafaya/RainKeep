@@ -1,0 +1,11 @@
+{
+  "name": {
+    "message": "拾雨"
+  },
+  "description": {
+    "message": "将网页下载交给本机的拾雨。"
+  },
+  "takeOver": {
+    "message": "接管下载"
+  }
+}

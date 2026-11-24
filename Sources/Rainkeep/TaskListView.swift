@@ -1,10 +1,10 @@
 // 任务列表与任务行：文件名 → 进度条 → 灰色小字，操作按钮悬停才出现；行可拖到侧栏分类，右键可移到分类
-import DownloaderCore
+import RainkeepCore
 import SwiftUI
 
 /// 任务行拖拽时带的内容：用私有 scheme 的 URL，侧栏认得出，主窗口的拖链接添加会忽略它
 enum TaskDrag {
-    static let scheme = "downloader-task"
+    static let scheme = "rainkeep-task"
 
     static func url(for id: UUID) -> URL { URL(string: "\(scheme):\(id.uuidString)")! }
 

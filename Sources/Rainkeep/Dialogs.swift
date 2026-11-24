@@ -1,7 +1,7 @@
 // 居中弹窗：添加下载、设置；以及设置里用的自绘下拉
 import AppKit
 import UniformTypeIdentifiers
-import DownloaderCore
+import RainkeepCore
 import SwiftUI
 
 struct DialogHost: View {

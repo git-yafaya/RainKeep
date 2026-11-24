@@ -1,10 +1,10 @@
-# 下载器
+# 拾雨
 
 [English](README_en.md)
 
-一个 macOS 下载器（SwiftUI）：多线程分段、断点续传，能接管 Chrome 系浏览器的下载，支持自定义分类并学习你的归类习惯。
+拾雨（Rainkeep）是一个 macOS 下载器（SwiftUI）：多线程分段、断点续传，能接管 Chrome 系浏览器的下载，支持自定义分类并学习你的归类习惯。
 
-已经能真正下载：服务器支持时分段并发，暂停或断网后从断点续传（网络类错误自动重试），按类型放进「下载」下的子文件夹。任务列表和设置存在 `~/Library/Application Support/Downloader/state.json`，重启后自动续传。
+已经能真正下载：服务器支持时分段并发，暂停或断网后从断点续传（网络类错误自动重试），按类型放进「下载」下的子文件夹。任务列表和设置存在 `~/Library/Application Support/Rainkeep/state.json`，重启后自动续传。
 
 ## 前置依赖
 
@@ -14,15 +14,15 @@
 ## 快速开始
 
 ```bash
-DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift run Downloader
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift run Rainkeep
 ```
 
-已经用 `sudo xcode-select -s /Applications/Xcode.app` 切换过的，直接 `swift run Downloader` 即可。也可以 `open Package.swift` 用 Xcode 打开。
+已经用 `sudo xcode-select -s /Applications/Xcode.app` 切换过的，直接 `swift run Rainkeep` 即可。也可以 `open Package.swift` 用 Xcode 打开。
 
 打包成 `.app`（有 Dock 图标和正式的应用身份）：
 
 ```bash
-./scripts/make-app.sh && open .build/Downloader.app
+./scripts/make-app.sh && open .build/Rainkeep.app
 ```
 
 运行测试：
@@ -44,17 +44,21 @@ DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test
 
 支持 Chrome、Edge、Arc、Brave。用 `./scripts/make-app.sh` 打包的 App 启动时会自动注册浏览器宿主。
 
-1. 设置 → 接管浏览器下载 → 接管：App 把扩展放进下载文件夹的「下载器扩展」，并打开访达和浏览器扩展页
-2. 在扩展页右上角打开「开发者模式」，把「下载器扩展」文件夹拖进去
-3. 设置里显示「已连接」就好了。装好后别删这个文件夹，浏览器是从这里加载扩展的
+1. 设置 → 接管浏览器下载 → 接管：App 把扩展放进下载文件夹的「拾雨扩展」，并打开访达和浏览器扩展页
+2. 在扩展页右上角打开「开发者模式」，把「拾雨扩展」整个拖进去（它在访达里显示为一个文件）
+3. 设置里显示「已连接」就好了。装好后别删它，浏览器是从这里加载扩展的
 
 细节见 [browser/chrome/README.md](browser/chrome/README.md)。
 
 ## 目录
 
-- `Sources/DownloaderCore`：不依赖界面的逻辑（下载引擎、重试策略、分类、命名、调度、格式化）
-- `Sources/Downloader`：SwiftUI 界面
-- `Sources/DownloaderHost`、`browser/chrome`：浏览器扩展和本机宿主
+- `Sources/RainkeepCore`：不依赖界面的逻辑（下载引擎、重试策略、分类、命名、调度、格式化）
+- `Sources/Rainkeep`：SwiftUI 界面
+- `Sources/RainkeepHost`、`browser/chrome`：浏览器扩展和本机宿主
 - `prototype/index.html`：界面的 HTML 原型，浏览器直接打开
 - `docs/UI.md`：界面规则
 - `assets/AppIcon.svg`：应用图标源文件；改完跑 `./scripts/make-icon.sh` 重新生成 `AppIcon.icns`
+
+## 许可证
+
+[MIT](LICENSE) © 2026 yafaya

@@ -1,7 +1,7 @@
 // 本地协议模拟 HTTP 响应，每个用例独占 URL、会话和临时目录。
 import Foundation
 import Testing
-@testable import DownloaderCore
+@testable import RainkeepCore
 
 private struct Reply {
     var body: Data

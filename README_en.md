@@ -1,10 +1,10 @@
-# Downloader
+# Rainkeep
 
 [中文](README.md)
 
-A macOS download manager (SwiftUI): multi-connection segmented downloads, resume support, takes over downloads from Chrome-family browsers, and custom categories that learn how you sort.
+Rainkeep (拾雨) is a macOS download manager (SwiftUI): multi-connection segmented downloads, resume support, takes over downloads from Chrome-family browsers, and custom categories that learn how you sort.
 
-It downloads real files: segmented in parallel when the server allows it, resumes from where it stopped after a pause or a network drop (network errors are retried automatically), and sorts files into subfolders of Downloads by type. Tasks and settings are saved to `~/Library/Application Support/Downloader/state.json` and resume after a restart.
+It downloads real files: segmented in parallel when the server allows it, resumes from where it stopped after a pause or a network drop (network errors are retried automatically), and sorts files into subfolders of Downloads by type. Tasks and settings are saved to `~/Library/Application Support/Rainkeep/state.json` and resume after a restart.
 
 ## Requirements
 
@@ -14,15 +14,15 @@ It downloads real files: segmented in parallel when the server allows it, resume
 ## Quick start
 
 ```bash
-DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift run Downloader
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift run Rainkeep
 ```
 
-If you have switched with `sudo xcode-select -s /Applications/Xcode.app`, plain `swift run Downloader` works. You can also `open Package.swift` in Xcode.
+If you have switched with `sudo xcode-select -s /Applications/Xcode.app`, plain `swift run Rainkeep` works. You can also `open Package.swift` in Xcode.
 
 Build a `.app` bundle (Dock icon and a proper app identity):
 
 ```bash
-./scripts/make-app.sh && open .build/Downloader.app
+./scripts/make-app.sh && open .build/Rainkeep.app
 ```
 
 Run tests:
@@ -44,17 +44,21 @@ DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test
 
 Works with Chrome, Edge, Arc and Brave. The app built with `./scripts/make-app.sh` registers the browser host on every launch.
 
-1. Settings → Take over browser downloads → Connect: the app puts the extension into "Downloader Extension" in your download folder and opens Finder and the browser's extensions page
-2. Turn on Developer mode at the top right of the extensions page and drag the "Downloader Extension" folder onto it
-3. Settings shows "Connected" when it's done. Keep the folder afterwards; the browser loads the extension from it
+1. Settings → Take over browser downloads → Connect: the app puts the extension into "Rainkeep Extension" in your download folder and opens Finder and the browser's extensions page
+2. Turn on Developer mode at the top right of the extensions page and drag "Rainkeep Extension" (Finder shows it as a single file) onto it
+3. Settings shows "Connected" when it's done. Keep it afterwards; the browser loads the extension from it
 
 Details in [browser/chrome/README.md](browser/chrome/README.md) (Chinese).
 
 ## Layout
 
-- `Sources/DownloaderCore`: UI-free logic (download engine, retry policy, categories, naming, scheduling, formatting)
-- `Sources/DownloaderHost`, `browser/chrome`: browser extension and native host
-- `Sources/Downloader`: SwiftUI interface
+- `Sources/RainkeepCore`: UI-free logic (download engine, retry policy, categories, naming, scheduling, formatting)
+- `Sources/RainkeepHost`, `browser/chrome`: browser extension and native host
+- `Sources/Rainkeep`: SwiftUI interface
 - `prototype/index.html`: HTML prototype of the interface, open it in a browser
 - `docs/UI.md`: interface rules (Chinese)
 - `assets/AppIcon.svg`: app icon source; after editing, run `./scripts/make-icon.sh` to regenerate `AppIcon.icns`
+
+## License
+
+[MIT](LICENSE) © 2026 yafaya

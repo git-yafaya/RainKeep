@@ -1,12 +1,14 @@
 {
   "manifest_version": 3,
-  "name": "下载器",
+  "name": "__MSG_name__",
+  "author": "yafaya",
+  "default_locale": "en",
   "version": "1.0.0",
-  "description": "将网页下载交给本机下载器。",
+  "description": "__MSG_description__",
   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAvkf7v9oJtzFejIAwnllUskvydyDpNHoGBAJeolWosByU1ZFq+/VG5L4X0yrqZ6h+gA6ZPCTdxtQowxFTt7iTZp5mjG3Ol/6Odx562YfbwtNcg1cArpc392Lm3xWSBL+lV0tzs3+300RoL1WLEEyC/2j+aZ9qCtnF4kftJV7HVj84Nf3Q2XDJqQnbtg403DqUJLL50f9LelLiMFGoYLgVsA49I9qmy6vcTFUf8cY0yLRKJcSjmJ83k14UycIizst/3hnleGayFLxkWNWQM40H05OBHnxQ7bdid1ZFoQMKOW/h4GL3ZOyeC/0bCl1nL4ODrsFCylyxnaabWNYsobfzRwIDAQAB",
   "permissions": ["downloads", "cookies", "storage", "nativeMessaging"],
   "host_permissions": ["http://*/*", "https://*/*"],
   "incognito": "split",
   "background": { "service_worker": "background.js" },
-  "action": { "default_popup": "popup.html", "default_title": "下载器" }
+  "action": { "default_popup": "popup.html", "default_title": "__MSG_name__" }
 }

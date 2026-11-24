@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>下载器原型</title>
-<!-- 下载器界面原型：用模拟数据跑一遍外观和交互，定稿后照此搬到 SwiftUI -->
+<title>拾雨原型</title>
+<!-- 拾雨界面原型：用模拟数据跑一遍外观和交互，定稿后照此搬到 SwiftUI -->
 <style>
   :root {
     --page: #e9e9ed;
@@ -621,7 +621,7 @@ const MB = 1024 ** 2;
 const TOAST_MS = 1800;
 const SIDEBAR_MIN = 160;
 const SIDEBAR_MAX = 340;
-const SIDEBAR_KEY = 'downloader.sidebarWidth';
+const SIDEBAR_KEY = 'rainkeep.sidebarWidth';
 const FADE_MS = 220;         // 侧栏跨级切换的淡入淡出时长
 const STAGGER_CAP = 12;     // 列表入场动画最多错开 12 行，后面的同时出现
 const MAX_DEPTH = 3;        // 自定义分类最多三级
@@ -656,9 +656,9 @@ const STRINGS = {
     newSub: '新建子分类', rename: '重命名', deleteGroup: '删除分类', moveTo: '移到分类', noGroup: '不放进分类',
     untitled: '新分类', movedTo: (name) => `已移到「${name}」`, learned: (name) => `已按习惯放进「${name}」`,
     deleted: (name) => `已删除「${name}」，里面的任务保留`,
-    browserTip: '打开扩展页右上角的「开发者模式」，把访达里的「下载器扩展」文件夹拖进去',
+    browserTip: '打开扩展页右上角的「开发者模式」，把访达里的「拾雨扩展」拖进去',
     connected: (browser) => `已连接 ${browser}`, notConnected: '未连接',
-    panelActive: '进行中', panelDone: '最近完成', panelOpen: '打开下载器', panelQuit: '退出',
+    panelActive: '进行中', panelDone: '最近完成', panelOpen: '打开拾雨', panelQuit: '退出',
     panelEmpty: '没有进行中的下载', panelEmptyDone: '还没有完成的下载',
     panelTitle: (n, speed) => (n ? `进行中 · ${n} 个 · ${speed}/s` : '进行中'),
     quitTip: '原型里不会真的退出',
@@ -685,9 +685,9 @@ const STRINGS = {
     newSub: 'New Subcategory', rename: 'Rename', deleteGroup: 'Delete Category', moveTo: 'Move to', noGroup: 'No category',
     untitled: 'New Category', movedTo: (name) => `Moved to “${name}”`, learned: (name) => `Sorted into “${name}” by habit`,
     deleted: (name) => `Deleted “${name}”; its tasks were kept`,
-    browserTip: 'Turn on Developer mode on the extensions page, then drag the “Downloader Extension” folder from Finder onto it',
+    browserTip: 'Turn on Developer mode on the extensions page, then drag “Rainkeep Extension” from Finder onto it',
     connected: (browser) => `Connected to ${browser}`, notConnected: 'Not connected',
-    panelActive: 'Active', panelDone: 'Recently done', panelOpen: 'Open Downloader', panelQuit: 'Quit',
+    panelActive: 'Active', panelDone: 'Recently done', panelOpen: 'Open Rainkeep', panelQuit: 'Quit',
     panelEmpty: 'Nothing downloading', panelEmptyDone: 'Nothing finished yet',
     panelTitle: (n, speed) => (n ? `Active · ${n} · ${speed}/s` : 'Active'),
     quitTip: 'The prototype does not really quit',
@@ -810,7 +810,7 @@ function makeTask(name, size, done = 0, status = 'queued', url = '', group = nul
   };
 }
 
-// 重名时加 " (1)"，和真实下载器落盘规则一致
+// 重名时加 " (1)"，和 App 落盘规则一致
 function uniqueName(name) {
   const taken = new Set(tasks.map((x) => x.name));
   if (!taken.has(name)) return name;
@@ -1599,7 +1599,7 @@ document.addEventListener('mousedown', (e) => { if (!$('ctx').contains(e.target)
 
 /* ---------- 拖任务到分类 ---------- */
 
-const TASK_MIME = 'application/x-downloader-task';
+const TASK_MIME = 'application/x-rainkeep-task';
 
 $('list').addEventListener('dragstart', (e) => {
   const row = e.target.closest('.row');

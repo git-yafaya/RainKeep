@@ -1,6 +1,6 @@
 // 界面状态与任务列表：调度下载引擎、网络出错自动重试、自定义分类、外观，任务和设置存盘
 import AppKit
-import DownloaderCore
+import RainkeepCore
 import Foundation
 import Network
 import Observation
@@ -226,7 +226,7 @@ final class DownloadStore {
         add(urls.map { NewTask(url: $0) })
     }
 
-    /// 浏览器扩展经 downloader://add 交来的下载；链接不合法直接拒绝
+    /// 浏览器扩展经 rainkeep://add 交来的下载；链接不合法直接拒绝
     func handle(_ url: URL) {
         guard let request = BrowserRequest.parse(url) else {
             showToast(language.pick("无法识别的下载请求", "Unrecognized download request"))
@@ -591,7 +591,7 @@ final class DownloadStore {
     private static func defaultStateFile() -> URL? {
         guard let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
         else { return nil }
-        return support.appending(path: "Downloader/state.json")
+        return support.appending(path: "Rainkeep/state.json")
     }
 
     /// 只在任务增删、状态变化、改设置时存；进度以引擎的 .part.json 为准，不用每次都存

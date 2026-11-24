@@ -20,13 +20,13 @@ public struct ChromiumBrowser: Sendable, Equatable {
 }
 
 public enum BrowserHost {
-    public static let name = "local.downloader"
+    public static let name = "com.yafaya.rainkeep"
     public static let extensionID = "fhfcdggihhigpphnfagldelhdcehnkoa"
 
     /// 给装过的浏览器写宿主清单，内容没变不重写；返回写好的浏览器
     public static func install(hostPath: URL, support: URL) throws -> [ChromiumBrowser] {
         let manifest = try JSONSerialization.data(withJSONObject: [
-            "name": name, "description": "下载器浏览器宿主", "path": hostPath.path,
+            "name": name, "description": "拾雨浏览器宿主", "path": hostPath.path,
             "type": "stdio", "allowed_origins": ["chrome-extension://\(extensionID)/"],
         ], options: [.sortedKeys, .withoutEscapingSlashes])
 
@@ -63,7 +63,7 @@ public struct ExtensionLink: Codable, Sendable, Equatable {
     }
 
     public static func file(in support: URL) -> URL {
-        support.appending(path: "Downloader/extension.json")
+        support.appending(path: "Rainkeep/extension.json")
     }
 
     public static func load(from support: URL) throws -> ExtensionLink? {

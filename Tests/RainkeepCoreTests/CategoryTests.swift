@@ -2,7 +2,7 @@
 import CoreGraphics
 import Foundation
 import Testing
-@testable import DownloaderCore
+@testable import RainkeepCore
 
 // #expect / #require 宏里不能调 mutating 方法，所以先存结果再断言
 @Test func treeLimitsDepthAndRemovesSubtree() throws {

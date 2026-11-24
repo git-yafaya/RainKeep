@@ -1,6 +1,6 @@
 // 侧栏：「全部」+ 类型二级；自定义分类和「全部」并列，最多三级；竖线 + 圆角折钩表达层级
 // 同级切换滑块，跨级淡入淡出；分类可右键新建/改名/删除，任务行拖上来就归类
-import DownloaderCore
+import RainkeepCore
 import SwiftUI
 
 struct SidebarView: View {

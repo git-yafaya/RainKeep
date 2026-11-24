@@ -1,9 +1,9 @@
-// 应用入口：主窗口、菜单栏图标面板、菜单快捷键（⌘N 添加、⌘, 设置），以及浏览器扩展发来的 downloader:// 链接
+// 应用入口：主窗口、菜单栏图标面板、菜单快捷键（⌘N 添加、⌘, 设置），以及浏览器扩展发来的 rainkeep:// 链接
 import AppKit
 import SwiftUI
 
 @main
-struct DownloaderApp: App {
+struct RainkeepApp: App {
     static let mainWindow = "main"
 
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
@@ -12,7 +12,7 @@ struct DownloaderApp: App {
     // 需要跟设置变的部分拆进下面各自的 Commands / Scene，场景闭包返回值也擦成 AnyView
     var body: some Scene {
         let store = appDelegate.store
-        Window(store.launchLanguage.pick("下载器", "Downloader"), id: Self.mainWindow) {
+        Window(store.launchLanguage.pick("拾雨", "Rainkeep"), id: Self.mainWindow) {
             AnyView(ContentView()
                 .modifier(Themed())
                 .environment(store)
@@ -57,7 +57,7 @@ private struct MenuBarScene: Scene {
     }
 }
 
-/// 持有任务仓库，这样窗口关了、只剩菜单栏图标时下载照常跑；也负责接收 downloader:// 链接
+/// 持有任务仓库，这样窗口关了、只剩菜单栏图标时下载照常跑；也负责接收 rainkeep:// 链接
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
     let store = DownloadStore()

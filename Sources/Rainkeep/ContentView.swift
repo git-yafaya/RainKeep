@@ -1,7 +1,7 @@
 // 主窗口：自绘侧栏（可拖宽）+ 顶栏 + 任务列表，外加背景图、弹窗、提示和拖拽添加
 // 不用系统分栏和工具栏：它们的浮动侧栏、按钮样式和动画都跟原型对不上
 import AppKit
-import DownloaderCore
+import RainkeepCore
 import SwiftUI
 
 enum Layout {
