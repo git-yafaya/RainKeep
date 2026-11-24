@@ -1,6 +1,11 @@
-// 读取一条 Native Messaging 消息，用 URL scheme 交给下载器并回报结果。
+// 读取一条 Native Messaging 消息，记录扩展连接或转交下载。
+import Darwin
 import DownloaderCore
 import Foundation
+
+private struct MessageHeader: Decodable {
+    let type: String?
+}
 
 private struct Payload: Decodable {
     let url: URL
@@ -19,6 +24,7 @@ private enum HostError: String, LocalizedError {
     case truncated = "消息未读完整"
     case size = "消息长度无效"
     case payload = "下载参数无效"
+    case messageType = "不支持的消息类型"
     case open = "无法打开下载器 App"
 
     var errorDescription: String? { rawValue }
@@ -35,16 +41,37 @@ private func readExactly(_ count: Int) throws -> Data {
     return data
 }
 
-/// DOWNLOADER_HOST_DRY_RUN=1 仅验证消息和 URL 编码，跳过启动 App。
+private func parentBrowser() -> String? {
+    // Swift 无法导入 PROC_PIDPATHINFO_MAXSIZE，沿用 SDK 的定义。
+    var buffer = [CChar](repeating: 0, count: 4 * Int(MAXPATHLEN))
+    let length = proc_pidpath(getppid(), &buffer, UInt32(buffer.count))
+    guard length > 0 else { return nil }
+    let path = FileManager.default.string(withFileSystemRepresentation: buffer, length: Int(length))
+    let app = URL(fileURLWithPath: path).pathComponents.first { $0.hasSuffix(".app") }
+    return app.map { String($0.dropLast(4)) }
+}
+
 private func handleMessage() throws {
     let prefix = try readExactly(4)
     let length = prefix.withUnsafeBytes { UInt32(littleEndian: $0.loadUnaligned(as: UInt32.self)) }
     guard (1...1_048_576).contains(length) else { throw HostError.size }
-    let payload = try JSONDecoder().decode(Payload.self, from: readExactly(Int(length)))
+    let body = try readExactly(Int(length))
+    let decoder = JSONDecoder()
+    let dryRun = ProcessInfo.processInfo.environment["DOWNLOADER_HOST_DRY_RUN"] == "1"
+    if let type = try decoder.decode(MessageHeader.self, from: body).type {
+        guard type == "hello" else { throw HostError.messageType }
+        if !dryRun {
+            let support = try FileManager.default.url(for: .applicationSupportDirectory, in: .userDomainMask,
+                                                      appropriateFor: nil, create: false)
+            try ExtensionLink(browser: parentBrowser(), seen: Date()).save(to: support)
+        }
+        return
+    }
+    let payload = try decoder.decode(Payload.self, from: body)
     guard let request = BrowserRequest(url: payload.url, referrer: payload.referrer, filename: payload.filename,
                                        cookies: payload.cookies, userAgent: payload.userAgent) else { throw HostError.payload }
     let url = BrowserRequest.url(for: request)
-    if ProcessInfo.processInfo.environment["DOWNLOADER_HOST_DRY_RUN"] == "1" { return }
+    if dryRun { return }
     // 旧版 App 即使收到 open 事件也不会建任务，先确认包内已注册下载协议。
     let executable = URL(fileURLWithPath: CommandLine.arguments[0]).standardizedFileURL
     let app = executable.deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()

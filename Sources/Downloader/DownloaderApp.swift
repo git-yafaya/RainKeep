@@ -68,6 +68,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // 浏览器用 open -g 在后台拉起，不抢焦点
         if !launchedByURL { NSApp.activate() }
         store.start()
+        store.installBrowserHost()
     }
 
     private var launchedByURL = false

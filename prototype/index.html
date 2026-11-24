@@ -336,6 +336,7 @@
   }
   .setting:last-child { border-bottom: 0; }
   .setting .value { display: flex; align-items: center; gap: 8px; min-width: 0; }
+  .setting .status { color: var(--text-2); font-size: var(--fs-xs); white-space: nowrap; }
   .setting .path { color: var(--text-2); font: var(--fs-xs) ui-monospace, "SF Mono", Menlo, monospace; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
   .switch {
@@ -561,7 +562,10 @@
         </div>
         <div class="setting">
           <span data-i18n="browser"></span>
-          <button class="btn small" id="browserHelp" data-i18n="howToInstall"></button>
+          <div class="value">
+            <span class="status" id="browserStatus"></span>
+            <button class="btn small" id="browserConnect" data-i18n="connect"></button>
+          </div>
         </div>
       </div>
       <div class="settings" data-page="appearance" hidden>
@@ -638,7 +642,7 @@ const STRINGS = {
     noLinks: '没有识别到 http/https 链接', noLinksDrop: '没有识别到链接', added: (n) => `已添加 ${n} 个任务`,
     general: '常规', appearance: '外观', downloadDir: '下载位置', change: '更改…',
     maxActive: '同时下载', threads: '每个任务分段', classify: '按类型放进子文件夹', learn: '学习我的分类习惯',
-    notify: '完成后通知', menuBar: '在菜单栏显示', browser: '接管 Chrome 下载', howToInstall: '安装说明',
+    notify: '完成后通知', menuBar: '在菜单栏显示', browser: '接管浏览器下载', connect: '接管',
     theme: '主题', fontSize: '字号', background: '背景图片', language: '语言', choose: '选择…', remove: '移除',
     themeSystem: '跟随系统', themeRainforest: '热带雨林', themeOrange: '初夏橙皮', themeGardenia: '雨后栀子',
     langAuto: '跟随系统',
@@ -652,7 +656,8 @@ const STRINGS = {
     newSub: '新建子分类', rename: '重命名', deleteGroup: '删除分类', moveTo: '移到分类', noGroup: '不放进分类',
     untitled: '新分类', movedTo: (name) => `已移到「${name}」`, learned: (name) => `已按习惯放进「${name}」`,
     deleted: (name) => `已删除「${name}」，里面的任务保留`,
-    browserTip: '在 Chrome 打开 chrome://extensions → 开发者模式 → 加载 browser/chrome',
+    browserTip: '打开扩展页右上角的「开发者模式」，把访达里的「下载器扩展」文件夹拖进去',
+    connected: (browser) => `已连接 ${browser}`, notConnected: '未连接',
     panelActive: '进行中', panelDone: '最近完成', panelOpen: '打开下载器', panelQuit: '退出',
     panelEmpty: '没有进行中的下载', panelEmptyDone: '还没有完成的下载',
     panelTitle: (n, speed) => (n ? `进行中 · ${n} 个 · ${speed}/s` : '进行中'),
@@ -666,7 +671,7 @@ const STRINGS = {
     noLinks: 'No http/https links found', noLinksDrop: 'No links found', added: (n) => `Added ${n} ${n === 1 ? 'task' : 'tasks'}`,
     general: 'General', appearance: 'Appearance', downloadDir: 'Save to', change: 'Change…',
     maxActive: 'Simultaneous', threads: 'Segments per task', classify: 'Sort into folders by type', learn: 'Learn my sorting habits',
-    notify: 'Notify when done', menuBar: 'Show in menu bar', browser: 'Take over Chrome downloads', howToInstall: 'How to install',
+    notify: 'Notify when done', menuBar: 'Show in menu bar', browser: 'Take over browser downloads', connect: 'Connect',
     theme: 'Theme', fontSize: 'Text size', background: 'Background image', language: 'Language', choose: 'Choose…', remove: 'Remove',
     themeSystem: 'System', themeRainforest: 'Rainforest', themeOrange: 'Orange Peel', themeGardenia: 'Gardenia',
     langAuto: 'System',
@@ -680,7 +685,8 @@ const STRINGS = {
     newSub: 'New Subcategory', rename: 'Rename', deleteGroup: 'Delete Category', moveTo: 'Move to', noGroup: 'No category',
     untitled: 'New Category', movedTo: (name) => `Moved to “${name}”`, learned: (name) => `Sorted into “${name}” by habit`,
     deleted: (name) => `Deleted “${name}”; its tasks were kept`,
-    browserTip: 'In Chrome open chrome://extensions → Developer mode → Load browser/chrome',
+    browserTip: 'Turn on Developer mode on the extensions page, then drag the “Downloader Extension” folder from Finder onto it',
+    connected: (browser) => `Connected to ${browser}`, notConnected: 'Not connected',
     panelActive: 'Active', panelDone: 'Recently done', panelOpen: 'Open Downloader', panelQuit: 'Quit',
     panelEmpty: 'Nothing downloading', panelEmptyDone: 'Nothing finished yet',
     panelTitle: (n, speed) => (n ? `Active · ${n} · ${speed}/s` : 'Active'),
@@ -749,6 +755,9 @@ function t(key, ...args) {
 }
 
 /* ---------- 数据 ---------- */
+
+/* 扩展连上的浏览器，null 表示未连接 */
+let linkedBrowser = null;
 
 // 按扩展名判断类型；.tar.gz 取最后一段 gz，同样归压缩包
 function typeOf(name) {
@@ -998,6 +1007,7 @@ function translateStatic() {
   for (const el of document.querySelectorAll('[data-i18n-placeholder]')) el.placeholder = t(el.dataset.i18nPlaceholder);
   for (const el of document.querySelectorAll('[data-i18n-label]')) el.setAttribute('aria-label', t(el.dataset.i18nLabel));
   $('sidebar').setAttribute('aria-label', t('settings'));
+  renderBrowserLink();
   $('resizer').setAttribute('aria-label', lang() === 'zh' ? '调整侧栏宽度' : 'Resize sidebar');
   $('addBtn').setAttribute('aria-label', t('add'));
   $('addBtn').title = t('add');
@@ -1496,7 +1506,15 @@ document.querySelectorAll('.dropdown').forEach(setupDropdown);
 document.querySelectorAll('.switch').forEach(setupSwitch);
 $('dirPath').textContent = settings.dir;
 $('changeDir').addEventListener('click', () => toast('SwiftUI 版这里会弹出访达选择文件夹'));
-$('browserHelp').addEventListener('click', () => toast(t('browserTip')));
+/* 接管浏览器：App 把扩展复制到下载文件夹，打开访达和浏览器扩展页，用户自己拖进去；原型里 3 秒后模拟扩展连上 */
+function renderBrowserLink() {
+  $('browserStatus').textContent = linkedBrowser ? t('connected', linkedBrowser) : t('notConnected');
+  $('browserConnect').hidden = Boolean(linkedBrowser);
+}
+$('browserConnect').addEventListener('click', () => {
+  toast(t('browserTip'));
+  setTimeout(() => { linkedBrowser = 'Chrome'; renderBrowserLink(); }, 3000);
+});
 $('pickBg').addEventListener('click', () => $('bgFile').click());
 $('clearBg').addEventListener('click', () => { settings.background = null; applySettings(); });
 $('bgFile').addEventListener('change', async (e) => {

@@ -1,5 +1,18 @@
 // 接管网页下载，宿主失败时把下载交回原浏览器。
 const browserRetries = new Map();
+const hostName = "local.downloader";
+
+async function hello() {
+  try {
+    const reply = await chrome.runtime.sendNativeMessage(hostName, { type: "hello" });
+    if (reply?.ok !== true) throw new Error(reply?.error || "宿主未确认连接");
+  } catch (error) {
+    console.error("下载器宿主连接失败。", error.message);
+  }
+}
+
+chrome.runtime.onInstalled.addListener(hello);
+chrome.runtime.onStartup.addListener(hello);
 
 // 保存当前 URL 和浏览器分配的下载 ID，区分同时点击的相同链接。
 async function returnToBrowser(url) {
@@ -39,7 +52,7 @@ async function takeOver(item) {
     if (current?.state === "complete") return;
     await chrome.downloads.erase({ id: item.id });
     const cookies = await chrome.cookies.getAll({ url });
-    const response = await chrome.runtime.sendNativeMessage("local.downloader", {
+    const response = await chrome.runtime.sendNativeMessage(hostName, {
       url,
       referrer: item.referrer || undefined,
       filename: item.filename?.split("/").pop() || undefined,

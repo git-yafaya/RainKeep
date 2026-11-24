@@ -169,12 +169,26 @@ private struct SettingsDialog: View {
         divider
         toggleRow(language.pick("在菜单栏显示", "Show in menu bar"), isOn: $store.settings.menuBar)
         divider
-        SettingRow(title: language.pick("接管 Chrome 下载", "Take over Chrome downloads")) {
-            Button(language.pick("安装说明", "How to install")) {
-                store.showToast(language.pick("运行 scripts/install-browser-host.sh，再在 Chrome 加载 browser/chrome",
-                                              "Run scripts/install-browser-host.sh, then load browser/chrome in Chrome"))
+        SettingRow(title: language.pick("接管浏览器下载", "Take over browser downloads")) {
+            if let link = store.browserLink {
+                let browser = link.browser ?? language.pick("浏览器", "browser")
+                Text(language.pick("已连接 \(browser)", "Connected to \(browser)"))
+                    .font(theme.font(12))
+                    .foregroundStyle(.secondary)
+            } else {
+                Text(language.pick("未连接", "Not connected"))
+                    .font(theme.font(12))
+                    .foregroundStyle(.secondary)
+                Button(language.pick("接管", "Connect"), action: store.connectBrowser)
+                    .buttonStyle(DialogButtonStyle(isSmall: true))
             }
-            .buttonStyle(DialogButtonStyle(isSmall: true))
+        }
+        // 用户把扩展拖进浏览器后，扩展会连一次宿主留下记录；设置开着时隔两秒看一眼
+        .task {
+            while !Task.isCancelled {
+                store.refreshBrowserLink()
+                try? await Task.sleep(for: .seconds(2))
+            }
         }
     }
 

@@ -1,10 +1,10 @@
 # 浏览器下载接管
 
-1. 先启动一次要使用的浏览器。然后在项目根目录依次执行 `./scripts/make-app.sh` 和 `./scripts/install-browser-host.sh`。
-2. 打开浏览器的扩展程序管理页（Chrome 和 Arc 可输入 `chrome://extensions`，Edge 用 `edge://extensions`，Brave 用 `brave://extensions`）。打开「开发者模式」，点「加载已解压的扩展程序」，选择本目录 `browser/chrome/`。
-3. 核对扩展 ID 为 `fhfcdggihhigpphnfagldelhdcehnkoa`。工具栏里的「接管下载」默认开启，关闭后由浏览器直接下载。
+用户装法见项目根目录 README「接管浏览器下载」：设置里点「接管」，把下载文件夹里的「下载器扩展」拖进浏览器扩展页（要开「开发者模式」）。
 
-宿主清单指向当前项目下的 `.build/Downloader.app`。移动项目后请重新运行安装脚本。
+- 扩展 ID 固定为 `fhfcdggihhigpphnfagldelhdcehnkoa`（manifest 里的 `key` 决定）。工具栏里的「接管下载」默认开启，关闭后由浏览器直接下载。
+- App 每次启动把宿主清单写进各浏览器数据目录的 `NativeMessagingHosts/local.downloader.json`，指向 App 包里的 `DownloaderHost`；App 挪了位置下次启动自动更新。
+- 扩展安装和浏览器启动时发一条 `{"type":"hello"}`，宿主记到 `~/Library/Application Support/Downloader/extension.json`，设置里据此显示「已连接」。扩展被卸载后这条记录不会消失。
 
 仅接管 HTTP(S) 下载。宿主失败时浏览器重新请求原链接。依赖 POST 正文或只能访问一次的链接可能无法重放。宿主在本机通过 URL 传递站点 Cookie，请避免记录或分享完整的 scheme URL。
 

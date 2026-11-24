@@ -42,17 +42,13 @@ DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test
 
 ## Browser takeover
 
-Works with Chrome, Edge, Arc and Brave:
+Works with Chrome, Edge, Arc and Brave. The app built with `./scripts/make-app.sh` registers the browser host on every launch.
 
-```bash
-./scripts/make-app.sh
-```
+1. Settings → Take over browser downloads → Connect: the app puts the extension into "Downloader Extension" in your download folder and opens Finder and the browser's extensions page
+2. Turn on Developer mode at the top right of the extensions page and drag the "Downloader Extension" folder onto it
+3. Settings shows "Connected" when it's done. Keep the folder afterwards; the browser loads the extension from it
 
-```bash
-./scripts/install-browser-host.sh
-```
-
-Then turn on Developer mode on the browser's extensions page and use "Load unpacked" on `browser/chrome/`. See [browser/chrome/README.md](browser/chrome/README.md) (Chinese).
+Details in [browser/chrome/README.md](browser/chrome/README.md) (Chinese).
 
 ## Layout
 

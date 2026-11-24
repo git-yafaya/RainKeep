@@ -42,17 +42,13 @@ DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test
 
 ## 接管浏览器下载
 
-支持 Chrome、Edge、Arc、Brave：
+支持 Chrome、Edge、Arc、Brave。用 `./scripts/make-app.sh` 打包的 App 启动时会自动注册浏览器宿主。
 
-```bash
-./scripts/make-app.sh
-```
+1. 设置 → 接管浏览器下载 → 接管：App 把扩展放进下载文件夹的「下载器扩展」，并打开访达和浏览器扩展页
+2. 在扩展页右上角打开「开发者模式」，把「下载器扩展」文件夹拖进去
+3. 设置里显示「已连接」就好了。装好后别删这个文件夹，浏览器是从这里加载扩展的
 
-```bash
-./scripts/install-browser-host.sh
-```
-
-然后在浏览器扩展页打开「开发者模式」，「加载已解压的扩展程序」选 `browser/chrome/`。详见 [browser/chrome/README.md](browser/chrome/README.md)。
+细节见 [browser/chrome/README.md](browser/chrome/README.md)。
 
 ## 目录
 

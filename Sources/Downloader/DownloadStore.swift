@@ -110,6 +110,8 @@ final class DownloadStore {
     var renaming: UUID?
     private(set) var backgroundImage: NSImage?
     private var backgroundIsBright = true
+    /// 浏览器扩展最近一次连上的记录，nil 表示还没连上过
+    var browserLink: ExtensionLink?
 
     @ObservationIgnored private var learner = CategoryLearner()
     /// 浏览器带来的 Cookie 等请求头只放内存，不写进存盘文件
@@ -480,7 +482,7 @@ final class DownloadStore {
     }
 
     /// 目录里已有的文件 + 列表里要下到这个目录的任务，新任务不能和它们重名
-    private func takenNames(in dir: URL) -> Set<String> {
+    func takenNames(in dir: URL) -> Set<String> {
         let onDisk = (try? FileManager.default.contentsOfDirectory(atPath: dir.path)) ?? []  // 目录还没建时为空
         let planned = items.compactMap(\.destination)
             .filter { $0.deletingLastPathComponent().path == dir.path }
