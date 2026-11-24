@@ -36,7 +36,7 @@ DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test
 - ⌘N or the toolbar `+`: paste links (one per line), ⌘Enter to start; or drag links into the window
 - Sidebar filters by type; the toolbar switches All / In progress / Done
 - Hover a task to pause, resume, retry or remove it
-- Custom categories: "New Category" at the bottom of the sidebar; right-click a category to add a subcategory (up to three levels), rename or delete it. Drag a task onto a category, or right-click a task and choose "Move to". With "Learn my sorting habits" on, once a site or file extension has gone to the same category 3 times, new tasks go there automatically
+- Custom categories: "New Category" at the bottom of the sidebar; right-click a category to add a subcategory (up to three levels), rename or delete it. Drag a task onto a category, or right-click a task and choose "Move to". With "Learn my sorting habits" on, after about 3 manual sorts of similar files, new ones are sorted automatically: file content first (JSON fields, data embedded in PNGs), then source page, Discord channel and file name, then site and extension
 - Menu bar icon: check progress, open the main window or quit; while it is on, closing the window keeps downloads running
 - ⌘,: settings. General: download folder, concurrent downloads, segments, subfolders, learning, notices, menu bar. Appearance: theme (System / Rainforest / Orange Peel / Gardenia), text size (12–16 px), background image (text color adapts to the image's brightness), language (中文 / English)
 

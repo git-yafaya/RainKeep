@@ -57,6 +57,10 @@ public struct DownloadItem: Identifiable, Codable, Sendable {
     public var message: String?
     /// 用户自定义分类，nil 表示没归类
     public var group: UUID?
+    /// 学习用的特征（链接、来源页、文件名，下完后加上文件内容）；老版本存的任务没有
+    public var features: [String]?
+    /// 分类是按习惯自动归的；用户挪走时要给原分类扣票。老版本存的任务没有，当作 false
+    public var autoSorted: Bool?
 
     public init(id: UUID = UUID(), name: String, url: URL? = nil, destination: URL? = nil,
                 size: Int64, received: Int64 = 0, status: TaskStatus = .queued) {
