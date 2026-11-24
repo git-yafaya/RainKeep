@@ -16,24 +16,10 @@ enum ThemeChoice: String, Codable, CaseIterable {
     }
 }
 
-enum FontSize: String, Codable, CaseIterable {
-    case small, standard, large
-
-    var scale: CGFloat {
-        switch self {
-        case .small: 0.92
-        case .standard: 1
-        case .large: 1.15
-        }
-    }
-
-    func name(_ language: Language) -> String {
-        switch self {
-        case .small: language.pick("小", "Small")
-        case .standard: language.pick("标准", "Standard")
-        case .large: language.pick("大", "Large")
-        }
-    }
+/// 正文字号（px），其他字号按和 13px 的比例一起缩放
+enum TextSize {
+    static let options = [12, 13, 14, 15, 16]
+    static let base = 13
 }
 
 struct Theme {
@@ -65,10 +51,10 @@ struct Theme {
     }
 
     /// backgroundIsBright 为 nil 表示没设背景图
-    static func make(_ choice: ThemeChoice, size: FontSize, backgroundIsBright: Bool?) -> Theme {
+    static func make(_ choice: ThemeChoice, textSize: Int, backgroundIsBright: Bool?) -> Theme {
         var theme = palette(choice)
         if let bright = backgroundIsBright { theme.adapt(toBrightImage: bright) }
-        theme.scale = size.scale
+        theme.scale = CGFloat(textSize) / CGFloat(TextSize.base)
         return theme
     }
 
@@ -166,7 +152,7 @@ extension Color {
 }
 
 extension EnvironmentValues {
-    @Entry var theme = Theme.make(.system, size: .standard, backgroundIsBright: nil)
+    @Entry var theme = Theme.make(.system, textSize: TextSize.base, backgroundIsBright: nil)
     @Entry var language = Language.zh
 }
 

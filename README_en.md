@@ -38,7 +38,7 @@ DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test
 - Hover a task to pause, resume, retry or remove it
 - Custom categories: "New Category" at the bottom of the sidebar; right-click a category to add a subcategory (up to three levels), rename or delete it. Drag a task onto a category, or right-click a task and choose "Move to". With "Learn my sorting habits" on, once a site or file extension has gone to the same category 3 times, new tasks go there automatically
 - Menu bar icon: check progress, open the main window or quit; while it is on, closing the window keeps downloads running
-- ⌘,: settings. General: download folder, concurrent downloads, segments, subfolders, learning, notices, menu bar. Appearance: theme (System / Rainforest / Orange Peel / Gardenia), font size, background image (text color adapts to the image's brightness), language (中文 / English)
+- ⌘,: settings. General: download folder, concurrent downloads, segments, subfolders, learning, notices, menu bar. Appearance: theme (System / Rainforest / Orange Peel / Gardenia), text size (12–16 px), background image (text color adapts to the image's brightness), language (中文 / English)
 
 ## Browser takeover
 

@@ -79,7 +79,7 @@ struct MenuBarPanel: View {
         .background(theme.card)
     }
 
-    private var items: [DownloadItem] {
+    private func items(_ tab: PanelTab) -> [DownloadItem] {
         let list = tab == .active
             ? store.items.filter { $0.status == .downloading || $0.status == .queued }
             : store.items.filter { $0.status == .completed }.reversed()
@@ -127,21 +127,34 @@ struct MenuBarPanel: View {
         .accessibilityAddTraits(selected ? .isSelected : [])
     }
 
+    /// 两页叠在一起只显示当前页，卡片取两页中较高的那个，切页签时面板不跳
     private var card: some View {
-        VStack(spacing: 2) {
-            if items.isEmpty {
-                Text(tab == .active ? language.pick("没有进行中的下载", "Nothing downloading")
-                                    : language.pick("还没有完成的下载", "Nothing finished yet"))
-                    .font(theme.font(12))
-                    .foregroundStyle(.tertiary)
-                    .frame(maxWidth: .infinity, minHeight: 64)
-            } else {
-                ForEach(items) { TaskRow(item: $0, compact: true) }
-            }
+        ZStack(alignment: .top) {
+            page(.active)
+            page(.done)
         }
         .padding(4)
         .background(RoundedRectangle(cornerRadius: 14).fill(theme.field))
         .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(theme.line))
+    }
+
+    private func page(_ value: PanelTab) -> some View {
+        let list = items(value)
+        let shown = tab == value
+        return VStack(spacing: 2) {
+            if list.isEmpty {
+                Text(value == .active ? language.pick("没有进行中的下载", "Nothing downloading")
+                                      : language.pick("还没有完成的下载", "Nothing finished yet"))
+                    .font(theme.font(12))
+                    .foregroundStyle(.tertiary)
+                    .frame(maxWidth: .infinity, minHeight: 64)
+            } else {
+                ForEach(list) { TaskRow(item: $0, compact: true) }
+            }
+        }
+        .opacity(shown ? 1 : 0)
+        .allowsHitTesting(shown)
+        .accessibilityHidden(!shown)
     }
 }
 

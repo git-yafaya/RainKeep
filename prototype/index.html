@@ -434,6 +434,9 @@
   .p-row:hover { background: var(--hover); }
   .p-row .ficon { width: 28px; height: 28px; border-radius: 7px; font-size: 8px; }
   .p-row .body { gap: 4px; }
+  /* 两页叠在同一格里只显示当前页，卡片高度取较高的一页，切页签时面板不跳 */
+  .p-page { grid-area: 1 / 1; display: flex; flex-direction: column; gap: 2px; }
+  .p-page:not(.current) { visibility: hidden; }
   .p-empty { padding: 22px 8px; text-align: center; color: var(--text-3); font-size: var(--fs-xs); }
   .panel-foot { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
   .panel-foot button {
@@ -620,7 +623,9 @@ const STAGGER_CAP = 12;     // 列表入场动画最多错开 12 行，后面的
 const MAX_DEPTH = 3;        // 自定义分类最多三级
 const LEARN_THRESHOLD = 3;  // 同一来源 / 扩展名连续归到同一分类几次后，新任务自动归进去
 const PANEL_LIMIT = 6;      // 状态栏面板最多列几条
-const FONT_SCALES = { small: 0.92, standard: 1, large: 1.15 };
+/* 正文字号（px），其他字号按和 13px 的比例一起缩放 */
+const TEXT_SIZES = [12, 13, 14, 15, 16];
+const BASE_TEXT_SIZE = 13;
 
 /* ---------- 文案：中文 / English ---------- */
 
@@ -636,7 +641,7 @@ const STRINGS = {
     notify: '完成后通知', menuBar: '在菜单栏显示', browser: '接管 Chrome 下载', howToInstall: '安装说明',
     theme: '主题', fontSize: '字号', background: '背景图片', language: '语言', choose: '选择…', remove: '移除',
     themeSystem: '跟随系统', themeRainforest: '热带雨林', themeOrange: '初夏橙皮', themeGardenia: '雨后栀子',
-    fontSmall: '小', fontStandard: '标准', fontLarge: '大', langAuto: '跟随系统',
+    langAuto: '跟随系统',
     count: (n) => `${n} 个`, segs: (n) => `${n} 段`, auto: '自动',
     pause: '暂停', resume: '继续', retry: '重试', reveal: '在访达中显示', removeTask: '移除',
     queued: '排队中', paused: '已暂停', failed: '连接中断', left: '剩',
@@ -664,7 +669,7 @@ const STRINGS = {
     notify: 'Notify when done', menuBar: 'Show in menu bar', browser: 'Take over Chrome downloads', howToInstall: 'How to install',
     theme: 'Theme', fontSize: 'Text size', background: 'Background image', language: 'Language', choose: 'Choose…', remove: 'Remove',
     themeSystem: 'System', themeRainforest: 'Rainforest', themeOrange: 'Orange Peel', themeGardenia: 'Gardenia',
-    fontSmall: 'Small', fontStandard: 'Standard', fontLarge: 'Large', langAuto: 'System',
+    langAuto: 'System',
     count: (n) => String(n), segs: (n) => String(n), auto: 'Auto',
     pause: 'Pause', resume: 'Resume', retry: 'Retry', reveal: 'Show in Finder', removeTask: 'Remove',
     queued: 'Queued', paused: 'Paused', failed: 'Connection lost', left: '',
@@ -698,7 +703,7 @@ const SETTING_OPTIONS = {
   threads: () => [{ value: 'auto', label: t('auto') }, ...[2, 4, 8, 16].map((v) => ({ value: v, label: t('segs', v) }))],
   theme: () => [['system', 'themeSystem'], ['rainforest', 'themeRainforest'], ['orange', 'themeOrange'], ['gardenia', 'themeGardenia']]
     .map(([value, key]) => ({ value, label: t(key) })),
-  fontSize: () => [['small', 'fontSmall'], ['standard', 'fontStandard'], ['large', 'fontLarge']].map(([value, key]) => ({ value, label: t(key) })),
+  fontSize: () => TEXT_SIZES.map(px => ({ value: px, label: `${px} px` })),
   language: () => [{ value: 'auto', label: t('langAuto') }, { value: 'zh', label: '中文' }, { value: 'en', label: 'English' }],
 };
 
@@ -723,7 +728,7 @@ const ICONS = {
 const view = { key: 'all', status: 'all' };   // key：'all' | 'type:video' | 'group:<id>'
 const settings = {
   dir: '~/Downloads', maxActive: 3, threads: 'auto', classify: true, learn: true, notify: true, menuBar: true,
-  theme: 'system', fontSize: 'standard', language: 'auto', background: null,
+  theme: 'system', fontSize: BASE_TEXT_SIZE, language: 'auto', background: null,
 };
 let tasks = [];
 let groups = [];          // 自定义分类：{ id, name, parent }，parent 为 null 时和「全部」并列
@@ -956,7 +961,7 @@ const totalSpeed = () => tasks.filter((x) => x.status === 'downloading').reduce(
 function applyAppearance() {
   const root = document.documentElement;
   if (settings.theme === 'system') delete root.dataset.theme; else root.dataset.theme = settings.theme;
-  root.style.setProperty('--scale', FONT_SCALES[settings.fontSize]);
+  root.style.setProperty('--scale', settings.fontSize / BASE_TEXT_SIZE);
   root.lang = lang() === 'zh' ? 'zh-CN' : 'en';
   const win = $('window');
   win.classList.toggle('has-bg', Boolean(settings.background));
@@ -1219,13 +1224,21 @@ function renderPanel() {
   moveThumb($('tabThumb'), current);
   const active = tasks.filter((x) => x.status === 'downloading' || x.status === 'queued');
   const done = tasks.filter((x) => x.status === 'completed');
-  const items = (panelTab === 'active' ? active : done.slice().reverse()).slice(0, PANEL_LIMIT);
   const downloading = tasks.filter((x) => x.status === 'downloading').length;
   $('panelTitle').textContent = panelTab === 'active' ? t('panelTitle', downloading, fmtBytes(totalSpeed())) : t('panelDone');
-  const list = $('panelList');
-  list.replaceChildren();
+  const pages = [['active', active], ['done', done.slice().reverse()]].map(([tab, all]) => {
+    const page = document.createElement('div');
+    page.className = 'p-page' + (tab === panelTab ? ' current' : '');
+    fillPanelPage(page, tab, all.slice(0, PANEL_LIMIT));
+    return page;
+  });
+  $('panelList').replaceChildren(...pages);
+}
+
+/* 菜单栏面板的一页：任务行，没有任务时一句空状态 */
+function fillPanelPage(page, tab, items) {
   if (!items.length) {
-    list.innerHTML = `<div class="p-empty">${panelTab === 'active' ? t('panelEmpty') : t('panelEmptyDone')}</div>`;
+    page.innerHTML = `<div class="p-empty">${tab === 'active' ? t('panelEmpty') : t('panelEmptyDone')}</div>`;
     return;
   }
   for (const task of items) {
@@ -1240,7 +1253,7 @@ function renderPanel() {
     toggle.innerHTML = ICONS[icon];
     toggle.setAttribute('aria-label', label);
     updateRow(row, task);
-    list.append(row);
+    page.append(row);
   }
 }
 

@@ -16,7 +16,8 @@ struct AppSettings: Equatable, Codable {
     var notify = true
     var menuBar = true
     var theme = ThemeChoice.system
-    var fontSize = FontSize.standard
+    /// 正文字号 px
+    var textSize = TextSize.base
     /// nil 表示跟随系统
     var language: Language?
     var background: URL?
@@ -35,7 +36,9 @@ struct AppSettings: Equatable, Codable {
         notify = try c.decodeIfPresent(Bool.self, forKey: .notify) ?? d.notify
         menuBar = try c.decodeIfPresent(Bool.self, forKey: .menuBar) ?? d.menuBar
         theme = try c.decodeIfPresent(ThemeChoice.self, forKey: .theme) ?? d.theme
-        fontSize = try c.decodeIfPresent(FontSize.self, forKey: .fontSize) ?? d.fontSize
+        // 老版本的 fontSize（小/标准/大）不迁移，回到默认 13px
+        let size = try c.decodeIfPresent(Int.self, forKey: .textSize)
+        textSize = size.flatMap { TextSize.options.contains($0) ? $0 : nil } ?? d.textSize
         language = try c.decodeIfPresent(Language.self, forKey: .language)
         background = try c.decodeIfPresent(URL.self, forKey: .background)
     }
@@ -148,7 +151,7 @@ final class DownloadStore {
     @ObservationIgnored private(set) lazy var launchLanguage = language
 
     var theme: Theme {
-        Theme.make(settings.theme, size: settings.fontSize,
+        Theme.make(settings.theme, textSize: settings.textSize,
                    backgroundIsBright: backgroundImage == nil ? nil : backgroundIsBright)
     }
 

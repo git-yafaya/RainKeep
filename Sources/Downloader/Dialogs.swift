@@ -183,8 +183,8 @@ private struct SettingsDialog: View {
         dropdownRow(.theme, language.pick("主题", "Theme"), selection: $store.settings.theme,
                     options: ThemeChoice.allCases.map { ($0, $0.name(language)) })
         divider
-        dropdownRow(.fontSize, language.pick("字号", "Text size"), selection: $store.settings.fontSize,
-                    options: FontSize.allCases.map { ($0, $0.name(language)) })
+        dropdownRow(.fontSize, language.pick("字号", "Text size"), selection: $store.settings.textSize,
+                    options: TextSize.options.map { ($0, "\($0) px") })
         divider
         SettingRow(title: language.pick("背景图片", "Background image")) {
             if store.settings.background != nil {
