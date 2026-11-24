@@ -19,7 +19,7 @@ DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test
 ## 工作流
 
 - 新界面先在 `prototype/index.html` 画（照 Mac 原生控件画），用户确认后再搬到 SwiftUI；改了界面规则同步 `docs/UI.md` 和原型。
-- 还没正式发布：标识、数据格式都能随便改，不用写迁移代码。
+- 已发布 1.0：下面的固定标识和 `state.json` 数据格式定下来了。数据格式只加可选字段，改动要能读旧数据，不能读就写迁移。
 - 不主动加功能，等用户点名。
 - 注释、commit message 用中文；commit 用 Conventional Commits 前缀（feat/fix/docs/refactor/chore）。
 
