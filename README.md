@@ -1,71 +1,68 @@
-# 拾雨
+<p align="center">
+  <img src="browser/chrome/icons/128.png" width="96" alt="拾雨图标">
+</p>
 
-[English](README_en.md)
+<h1 align="center">拾雨</h1>
 
-拾雨（Rainkeep）是一个 macOS 下载器（SwiftUI）：多线程分段、断点续传，能接管 Chrome 系浏览器的下载，支持自定义分类并学习你的归类习惯。
+<p align="center">
+  一个安静好用的 macOS 下载器：分段加速、断点续传、自动归类，还能接管浏览器下载。
+</p>
 
-已经能真正下载：服务器支持时分段并发，暂停或断网后从断点续传（网络类错误自动重试），按类型放进「下载」下的子文件夹。任务列表和设置存在 `~/Library/Application Support/Rainkeep/state.json`，重启后自动续传。
+<p align="center">
+  <a href="https://github.com/git-yafaya/RainKeep/releases/latest"><img src="https://img.shields.io/github/v/release/git-yafaya/RainKeep?label=%E4%B8%8B%E8%BD%BD" alt="下载"></a>
+  <img src="https://img.shields.io/badge/macOS-14%2B-lightgrey" alt="macOS 14+">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT"></a>
+</p>
 
-## 前置依赖
+<p align="center">
+  简体中文 · <a href="README_en.md">English</a>
+</p>
 
-- macOS 14 及以上
-- Xcode（SwiftUI 宏需要 Xcode 的工具链，只有命令行工具编译不了）
+<p align="center">
+  <img src="docs/images/main-zh.png" width="800" alt="拾雨主窗口">
+</p>
 
-## 快速开始
+## 特点
 
-```bash
-DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift run Rainkeep
-```
+- **快**：服务器支持时多线程分段下载
+- **稳**：暂停、断网、重启后都从断点续传，网络出错自动重试
+- **会整理**：按类型放进「下载」下的子文件夹；自定义分类，学你的归类习惯，连同为 JSON 的世界书和预设都能分开
+- **接管浏览器**：Chrome、Edge、Arc、Brave 里点下载直接交给拾雨
+- **好看**：跟随系统，另有三套主题，可换背景图；中英文界面
 
-已经用 `sudo xcode-select -s /Applications/Xcode.app` 切换过的，直接 `swift run Rainkeep` 即可。也可以 `open Package.swift` 用 Xcode 打开。
+## 安装
 
-打包成 `.app`（有 Dock 图标和正式的应用身份）：
-
-```bash
-./scripts/make-app.sh && open .build/Rainkeep.app
-```
-
-打包成安装用的 DMG（release 版，产物在 `dist/`）：
-
-```bash
-./scripts/make-dmg.sh
-```
-
-App 只做了临时签名、没有公证，别的 Mac 第一次打开时要在「系统设置 → 隐私与安全性」里点「仍要打开」。
-
-运行测试：
-
-```bash
-DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test
-```
+1. 到 [Releases](https://github.com/git-yafaya/RainKeep/releases/latest) 下载 `Rainkeep-<版本>.dmg`
+2. 打开后把「拾雨」拖进「应用程序」
+3. 第一次打开会被系统拦下（App 没有经过苹果公证）：到「系统设置 → 隐私与安全性」点「仍要打开」
 
 ## 使用
 
-- ⌘N 或工具栏 `+`：粘贴链接（每行一个），⌘Enter 开始下载；也可以把链接直接拖进窗口
-- 左侧栏按类型筛选，工具栏切换 全部 / 进行中 / 已完成
+- ⌘N 或工具栏 `+`：粘贴链接（每行一个），⌘Enter 开始；也可以把链接直接拖进窗口
 - 鼠标移到任务上：暂停、继续、重试、移除
-- 自定义分类：侧栏底部「新建分类」，右键分类可建子分类（最多三级）、改名、删除；把任务拖到分类上，或右键任务「移到分类」。开了「学习我的分类习惯」后，同类文件手动归 3 次左右就会自动归：先看文件内容（JSON 字段、PNG 里嵌的数据，能分开世界书、预设、角色卡），再看来源页面、Discord 频道、文件名，最后看网站和扩展名
-- 菜单栏图标：看下载进度、打开主窗口或退出；开着时关窗口不退出，下载继续
-- ⌘,：设置。常规页是下载位置、同时下载数、分段、子文件夹、学习、通知、菜单栏；外观页是主题（跟随系统 / 热带雨林 / 初夏橙皮 / 雨后栀子）、字号（12–16 px）、背景图（字色会按图片明暗自动调）、语言（中文 / English）
+- 侧栏底部「新建分类」，右键分类可建子分类（最多三级）；把任务拖到分类上即可归类。同类文件手动归 3 次左右，之后就会自动归
+- 菜单栏图标随时看进度；开着它时关掉窗口，下载照常继续
+- ⌘,：设置（下载位置、同时下载数、主题、字号、背景图、语言等）
 
 ## 接管浏览器下载
 
-支持 Chrome、Edge、Arc、Brave。用 `./scripts/make-app.sh` 打包的 App 启动时会自动注册浏览器宿主。
-
-1. 设置 → 接管浏览器下载 → 接管：App 把扩展放进下载文件夹的「拾雨扩展」，并打开访达和浏览器扩展页
-2. 在扩展页右上角打开「开发者模式」，把「拾雨扩展」整个拖进去（它在访达里显示为一个文件）
-3. 设置里显示「已连接」就好了。装好后别删它，浏览器是从这里加载扩展的
+1. 设置 → 接管浏览器下载 → 接管：拾雨会把扩展放进「下载」文件夹，并打开访达和浏览器扩展页
+2. 在扩展页右上角打开「开发者模式」，把「拾雨扩展」整个拖进去
+3. 设置里显示「已连接」就好了。装好后别删掉「拾雨扩展」，浏览器是从那里加载它的
 
 细节见 [browser/chrome/README.md](browser/chrome/README.md)。
 
-## 目录
+## 从源码构建
 
-- `Sources/RainkeepCore`：不依赖界面的逻辑（下载引擎、重试策略、分类、命名、调度、格式化）
-- `Sources/Rainkeep`：SwiftUI 界面
-- `Sources/RainkeepHost`、`browser/chrome`：浏览器扩展和本机宿主
-- `prototype/index.html`：界面的 HTML 原型，浏览器直接打开
-- `docs/UI.md`：界面规则
-- `assets/AppIcon.svg`：应用图标源文件；改完跑 `./scripts/make-icon.sh` 重新生成 `AppIcon.icns`
+需要 macOS 14+ 和 Xcode（只有命令行工具编译不了 SwiftUI）。
+
+```bash
+./scripts/make-app.sh && open .build/Rainkeep.app   # 调试版 App
+./scripts/make-dmg.sh                                # release 版 DMG，产物在 dist/
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test
+```
+
+目录：`Sources/RainkeepCore` 是下载引擎和分类等逻辑，`Sources/Rainkeep` 是界面，`Sources/RainkeepHost` 和 `browser/chrome` 是浏览器宿主和扩展，`prototype/` 是界面原型，界面规则见 [docs/UI.md](docs/UI.md)。
 
 ## 许可证
 

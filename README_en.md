@@ -1,71 +1,68 @@
-# Rainkeep
+<p align="center">
+  <img src="browser/chrome/icons/128.png" width="96" alt="Rainkeep icon">
+</p>
 
-[中文](README.md)
+<h1 align="center">Rainkeep</h1>
 
-Rainkeep (拾雨) is a macOS download manager (SwiftUI): multi-connection segmented downloads, resume support, takes over downloads from Chrome-family browsers, and custom categories that learn how you sort.
+<p align="center">
+  A calm macOS download manager: segmented downloads, resume anywhere, auto-sorting, and browser takeover.
+</p>
 
-It downloads real files: segmented in parallel when the server allows it, resumes from where it stopped after a pause or a network drop (network errors are retried automatically), and sorts files into subfolders of Downloads by type. Tasks and settings are saved to `~/Library/Application Support/Rainkeep/state.json` and resume after a restart.
+<p align="center">
+  <a href="https://github.com/git-yafaya/RainKeep/releases/latest"><img src="https://img.shields.io/github/v/release/git-yafaya/RainKeep?label=download" alt="Download"></a>
+  <img src="https://img.shields.io/badge/macOS-14%2B-lightgrey" alt="macOS 14+">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT"></a>
+</p>
 
-## Requirements
+<p align="center">
+  <a href="README.md">简体中文</a> · English
+</p>
 
-- macOS 14 or later
-- Xcode (SwiftUI macros need the Xcode toolchain; Command Line Tools alone cannot build it)
+<p align="center">
+  <img src="docs/images/main-en.png" width="800" alt="Rainkeep main window">
+</p>
 
-## Quick start
+## Features
 
-```bash
-DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift run Rainkeep
-```
+- **Fast**: multi-connection segmented downloads when the server allows it
+- **Reliable**: resumes after pausing, network loss or restart; retries network errors automatically
+- **Tidy**: files go into subfolders of Downloads by type; custom categories that learn your habits, even telling apart lorebooks and presets that are both JSON
+- **Browser takeover**: downloads in Chrome, Edge, Arc and Brave go straight to Rainkeep
+- **Good-looking**: follows the system, plus three themes, custom background image, Chinese and English UI
 
-If you have switched with `sudo xcode-select -s /Applications/Xcode.app`, plain `swift run Rainkeep` works. You can also `open Package.swift` in Xcode.
+## Install
 
-Build a `.app` bundle (Dock icon and a proper app identity):
-
-```bash
-./scripts/make-app.sh && open .build/Rainkeep.app
-```
-
-Build an installer DMG (release build, written to `dist/`):
-
-```bash
-./scripts/make-dmg.sh
-```
-
-The app is only ad-hoc signed and not notarized, so on another Mac the first launch needs "Open Anyway" in System Settings → Privacy & Security.
-
-Run tests:
-
-```bash
-DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test
-```
+1. Download `Rainkeep-<version>.dmg` from [Releases](https://github.com/git-yafaya/RainKeep/releases/latest)
+2. Open it and drag Rainkeep into Applications
+3. macOS blocks the first launch because the app isn't notarized: click "Open Anyway" in System Settings → Privacy & Security
 
 ## Usage
 
-- ⌘N or the toolbar `+`: paste links (one per line), ⌘Enter to start; or drag links into the window
-- Sidebar filters by type; the toolbar switches All / In progress / Done
+- ⌘N or the toolbar `+`: paste links (one per line), ⌘Enter to start; or drag links onto the window
 - Hover a task to pause, resume, retry or remove it
-- Custom categories: "New Category" at the bottom of the sidebar; right-click a category to add a subcategory (up to three levels), rename or delete it. Drag a task onto a category, or right-click a task and choose "Move to". With "Learn my sorting habits" on, after about 3 manual sorts of similar files, new ones are sorted automatically: file content first (JSON fields, data embedded in PNGs), then source page, Discord channel and file name, then site and extension
-- Menu bar icon: check progress, open the main window or quit; while it is on, closing the window keeps downloads running
-- ⌘,: settings. General: download folder, concurrent downloads, segments, subfolders, learning, notices, menu bar. Appearance: theme (System / Rainforest / Orange Peel / Gardenia), text size (12–16 px), background image (text color adapts to the image's brightness), language (中文 / English)
+- "New Category" at the bottom of the sidebar; right-click a category to add subcategories (up to three levels); drag tasks onto a category. After about three manual moves, similar files are sorted automatically
+- The menu bar icon shows progress; while it's on, closing the window keeps downloads running
+- ⌘,: Settings (download folder, concurrent downloads, theme, text size, background, language and more)
 
 ## Browser takeover
 
-Works with Chrome, Edge, Arc and Brave. The app built with `./scripts/make-app.sh` registers the browser host on every launch.
+1. Settings → Take over browser downloads → Connect: Rainkeep puts the extension in your Downloads folder and opens Finder and the browser's extensions page
+2. Turn on "Developer mode" at the top right of that page and drag "Rainkeep Extension" in as a whole
+3. Settings shows "Connected to <browser>" when it works. Keep "Rainkeep Extension" where it is; the browser loads the extension from there
 
-1. Settings → Take over browser downloads → Connect: the app puts the extension into "Rainkeep Extension" in your download folder and opens Finder and the browser's extensions page
-2. Turn on Developer mode at the top right of the extensions page and drag "Rainkeep Extension" (Finder shows it as a single file) onto it
-3. Settings shows "Connected" when it's done. Keep it afterwards; the browser loads the extension from it
+Details: [browser/chrome/README.md](browser/chrome/README.md).
 
-Details in [browser/chrome/README.md](browser/chrome/README.md) (Chinese).
+## Build from source
 
-## Layout
+Needs macOS 14+ and Xcode (Command Line Tools alone can't build SwiftUI).
 
-- `Sources/RainkeepCore`: UI-free logic (download engine, retry policy, categories, naming, scheduling, formatting)
-- `Sources/RainkeepHost`, `browser/chrome`: browser extension and native host
-- `Sources/Rainkeep`: SwiftUI interface
-- `prototype/index.html`: HTML prototype of the interface, open it in a browser
-- `docs/UI.md`: interface rules (Chinese)
-- `assets/AppIcon.svg`: app icon source; after editing, run `./scripts/make-icon.sh` to regenerate `AppIcon.icns`
+```bash
+./scripts/make-app.sh && open .build/Rainkeep.app   # debug app
+./scripts/make-dmg.sh                                # release DMG in dist/
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test
+```
+
+Layout: `Sources/RainkeepCore` holds the download engine and sorting logic, `Sources/Rainkeep` the UI, `Sources/RainkeepHost` and `browser/chrome` the browser host and extension, `prototype/` the UI prototype; UI rules are in [docs/UI.md](docs/UI.md).
 
 ## License
 
