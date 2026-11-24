@@ -4,8 +4,9 @@ set -eu
 cd "$(dirname "$0")/.."
 export DEVELOPER_DIR="${DEVELOPER_DIR:-/Applications/Xcode.app/Contents/Developer}"
 
-swift build
-BIN_DIR=$(swift build --show-bin-path)
+CONFIG="${CONFIG:-debug}"
+swift build -c "$CONFIG"
+BIN_DIR=$(swift build -c "$CONFIG" --show-bin-path)
 APP=.build/Rainkeep.app
 
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
@@ -47,5 +48,7 @@ cat > "$APP/Contents/Info.plist" <<'PLIST'
 </dict>
 </plist>
 PLIST
+# 改过包内文件后签名就失效了，重新做临时签名，Apple 芯片上才能打开
+codesign --force --deep --sign - "$APP"
 
 echo "$APP"

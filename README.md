@@ -25,6 +25,14 @@ DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift run Rainkeep
 ./scripts/make-app.sh && open .build/Rainkeep.app
 ```
 
+打包成安装用的 DMG（release 版，产物在 `dist/`）：
+
+```bash
+./scripts/make-dmg.sh
+```
+
+App 只做了临时签名、没有公证，别的 Mac 第一次打开时要在「系统设置 → 隐私与安全性」里点「仍要打开」。
+
 运行测试：
 
 ```bash

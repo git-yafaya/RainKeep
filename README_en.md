@@ -25,6 +25,14 @@ Build a `.app` bundle (Dock icon and a proper app identity):
 ./scripts/make-app.sh && open .build/Rainkeep.app
 ```
 
+Build an installer DMG (release build, written to `dist/`):
+
+```bash
+./scripts/make-dmg.sh
+```
+
+The app is only ad-hoc signed and not notarized, so on another Mac the first launch needs "Open Anyway" in System Settings → Privacy & Security.
+
 Run tests:
 
 ```bash
