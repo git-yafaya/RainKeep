@@ -43,7 +43,7 @@
 - "New Category" at the bottom of the sidebar; right-click a category to add subcategories (up to three levels); drag tasks onto a category. After about three manual moves, similar files are sorted automatically
 - The menu bar icon shows progress; while it's on, closing the window keeps downloads running
 - ⌘,: Settings (download folder, concurrent downloads, theme, text size, background, language and more)
-- Settings → Updates → Check for Updates: when a new version is out, "Catch the Rain" downloads its installer with Rainkeep itself
+- The weather icon in the toolbar checks for updates at launch: rain means a new version is out, and clicking it downloads the installer with Rainkeep itself. You can also check in Settings → Updates
 
 ## Browser takeover
 
