@@ -5,7 +5,7 @@
 <h1 align="center">Rainkeep</h1>
 
 <p align="center">
-  A calm macOS download manager: segmented downloads, resume anywhere, auto-sorting, and browser takeover.
+  A macOS download manager: segmented downloads, resume, auto-sorting and browser takeover.
 </p>
 
 <p align="center">
@@ -24,11 +24,11 @@
 
 ## Features
 
-- **Fast**: multi-connection segmented downloads when the server allows it; a connection that finishes early takes over half of the largest remaining segment, so every connection stays busy
-- **Reliable**: resumes after pausing, network loss or restart; retries network errors automatically
-- **Tidy**: files go into subfolders of Downloads by type; custom categories that learn your habits, even telling apart lorebooks and presets that are both JSON
+- **Multi-connection**: segmented downloads when the server allows it; a connection that finishes early takes over half of the largest remaining segment
+- **Resume**: picks up after pausing, network loss or restart; retries network errors automatically
+- **Auto-sorting**: files go into subfolders of Downloads by type; custom categories learn your habits and can tell apart lorebooks and presets that are both JSON
 - **Browser takeover**: downloads in Chrome, Edge, Arc and Brave go straight to Rainkeep
-- **Good-looking**: follows the system, plus three themes, custom background image, Chinese and English UI
+- **Themes**: follows the system appearance, plus three built-in themes and a custom background image; Chinese and English UI
 
 ## Install
 
