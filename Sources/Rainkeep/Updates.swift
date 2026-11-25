@@ -13,7 +13,7 @@ enum UpdatePhase: Equatable {
         switch self {
         case .idle: language.pick("当前 \(Self.current)", "Version \(Self.current)")
         case .checking: language.pick("正在望云…", "Watching the clouds…")
-        case .latest: language.pick("天晴，已是最新", "Clear skies · up to date")
+        case .latest: language.pick("天晴·已是最新", "Clear skies · up to date")
         case .failed: language.pick("没望见云，检查网络后再试", "Couldn't reach the clouds")
         case .available(let release): language.pick("新雨已至 \(release.version)", "Fresh rain is here · \(release.version)")
         }
