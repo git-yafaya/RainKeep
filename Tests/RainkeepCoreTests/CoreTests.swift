@@ -23,6 +23,18 @@ import Testing
     #expect(Naming.fileName(from: URL(string: "https://x.com/")!) == "download")
 }
 
+/// GitHub 发布下载会重定向到签名地址，路径末尾是一串 ID，真名在参数里
+@Test func fileNameFromSignedURL() {
+    // 2026-11 真实 GitHub 签名地址的参数（签名部分省略）：rscd 在前且用 + 当空格
+    let github = URL(string: "https://release-assets.githubusercontent.com/github-production-release-asset/1/ff3f1a06-e9f4-41a0-a124-0ddcf2dd1d58?sp=r&sv=2018-11-09&rscd=attachment%3B+filename%3DNAI_Launcher_macOS_4.4.0%2B47_Portable.zip&rsct=application%2Foctet-stream&response-content-disposition=attachment%3B%20filename%3DNAI_Launcher_macOS_4.4.0%2B47_Portable.zip&response-content-type=application%2Foctet-stream")!
+    #expect(Naming.fileName(from: github) == "NAI_Launcher_macOS_4.4.0+47_Portable.zip")
+    let azure = URL(string: "https://a.blob.core.windows.net/c/123?rscd=attachment%3B%20filename%2A%3DUTF-8%27%27%25E6%25B5%258B.zip")!
+    #expect(Naming.fileName(from: azure) == "测.zip")
+    #expect(Naming.fileName(fromDisposition: #"attachment; filename="../../etc/a.txt""#) == "a.txt")
+    #expect(Naming.fileName(fromDisposition: "inline") == nil)
+    #expect(Naming.fileName(from: URL(string: "https://x.com/a.zip?response-content-disposition=inline")!) == "a.zip")
+}
+
 @Test func scheduleTrimsAndFills() {
     var items = (0..<4).map { DownloadItem(name: "\($0).zip", size: 10, status: .downloading) }
     items.append(DownloadItem(name: "q.zip", size: 10, status: .queued))
