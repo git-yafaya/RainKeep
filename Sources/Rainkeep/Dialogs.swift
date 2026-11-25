@@ -260,51 +260,35 @@ private struct SettingsDialog: View {
     }
 }
 
-/// 更新检测：望云时雨点依次落下，有新版时雨点停住、变强调色；「接住新雨」把安装包加进下载列表
+/// 更新检测：天气图标 + 状态文字；「接住新雨」把安装包加进下载列表
 private struct UpdateRow: View {
-    private enum Phase: Equatable {
-        case idle, checking, latest, failed(String)
-        case available(Release)
-    }
-
     @Environment(DownloadStore.self) private var store
     @Environment(\.theme) private var theme
     @Environment(\.language) private var language
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var phase = Phase.idle
 
-    private static let current = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0"
+    private var phase: UpdatePhase { store.update }
 
     var body: some View {
         SettingRow(title: language.pick("更新检测", "Updates")) {
             switch phase {
-            case .checking: RainCloud(isRaining: !reduceMotion).foregroundStyle(.secondary)
-            case .available: RainCloud(isRaining: false).foregroundStyle(theme.accent)
+            case .checking, .latest, .available: UpdateSky(phase: phase).foregroundStyle(.secondary)
             default: EmptyView()
             }
-            Text(status)
+            Text(phase.status(language))
                 .font(theme.font(12))
                 .foregroundStyle(isFailed ? theme.danger : .secondary)
                 .help(failure ?? "")
                 // 和原型一致：旧字立刻消失、新字淡入，免得新旧两段并排挤在一行
-                .id(status)
+                .id(phase.status(language))
                 .transition(.asymmetric(insertion: .opacity, removal: .identity))
             if phase != .checking {
-                Button(buttonTitle, action: act)
+                Button(buttonTitle, action: store.checkOrCatchUpdate)
                     .buttonStyle(DialogButtonStyle(isPrimary: isAvailable, isSmall: true))
                     .transition(.asymmetric(insertion: .opacity, removal: .identity))
             }
         }
-    }
-
-    private var status: String {
-        switch phase {
-        case .idle: language.pick("当前 \(Self.current)", "Version \(Self.current)")
-        case .checking: language.pick("正在望云…", "Watching the clouds…")
-        case .latest: language.pick("天晴，已是最新", "Clear skies · up to date")
-        case .failed: language.pick("没望见云，检查网络后再试", "Couldn't reach the clouds")
-        case .available(let release): language.pick("新雨已至 \(release.version)", "Fresh rain is here · \(release.version)")
-        }
+        .animation(reduceMotion ? nil : .easeOut(duration: 0.22), value: phase)
     }
 
     private var buttonTitle: String {
@@ -318,58 +302,6 @@ private struct UpdateRow: View {
     private var isAvailable: Bool { if case .available = phase { true } else { false } }
     private var isFailed: Bool { failure != nil }
     private var failure: String? { if case .failed(let reason) = phase { reason } else { nil } }
-
-    private func act() {
-        if case .available(let release) = phase {
-            // 拾雨自己就是下载器：安装包直接加进任务列表；发布里没有安装包就打开发布页
-            if let installer = release.installer {
-                store.add(urls: [installer])
-            } else {
-                NSWorkspace.shared.open(release.page)
-            }
-            show(.idle)
-            return
-        }
-        show(.checking)
-        Task {
-            do {
-                let release = try await UpdateCheck.latest()
-                show(UpdateCheck.isNewer(release.version, than: Self.current) ? .available(release) : .latest)
-            } catch {
-                show(.failed(error.localizedDescription))
-            }
-        }
-    }
-
-    private func show(_ next: Phase) {
-        withAnimation(reduceMotion ? nil : .easeOut(duration: 0.22)) { phase = next }
-    }
-}
-
-/// 云 + 三滴雨：下雨时雨点依次下落淡出，对应原型的 rain 动画
-private struct RainCloud: View {
-    let isRaining: Bool
-    private static let cycle = 0.9
-    private static let dropXs: [CGFloat] = [-4, 0, 4]
-
-    var body: some View {
-        TimelineView(.animation(paused: !isRaining)) { context in
-            let time = context.date.timeIntervalSinceReferenceDate
-            ZStack(alignment: .top) {
-                Image(systemName: "cloud").font(.system(size: 12, weight: .medium))
-                ForEach(0..<3, id: \.self) { index in
-                    let progress = isRaining ? (time / Self.cycle + Double(index) / 3).truncatingRemainder(dividingBy: 1) : 0.5
-                    Capsule()
-                        .frame(width: 1.4, height: 2.6)
-                        .rotationEffect(.degrees(16))
-                        .offset(x: Self.dropXs[index], y: 11 + (-3 + 6 * progress * progress))
-                        .opacity(isRaining ? (progress < 0.3 ? progress / 0.3 : (1 - progress) / 0.7) : 1)
-                }
-            }
-            .frame(width: 18, height: 16, alignment: .top)
-        }
-        .accessibilityHidden(true)
-    }
 }
 
 /// 弹窗按钮：扁平圆角，普通灰底、主按钮强调色；small 用在设置行里（不用系统按钮，样式对不上原型）

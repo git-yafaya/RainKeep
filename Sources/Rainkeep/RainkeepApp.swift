@@ -69,6 +69,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if !launchedByURL { NSApp.activate() }
         store.start()
         store.installBrowserHost()
+        store.checkForUpdate()
     }
 
     private var launchedByURL = false

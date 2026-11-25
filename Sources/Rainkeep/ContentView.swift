@@ -142,7 +142,7 @@ private struct SidebarResizer: View {
     }
 }
 
-/// 顶栏：当前分类名 · 状态切换 · 全部暂停/继续 · 添加
+/// 顶栏：当前分类名 · 状态切换 · 更新天气 · 全部暂停/继续 · 添加
 private struct HeaderBar: View {
     @Environment(DownloadStore.self) private var store
     @Environment(\.theme) private var theme
@@ -158,6 +158,10 @@ private struct HeaderBar: View {
             Segmented(options: StatusFilter.allCases.map { ($0, $0.title(language)) },
                       selection: $store.statusFilter)
                 .padding(.trailing, 6)
+            Button(action: store.checkOrCatchUpdate) { UpdateSky(phase: store.update) }
+                .buttonStyle(IconButtonStyle())
+                .help(updateTip)
+                .accessibilityLabel(updateTip)
             IconButton(systemName: store.isRunning ? "pause.fill" : "play.fill",
                        label: store.isRunning ? language.pick("全部暂停", "Pause All")
                                               : language.pick("全部继续", "Resume All")) { store.pauseOrResumeAll() }
@@ -172,6 +176,14 @@ private struct HeaderBar: View {
         .frame(height: Layout.headerHeight)
         .background { Color.clear.contentShape(Rectangle()).modifier(WindowDragArea()) }
         .overlay(alignment: .bottom) { theme.line.frame(height: 1) }
+    }
+
+    private var updateTip: String {
+        switch store.update {
+        case .idle: language.pick("检查更新", "Check for Updates")
+        case .available(let release): language.pick("新雨已至 \(release.version)，点击接住", "Fresh rain is here · \(release.version). Click to catch it")
+        default: store.update.status(language)
+        }
     }
 }
 

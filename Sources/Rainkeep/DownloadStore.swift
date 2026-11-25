@@ -40,6 +40,8 @@ final class DownloadStore {
     private var backgroundIsBright = true
     /// 浏览器扩展最近一次连上的记录，nil 表示还没连上过
     var browserLink: ExtensionLink?
+    /// 更新检测的进度，设置行和顶栏天气图标共用
+    var update = UpdatePhase.idle
 
     @ObservationIgnored var learner = CategoryLearner()
     /// 浏览器带来的 Cookie 等请求头只放内存，不写进存盘文件

@@ -206,7 +206,7 @@ struct IconButton: View {
     }
 }
 
-private struct IconButtonStyle: ButtonStyle {
+struct IconButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         IconButtonBody(configuration: configuration)
     }

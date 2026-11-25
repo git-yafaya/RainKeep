@@ -339,14 +339,25 @@
   .setting .status { color: var(--text-2); font-size: var(--fs-xs); white-space: nowrap; }
   .setting .path { color: var(--text-2); font: var(--fs-xs) ui-monospace, "SF Mono", Menlo, monospace; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-  /* 更新检测：望云时雨点依次落下，有新雨时雨点停住、变强调色 */
+  /* 更新检测的天气：望云时乌云来回飘，天晴出太阳，有新雨时强调色的雨点落三轮后停住。设置行和工具栏共用 */
   .sky { display: none; width: 18px; height: 16px; flex: none; color: var(--text-2); overflow: visible; }
-  [data-update="checking"] .sky, [data-update="available"] .sky { display: block; }
-  [data-update="available"] .sky { color: var(--accent); }
-  [data-update="checking"] .drops line { animation: rain .9s ease-in infinite; }
+  [data-update="checking"] .sky, [data-update="latest"] .sky, [data-update="available"] .sky { display: block; }
+  .sky .sun, .sky .drops { display: none; }
+  [data-update="latest"] .sky .sun, [data-update="available"] .sky .drops { display: inline; }
+  [data-update="latest"] .sky .cloud { display: none; }
+  [data-update="available"] .sky { color: var(--accent); transform: translateY(1px); }
+  /* 只有云时图形偏上，整体往下挪到视觉居中 */
+  [data-update="idle"] .sky, [data-update="checking"] .sky, [data-update="failed"] .sky { transform: translateY(3px); }
+  [data-update="checking"] .sky .cloud { animation: drift 1.6s ease-in-out infinite alternate; }
+  [data-update="latest"] .sky .sun { transform-box: fill-box; transform-origin: center; animation: sun-in .5s var(--ease); }
+  [data-update="available"] .drops line { animation: rain .9s ease-in 3; }
   .drops line:nth-child(2) { animation-delay: .3s; }
   .drops line:nth-child(3) { animation-delay: .6s; }
+  @keyframes drift { from { transform: translateX(-1.5px); } to { transform: translateX(1.5px); } }
+  @keyframes sun-in { from { opacity: 0; transform: rotate(-45deg) scale(.6); } }
   @keyframes rain { 0% { opacity: 0; transform: translateY(-3px); } 30% { opacity: 1; } 100% { opacity: 0; transform: translateY(3px); } }
+  #skyBtn .sky { display: block; }
+  #skyBtn:not([data-update="available"]) .sky { color: inherit; }
   #updateStatus { animation: fade-in .22s ease-out; }
   [data-update="failed"] #updateStatus { color: var(--danger); }
 
@@ -481,7 +492,7 @@
   }
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { animation-duration: 0s !important; transition-duration: 0s !important; }
-    .drops line { animation: none !important; }
+    .drops line, .sky .cloud, .sky .sun { animation: none !important; }
   }
 </style>
 </head>
@@ -527,6 +538,7 @@
         <button data-status="active" aria-pressed="false" data-i18n="filterActive"></button>
         <button data-status="done" aria-pressed="false" data-i18n="filterDone"></button>
       </div>
+      <button class="icon-btn" id="skyBtn" data-update="idle"></button>
       <button class="icon-btn" id="pauseAll"></button>
       <button class="icon-btn" id="addBtn"></button>
     </header>
@@ -597,12 +609,6 @@
         <div class="setting" id="updateRow" data-update="idle">
           <span data-i18n="update"></span>
           <div class="value">
-            <svg class="sky" viewBox="0 0 20 18" aria-hidden="true">
-              <path d="M5.5 10.5h9a3.25 3.25 0 0 0 .4-6.48A4.75 4.75 0 0 0 5.9 4.2a3.15 3.15 0 0 0-.4 6.3z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
-              <g class="drops" stroke="currentColor" stroke-width="1.4" stroke-linecap="round">
-                <line x1="7" y1="13" x2="6.4" y2="15"/><line x1="10.5" y1="13" x2="9.9" y2="15"/><line x1="14" y1="13" x2="13.4" y2="15"/>
-              </g>
-            </svg>
             <span class="status" id="updateStatus" aria-live="polite"></span>
             <button class="btn small" id="updateBtn"></button>
           </div>
@@ -707,7 +713,7 @@ const STRINGS = {
     connected: (browser) => `已连接 ${browser}`, notConnected: '未连接',
     update: '更新检测', updateCurrent: (v) => `当前 ${v}`, updateCheck: '检查更新', updateChecking: '正在望云…',
     updateLatest: '天晴，已是最新', updateFound: (v) => `新雨已至 ${v}`, updateGet: '接住新雨',
-    updateFailed: '没望见云，检查网络后再试', updateRetry: '重试',
+    updateFailed: '没望见云，检查网络后再试', updateRetry: '重试', updateFoundTip: (v) => `新雨已至 ${v}，点击接住`,
     panelActive: '进行中', panelDone: '最近完成', panelOpen: '打开拾雨', panelQuit: '退出',
     panelEmpty: '没有进行中的下载', panelEmptyDone: '还没有完成的下载',
     panelTitle: (n, speed) => (n ? `进行中 · ${n} 个 · ${speed}/s` : '进行中'),
@@ -741,7 +747,7 @@ const STRINGS = {
     connected: (browser) => `Connected to ${browser}`, notConnected: 'Not connected',
     update: 'Updates', updateCurrent: (v) => `Version ${v}`, updateCheck: 'Check for Updates', updateChecking: 'Watching the clouds…',
     updateLatest: 'Clear skies · up to date', updateFound: (v) => `Fresh rain is here · ${v}`, updateGet: 'Catch the Rain',
-    updateFailed: "Couldn't reach the clouds", updateRetry: 'Retry',
+    updateFailed: "Couldn't reach the clouds", updateRetry: 'Retry', updateFoundTip: (v) => `Fresh rain is here · ${v}. Click to catch it`,
     panelActive: 'Active', panelDone: 'Recently done', panelOpen: 'Open Rainkeep', panelQuit: 'Quit',
     panelEmpty: 'Nothing downloading', panelEmptyDone: 'Nothing finished yet',
     panelTitle: (n, speed) => (n ? `Active · ${n} · ${speed}/s` : 'Active'),
@@ -1574,11 +1580,28 @@ $('browserConnect').addEventListener('click', () => {
 });
 /* ---------- 更新检测：原型里第一次检查是「已是最新」，再检查一次「新雨已至」 ---------- */
 const APP_VERSION = '1.3';
+const SKY_SVG = `<svg class="sky" viewBox="0 0 20 18" aria-hidden="true">
+  <path class="cloud" d="M5.5 10.5h9a3.25 3.25 0 0 0 .4-6.48A4.75 4.75 0 0 0 5.9 4.2a3.15 3.15 0 0 0-.4 6.3z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
+  <g class="drops" stroke="currentColor" stroke-width="1.4" stroke-linecap="round">
+    <line x1="7" y1="13" x2="6.4" y2="15"/><line x1="10.5" y1="13" x2="9.9" y2="15"/><line x1="14" y1="13" x2="13.4" y2="15"/>
+  </g>
+  <g class="sun" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round">
+    <circle cx="10" cy="9" r="3"/>
+    <path d="M15 9h2M13.5 12.5l1.4 1.4M10 14v2M6.5 12.5l-1.4 1.4M5 9H3M6.5 5.5 5.1 4.1M10 4V2M13.5 5.5l1.4-1.4"/>
+  </g>
+</svg>`;
 const UPDATE_DEMO_MS = 1800;
 let update = { state: 'idle' };
 let updateChecks = 0;
 function renderUpdate(animate = true) {
   $('updateRow').dataset.update = update.state;
+  // 工具栏的天气一直在：没查过或查失败时是一朵静止的云，点它就查
+  const sky = $('skyBtn');
+  sky.dataset.update = update.state;
+  const tip = update.state === 'available' ? t('updateFoundTip', update.version)
+    : { checking: t('updateChecking'), latest: t('updateLatest'), failed: t('updateFailed') }[update.state] ?? t('updateCheck');
+  sky.title = tip;
+  sky.setAttribute('aria-label', tip);
   const status = $('updateStatus');
   const button = $('updateBtn');
   status.textContent = {
@@ -1593,7 +1616,8 @@ function renderUpdate(animate = true) {
   void status.offsetWidth;  // 重放淡入
   status.style.animation = '';
 }
-$('updateBtn').addEventListener('click', () => {
+function checkOrCatch() {
+  if (update.state === 'checking') return;
   if (update.state === 'available') {
     // 拾雨自己就是下载器：新版安装包直接加进任务列表
     addUrls([`https://github.com/git-yafaya/RainKeep/releases/download/v${update.version}/Rainkeep-${update.version}.dmg`]);
@@ -1608,7 +1632,9 @@ $('updateBtn').addEventListener('click', () => {
     update = updateChecks === 1 ? { state: 'latest' } : { state: 'available', version: '1.4' };
     renderUpdate();
   }, UPDATE_DEMO_MS);
-});
+}
+$('updateBtn').addEventListener('click', checkOrCatch);
+$('skyBtn').addEventListener('click', checkOrCatch);
 $('pickBg').addEventListener('click', () => $('bgFile').click());
 $('clearBg').addEventListener('click', () => { settings.background = null; applySettings(); });
 $('bgFile').addEventListener('change', async (e) => {
@@ -1876,6 +1902,8 @@ window.addEventListener('resize', () => renderAll());
 /* ---------- 启动 ---------- */
 
 $('addBtn').innerHTML = ICONS.plus;
+$('skyBtn').innerHTML = SKY_SVG;
+$('updateStatus').insertAdjacentHTML('beforebegin', SKY_SVG);
 $('panelLogo').innerHTML = ICONS.drop(46);
 groups = [
   { id: 'work', name: '工作', parent: null },
@@ -1901,6 +1929,7 @@ setSidebarWidth(loadSidebarWidth() || 210);
 renderAll(true);
 requestAnimationFrame(() => document.body.classList.add('ready'));   // 首次定位后再开滑块过渡，避免开场乱飞
 setInterval(tick, TICK_MS);
+checkOrCatch();   // 启动时自动查一次
 </script>
 </body>
 </html>
