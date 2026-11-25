@@ -260,7 +260,7 @@ private struct SettingsDialog: View {
     }
 }
 
-/// 新雨（检查更新）：望云时雨点依次落下，有新雨时雨点停住、变强调色；「更新」把安装包加进下载列表
+/// 更新检测：望云时雨点依次落下，有新版时雨点停住、变强调色；「接住新雨」把安装包加进下载列表
 private struct UpdateRow: View {
     private enum Phase: Equatable {
         case idle, checking, latest, failed(String)
@@ -276,7 +276,7 @@ private struct UpdateRow: View {
     private static let current = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0"
 
     var body: some View {
-        SettingRow(title: language.pick("新雨", "Updates")) {
+        SettingRow(title: language.pick("更新检测", "Updates")) {
             switch phase {
             case .checking: RainCloud(isRaining: !reduceMotion).foregroundStyle(.secondary)
             case .available: RainCloud(isRaining: false).foregroundStyle(theme.accent)

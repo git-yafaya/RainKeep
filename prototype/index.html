@@ -339,7 +339,7 @@
   .setting .status { color: var(--text-2); font-size: var(--fs-xs); white-space: nowrap; }
   .setting .path { color: var(--text-2); font: var(--fs-xs) ui-monospace, "SF Mono", Menlo, monospace; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-  /* 新雨（检查更新）：望云时雨点依次落下，有新雨时雨点停住、变强调色 */
+  /* 更新检测：望云时雨点依次落下，有新雨时雨点停住、变强调色 */
   .sky { display: none; width: 18px; height: 16px; flex: none; color: var(--text-2); overflow: visible; }
   [data-update="checking"] .sky, [data-update="available"] .sky { display: block; }
   [data-update="available"] .sky { color: var(--accent); }
@@ -683,7 +683,7 @@ const STRINGS = {
     deleted: (name) => `已删除「${name}」，里面的任务保留`,
     browserTip: '打开扩展页右上角的「开发者模式」，把访达里的「拾雨扩展」拖进去',
     connected: (browser) => `已连接 ${browser}`, notConnected: '未连接',
-    update: '新雨', updateCurrent: (v) => `当前 ${v}`, updateCheck: '检查更新', updateChecking: '正在望云…',
+    update: '更新检测', updateCurrent: (v) => `当前 ${v}`, updateCheck: '检查更新', updateChecking: '正在望云…',
     updateLatest: '天晴，已是最新', updateFound: (v) => `新雨已至 ${v}`, updateGet: '接住新雨',
     updateFailed: '没望见云，检查网络后再试', updateRetry: '重试',
     panelActive: '进行中', panelDone: '最近完成', panelOpen: '打开拾雨', panelQuit: '退出',
@@ -1547,7 +1547,7 @@ $('browserConnect').addEventListener('click', () => {
   toast(t('browserTip'));
   setTimeout(() => { linkedBrowser = 'Chrome'; renderBrowserLink(); }, 3000);
 });
-/* ---------- 新雨（检查更新）：原型里第一次望是「已是最新」，再望一次「新雨到了」 ---------- */
+/* ---------- 更新检测：原型里第一次检查是「已是最新」，再检查一次「新雨已至」 ---------- */
 const APP_VERSION = '1.0';
 const UPDATE_DEMO_MS = 1800;
 let update = { state: 'idle' };
