@@ -181,7 +181,7 @@ private struct HeaderBar: View {
     private var updateTip: String {
         switch store.update {
         case .idle: language.pick("检查更新", "Check for Updates")
-        case .available(let release): language.pick("新雨已至 \(release.version)，点击接住", "Fresh rain is here · \(release.version). Click to catch it")
+        case .available(let release): language.pick("新雨已至 · \(release.version)，点击接住", "Fresh rain is here · \(release.version). Click to catch it")
         default: store.update.status(language)
         }
     }

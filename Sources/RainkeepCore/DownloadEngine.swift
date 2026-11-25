@@ -23,20 +23,23 @@ public struct DownloadProgress: Sendable {
     public var serverName: String?
 }
 
-enum EngineError: LocalizedError, Equatable {
+public enum EngineError: LocalizedError, Equatable {
     case status(Int), invalidResponse, incomplete, busy, backgroundSession
     case restart
 
-    var errorDescription: String? {
+    /// 按界面语言给出原因，任务行和更新检测失败时显示
+    public func message(_ language: Language) -> String {
         switch self {
-        case .status(let code): "服务器返回 \(code)"
-        case .invalidResponse: "服务器返回了无效的下载响应"
-        case .incomplete: "下载数据长度不符"
-        case .busy: "该文件正在下载"
-        case .backgroundSession: "下载引擎需要前台 URLSession"
-        case .restart: "服务器已更改下载范围"
+        case .status(let code): language.pick("服务器返回错误（\(code)）", "Server returned \(code)")
+        case .invalidResponse: language.pick("服务器响应无效", "Invalid response from server")
+        case .incomplete: language.pick("文件大小与服务器声明不符", "Download size mismatch")
+        case .busy: language.pick("该文件已在下载列表中", "This file is already downloading")
+        case .backgroundSession: language.pick("当前下载模式不可用（需前台会话）", "Download engine requires an active session")
+        case .restart: language.pick("服务器不支持断点续传或范围已变更", "Server changed the download range")
         }
     }
+
+    public var errorDescription: String? { message(.system) }
 }
 
 struct EngineResource: Codable, Equatable {

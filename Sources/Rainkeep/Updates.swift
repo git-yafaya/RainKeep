@@ -13,9 +13,9 @@ enum UpdatePhase: Equatable {
         switch self {
         case .idle: language.pick("当前 \(Self.current)", "Version \(Self.current)")
         case .checking: language.pick("正在望云…", "Watching the clouds…")
-        case .latest: language.pick("天晴·已是最新", "Clear skies · up to date")
-        case .failed: language.pick("没望见云，检查网络后再试", "Couldn't reach the clouds")
-        case .available(let release): language.pick("新雨已至 \(release.version)", "Fresh rain is here · \(release.version)")
+        case .latest: language.pick("天晴 · 已是最新", "Clear skies · Up to date")
+        case .failed: language.pick("无云可望 · 请检查网络后再试", "No clouds in sight · Check your network and try again")
+        case .available(let release): language.pick("新雨已至 · \(release.version)", "Fresh rain is here · \(release.version)")
         }
     }
 }
@@ -29,7 +29,7 @@ extension DownloadStore {
                 let release = try await UpdateCheck.latest()
                 update = UpdateCheck.isNewer(release.version, than: UpdatePhase.current) ? .available(release) : .latest
             } catch {
-                update = .failed(error.localizedDescription)
+                update = .failed(describe(error))
             }
         }
     }

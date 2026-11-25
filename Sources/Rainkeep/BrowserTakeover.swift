@@ -15,7 +15,7 @@ extension DownloadStore {
         do {
             _ = try BrowserHost.install(hostPath: host, support: support)
         } catch {
-            showToast(language.pick("注册浏览器宿主失败：", "Couldn't register the browser host: ") + error.localizedDescription)
+            showToast(language.pick("注册浏览器通讯组件失败：", "Couldn't register the native messaging host: ") + error.localizedDescription)
         }
     }
 
@@ -45,7 +45,7 @@ extension DownloadStore {
         do {
             folder = try placeExtension(from: source)
         } catch {
-            showToast(language.pick("放扩展失败：", "Couldn't copy the extension: ") + error.localizedDescription)
+            showToast(language.pick("导出扩展失败：", "Couldn't copy the extension: ") + error.localizedDescription)
             return
         }
         NSWorkspace.shared.activateFileViewerSelecting([folder])
@@ -54,13 +54,13 @@ extension DownloadStore {
                 _ = try await NSWorkspace.shared.open([browser.page], withApplicationAt: browser.app,
                                                       configuration: NSWorkspace.OpenConfiguration())
             } catch {
-                showToast(language.pick("打不开浏览器：", "Couldn't open the browser: ") + error.localizedDescription)
+                showToast(language.pick("无法打开浏览器：", "Couldn't open the browser: ") + error.localizedDescription)
                 return
             }
             // 浏览器第一次启动才建数据目录，打开后再注册一次宿主
             installBrowserHost()
-            showToast(language.pick("打开扩展页右上角的「开发者模式」，把访达里的「拾雨扩展」拖进去",
-                                    "Turn on Developer mode on the extensions page, then drag “Rainkeep Extension” from Finder onto it"))
+            showToast(language.pick("开启扩展页右上角的「开发者模式」，将访达中的「拾雨扩展」拖入页面",
+                                    "Turn on “Developer mode” on the Extensions page, then drag “Rainkeep Extension” from Finder into the page"))
         }
     }
 

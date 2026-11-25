@@ -9,7 +9,7 @@ public enum FileCategory: String, CaseIterable, Identifiable, Sendable {
     /// 界面名，也是「按类型放进子文件夹」时的文件夹名
     public func name(_ language: Language) -> String {
         switch self {
-        case .video: language.pick("视频", "Video")
+        case .video: language.pick("视频", "Videos")
         case .audio: language.pick("音频", "Audio")
         case .image: language.pick("图片", "Images")
         case .document: language.pick("文档", "Documents")

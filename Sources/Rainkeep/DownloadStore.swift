@@ -279,7 +279,7 @@ final class DownloadStore {
         guard let image = NSImage(contentsOf: url),
               let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) else {
             backgroundImage = nil
-            showToast(language.pick("背景图片读不出来", "Couldn't read the background image"))
+            showToast(language.pick("无法读取背景图片", "Couldn't load the background image"))
             return
         }
         backgroundIsBright = ImageTone.isBright(cgImage)

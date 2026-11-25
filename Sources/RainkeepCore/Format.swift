@@ -28,7 +28,7 @@ public enum Format {
         case .downloading:
             if let message = item.message { return "\(message) · \(progress)" }
             // 服务器没给长度时只能显示已下多少
-            guard item.size > 0 else { return "\(bytes(item.speed))/s · \(l.pick("已下", "got")) \(bytes(Double(item.received)))" }
+            guard item.size > 0 else { return "\(bytes(item.speed))/s · \(l.pick("已下", "downloaded")) \(bytes(Double(item.received)))" }
             let remaining = Double(item.size - item.received) / max(item.speed, 1)
             return "\(bytes(item.speed))/s · \(l.pick("剩 ", ""))\(eta(remaining, l))\(l.pick("", " left")) · \(progress)"
         case .queued: return "\(l.pick("排队中", "Queued")) · \(total)"

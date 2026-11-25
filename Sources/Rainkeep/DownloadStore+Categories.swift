@@ -12,7 +12,7 @@ extension DownloadStore {
     }
 
     func newCategory(parent: UUID?) {
-        guard let category = categories.add(language.pick("新分类", "New Category"), parent: parent) else { return }
+        guard let category = categories.add(language.pick("未命名分类", "Untitled Category"), parent: parent) else { return }
         renaming = category.id
         save()
     }
@@ -31,7 +31,7 @@ extension DownloadStore {
         for i in items.indices where items[i].group.map(removed.contains) == true { items[i].group = nil }
         if case .group(let selected) = selection, removed.contains(selected) { selection = .all }
         save()
-        showToast(language.pick("已删除「\(name)」，里面的任务保留", "Deleted “\(name)”; its tasks were kept"))
+        showToast(language.pick("已删除分类「\(name)」，其中任务已保留", "Deleted “\(name)” (tasks kept)"))
     }
 
     /// 手动归类：给新分类加票，自动归错的给原分类扣票；已下完的文件立刻挪进分类文件夹，没下完的等下完再挪
@@ -73,7 +73,7 @@ extension DownloadStore {
         return suggestion
     }
 
-    /// 「已按习惯放进『世界书』· 文件内容相似」：说明是按哪条习惯分的
+    /// 「已按习惯归入『世界书』· 文件内容相似」：说明是按哪条习惯分的
     func sortedMessage(_ suggestion: CategoryLearner.Suggestion) -> String {
         let name = categories[suggestion.category]?.name ?? ""
         let kind = suggestion.reason.prefix { $0 != ":" }
@@ -84,7 +84,7 @@ extension DownloadStore {
         case "word": language.pick("文件名含「\(value)」", "name contains “\(value)”")
         default: language.pick("来自 \(value.prefix { $0 != "/" })", "from \(value.prefix { $0 != "/" })")
         }
-        return language.pick("已按习惯放进「\(name)」· \(reason)", "Sorted into “\(name)” by habit · \(reason)")
+        return language.pick("已按习惯归入「\(name)」· \(reason)", "Auto-sorted into “\(name)” · \(reason)")
     }
 
     /// 已完成且归了分类的文件挪到分类对应的文件夹，重名自动加序号

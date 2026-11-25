@@ -87,7 +87,7 @@ struct MenuBarPanel: View {
     }
 
     private var title: String {
-        guard tab == .active else { return language.pick("最近完成", "Recently done") }
+        guard tab == .active else { return language.pick("最近完成", "Recently Completed") }
         let count = store.activeItems.count
         guard count > 0 else { return language.pick("进行中", "Active") }
         return language.pick("进行中 · \(count) 个", "Active · \(count)") + " · \(Format.bytes(store.totalSpeed))/s"
@@ -97,7 +97,7 @@ struct MenuBarPanel: View {
     private var tabs: some View {
         HStack(spacing: 0) {
             tabButton(.active, systemName: "arrow.down", label: language.pick("进行中", "Active"))
-            tabButton(.done, systemName: "checkmark", label: language.pick("最近完成", "Recently done"))
+            tabButton(.done, systemName: "checkmark", label: language.pick("最近完成", "Recently Completed"))
         }
         .padding(4)
         .background(RoundedRectangle(cornerRadius: 12).fill(theme.field))

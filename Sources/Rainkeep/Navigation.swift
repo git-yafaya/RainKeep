@@ -9,7 +9,7 @@ enum StatusFilter: CaseIterable, Identifiable {
         switch self {
         case .all: language.pick("全部", "All")
         case .active: language.pick("进行中", "Active")
-        case .done: language.pick("已完成", "Done")
+        case .done: language.pick("已完成", "Completed")
         }
     }
 }

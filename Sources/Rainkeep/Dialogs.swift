@@ -155,7 +155,7 @@ private struct SettingsDialog: View {
             Button(language.pick("更改…", "Change…"), action: chooseFolder).buttonStyle(DialogButtonStyle(isSmall: true))
         }
         divider
-        dropdownRow(.maxActive, language.pick("同时下载", "Simultaneous"), selection: $store.settings.maxActive,
+        dropdownRow(.maxActive, language.pick("同时下载", "Concurrent downloads"), selection: $store.settings.maxActive,
                     options: [1, 2, 3, 4, 5, 6, 8].map { ($0, language.pick("\($0) 个", "\($0)")) })
         divider
         dropdownRow(.threads, language.pick("每个任务分段", "Segments per task"), selection: $store.settings.threads,
@@ -179,7 +179,7 @@ private struct SettingsDialog: View {
                 Text(language.pick("未连接", "Not connected"))
                     .font(theme.font(12))
                     .foregroundStyle(.secondary)
-                Button(language.pick("接管", "Connect"), action: store.connectBrowser)
+                Button(language.pick("连接", "Connect"), action: store.connectBrowser)
                     .buttonStyle(DialogButtonStyle(isSmall: true))
             }
         }

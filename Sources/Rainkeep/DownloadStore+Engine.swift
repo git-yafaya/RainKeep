@@ -40,10 +40,10 @@ extension DownloadStore {
                 if Task.isCancelled || error is CancellationError { return }
                 attempt += 1
                 guard Retry.isTransient(error), attempt < Retry.maxAttempts else {
-                    fail(id, error.localizedDescription)
+                    fail(id, describe(error))
                     return
                 }
-                let message = language.pick("网络中断，正在重试", "Network lost, retrying")
+                let message = language.pick("网络中断，正在重试…", "Connection lost, retrying…")
                 update(id) {
                     $0.message = message
                     $0.speed = 0
@@ -136,6 +136,11 @@ extension DownloadStore {
             $0.message = message
         }
         reschedule()
+    }
+
+    /// 引擎自己的错误按界面语言显示，其余用系统给的说明
+    func describe(_ error: Error) -> String {
+        (error as? EngineError)?.message(language) ?? error.localizedDescription
     }
 
     private func update(_ id: UUID, _ change: (inout DownloadItem) -> Void) {

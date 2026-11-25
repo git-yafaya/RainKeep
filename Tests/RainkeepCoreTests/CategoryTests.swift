@@ -77,7 +77,7 @@ import Testing
     var item = DownloadItem(name: "a.mp4", size: 2048 * 1024 * 1024, received: 1024 * 1024 * 1024, status: .paused)
     #expect(Format.summary(item, .en) == "Paused · 1.0 GB / 2.0 GB")
     item.status = .completed
-    #expect(Format.summary(item, .en) == "2.0 GB · Video")
+    #expect(Format.summary(item, .en) == "2.0 GB · Videos")
     #expect(Format.summary(item, .en, groupName: "Work") == "2.0 GB · Work")
     #expect(Format.eta(90, .en) == "2 min")
 }

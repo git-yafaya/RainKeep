@@ -393,7 +393,8 @@ private func reportsServerFileName(ranges: Bool) async throws {
             try await fixture.run()
             Issue.record("404 应抛出错误")
         } catch {
-            #expect(error.localizedDescription == "服务器返回 404")
+            #expect((error as? EngineError)?.message(.zh) == "服务器返回错误（404）")
+            #expect((error as? EngineError)?.message(.en) == "Server returned 404")
         }
         #expect(!FileManager.default.fileExists(atPath: fixture.job.destination.path))
     }
