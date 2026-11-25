@@ -3,25 +3,6 @@ import AppKit
 import RainkeepCore
 import SwiftUI
 
-enum ThemeChoice: String, Codable, CaseIterable {
-    case system, rainforest, orange, gardenia
-
-    func name(_ language: Language) -> String {
-        switch self {
-        case .system: language.pick("跟随系统", "System")
-        case .rainforest: language.pick("热带雨林", "Rainforest")
-        case .orange: language.pick("初夏橙皮", "Orange Peel")
-        case .gardenia: language.pick("雨后栀子", "Gardenia")
-        }
-    }
-}
-
-/// 正文字号（px），其他字号按和 13px 的比例一起缩放
-enum TextSize {
-    static let options = [12, 13, 14, 15, 16]
-    static let base = 13
-}
-
 struct Theme {
     /// nil 表示跟随系统深浅色
     var scheme: ColorScheme?
