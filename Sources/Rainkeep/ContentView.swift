@@ -23,6 +23,7 @@ struct ContentView: View {
     @Environment(\.theme) private var theme
     @Environment(\.language) private var language
     @State private var isDropTargeted = false
+    @Environment(\.openWindow) private var openWindow
     @AppStorage("sidebarWidth") private var sidebarWidth = Layout.sidebarDefault
 
     var body: some View {
@@ -31,7 +32,8 @@ struct ContentView: View {
                 .frame(width: sidebarWidth)
                 .background { theme.sidebar.modifier(WindowDragArea()) }
                 .overlay(alignment: .trailing) {
-                    SidebarResizer(width: $sidebarWidth).offset(x: 4)
+                    // 顶栏高度内是拖窗口的区域，拖动条从顶栏下沿开始，免得光标显示能拉宽、拖起来却在移窗口
+                    SidebarResizer(width: $sidebarWidth).offset(x: 4).padding(.top, Layout.headerHeight)
                 }
                 .zIndex(1)
             VStack(spacing: 0) {
@@ -67,6 +69,7 @@ struct ContentView: View {
             return true
         } isTargeted: { isDropTargeted = $0 }
         .focusEffectDisabled()
+        .onAppear { store.openMainWindow = { [openWindow] in openWindow(id: RainkeepApp.mainWindow) } }
     }
 }
 

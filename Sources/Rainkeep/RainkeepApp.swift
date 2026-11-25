@@ -79,6 +79,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         for url in urls { store.handle(url) }
     }
 
+    /// 主窗口关掉后点 Dock 图标，把它重新打开
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows: Bool) -> Bool {
+        guard !hasVisibleWindows else { return true }
+        store.openMainWindow?()
+        return false
+    }
+
     /// 菜单栏图标开着时关窗口不退出，下载继续
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { !store.settings.menuBar }
 }

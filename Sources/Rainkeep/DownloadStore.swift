@@ -49,6 +49,8 @@ final class DownloadStore {
     /// 服务器在 Content-Disposition 里给的文件名，下完时用
     @ObservationIgnored var serverNames: [UUID: String] = [:]
 
+    /// 关掉主窗口后点 Dock 图标时用来重新打开；由主窗口第一次出现时填上
+    @ObservationIgnored var openMainWindow: (() -> Void)?
     @ObservationIgnored private var toastToken = 0
     @ObservationIgnored var jobs: [UUID: Task<Void, Never>] = [:]
     @ObservationIgnored var speedSamples: [UUID: (time: ContinuousClock.Instant, received: Int64)] = [:]
