@@ -153,17 +153,22 @@ public enum DownloadEngine {
     /// 调度各分段，服务器不支持范围时退回整文件下载。
     private static func download(_ job: DownloadJob, _ resource: EngineResource,
                                  _ file: EngineFile, _ session: URLSession) async throws {
-        let segments = file.segments
-        if segments.first?.end != nil {
+        if file.rangeConcurrency > 0 {
             do {
-                try await withThrowingTaskGroup(of: Void.self) { group in
-                    for (index, segment) in segments.enumerated() {
-                        guard let end = segment.end, segment.next < end else { continue }
-                        group.addTask {
-                            try await downloadRange(segment.next..<end, index, request(job), resource, file, session)
+                try await withThrowingTaskGroup(of: Int.self) { group in
+                    var active = Set<Int>()
+                    while true {
+                        try Task.checkCancellation()
+                        while active.count < file.rangeConcurrency, let work = file.claimRange(active: active) {
+                            active.insert(work.index)
+                            group.addTask {
+                                try await downloadRange(work.range, work.index, request(job), resource, file, session)
+                                return work.index
+                            }
                         }
+                        guard let finished = try await group.next() else { break }
+                        active.remove(finished)
                     }
-                    while let _ = try await group.next() {}
                 }
                 return
             } catch EngineError.restart {
@@ -193,7 +198,7 @@ public enum DownloadEngine {
             guard http.statusCode == 206, http.hasIdentityEncoding, let total = resource.total,
                   http.value(forHTTPHeaderField: "Content-Range")?.lowercased() == "bytes \(bounds)/\(total)"
             else { throw EngineError.invalidResponse }
-        } receive: { try file.write($0, to: index) }
+        } receive: { try file.write($0, to: index, requestedEnd: range.upperBound) }
         try file.verify(index)
     }
 }

@@ -14,7 +14,7 @@ private struct Reply {
     var status = 200
     var headStatus: Int?
     var omitAcceptRanges = false
-    var disconnectAtSegmentStart: Int?
+    var pauseAfterBytes: [Int: Int] = [:]
     var badContentRange = false
 }
 
@@ -22,7 +22,7 @@ private final class Server: @unchecked Sendable {
     private let lock = NSLock()
     private var reply: Reply
     private var requests: [URLRequest] = []
-    private var interruptedRequest: EngineProtocol?
+    private var held: [Int: EngineProtocol] = [:]
 
     init(_ reply: Reply) { self.reply = reply }
 
@@ -33,12 +33,10 @@ private final class Server: @unchecked Sendable {
         }
     }
 
-    func hold(_ request: EngineProtocol) { lock.withLock { interruptedRequest = request } }
+    func hold(_ request: EngineProtocol, at start: Int) { lock.withLock { held[start] = request } }
 
-    func disconnect() throws {
-        let request = try #require(lock.withLock { interruptedRequest })
-        request.client?.urlProtocol(request, didFailWithError: URLError(.networkConnectionLost))
-        lock.withLock { interruptedRequest = nil }
+    func heldRequest(at start: Int) throws -> EngineProtocol {
+        try #require(lock.withLock { held[start] })
     }
 
     func change(_ edit: (inout Reply) -> Void) {
@@ -94,19 +92,26 @@ private final class EngineProtocol: URLProtocol, @unchecked Sendable {
                 client?.urlProtocol(self, didLoad: reply.body.prefix(4096))
                 return
             }
-            let disconnect = status == 206 && reply.disconnectAtSegmentStart == bytes.lowerBound
-            if reply.stall || disconnect { bytes = bytes.lowerBound..<(bytes.lowerBound + bytes.count / 2) }
-            if disconnect { server.hold(self) }
+            let prefix = status == 206 ? reply.pauseAfterBytes[bytes.lowerBound] : nil
+            if let prefix {
+                server.hold(self, at: bytes.lowerBound)
+                bytes = bytes.prefix(prefix)
+            } else if reply.stall { bytes = bytes.prefix(bytes.count / 2) }
             for offset in stride(from: bytes.lowerBound, to: bytes.upperBound, by: 256 * 1024) {
                 let end = min(offset + 256 * 1024, bytes.upperBound)
                 client?.urlProtocol(self, didLoad: reply.body.subdata(in: offset..<end))
             }
-            if reply.stall || disconnect { return }
+            if reply.stall || prefix != nil { return }
         }
         client?.urlProtocolDidFinishLoading(self)
     }
 
     override func stopLoading() {}
+
+    func send(_ data: Data, finish: Bool = true) {
+        client?.urlProtocol(self, didLoad: data)
+        if finish { client?.urlProtocolDidFinishLoading(self) }
+    }
 }
 
 private let mib = 1 << 20
@@ -175,6 +180,7 @@ private func withServer(_ reply: Reply, segments: Int = 0,
     EngineProtocol.register(server, at: url)
     let config = URLSessionConfiguration.ephemeral
     config.protocolClasses = [EngineProtocol.self]
+    config.timeoutIntervalForResource = 10
     let session = URLSession(configuration: config)
     defer {
         session.invalidateAndCancel()
@@ -203,7 +209,11 @@ private final class ProgressLog: @unchecked Sendable {
         let destination = try await fixture.run(log.append)
         #expect(destination == fixture.job.destination)
         let ranges = fixture.server.gets.compactMap { $0.value(forHTTPHeaderField: "Range") }
-        #expect(Set(ranges).count == 4)
+        let size = data.count / 4
+        for index in 0..<4 {
+            let end = index == 3 ? data.count : (index + 1) * size
+            #expect(ranges.contains("bytes=\(index * size)-\(end - 1)"))
+        }
         #expect(log.last?.received == Int64(data.count))
         #expect(log.last?.total == Int64(data.count))
         try fixture.checkResult(data)
@@ -221,6 +231,86 @@ private final class ProgressLog: @unchecked Sendable {
         #expect(ranges == ["bytes=\(mib)-\(2 * mib - 1)", "bytes=\(3 * mib)-\(4 * mib - 1)"])
         #expect(gets.count == 2)
         #expect(gets.allSatisfy { $0.value(forHTTPHeaderField: "If-Range") == "\"v1\"" })
+        try fixture.checkResult(data)
+    }
+}
+
+@Test(arguments: [false, true])
+private func splitsLargestRemainingRange(pauseAfterSplit: Bool) async throws {
+    let size = 4 * mib
+    let data = payload(3 * size)
+    let slowPrefix = mib + 1
+    let reply = Reply(body: data, pauseAfterBytes: [0: 3 * mib, size: slowPrefix, 2 * size: mib])
+    try await withServer(reply, segments: 3) { fixture in
+        let task = Task { try await fixture.run() }
+        defer { task.cancel() }
+        let next = size + slowPrefix
+        let midpoint = next + (2 * size - next) / 2
+        try await fixture.waitForWrites([0..<(3 * mib), size..<next, (2 * size)..<(2 * size + mib)], from: data)
+        try fixture.server.heldRequest(at: 2 * size).send(data.suffix(from: 2 * size + mib))
+        try await fixture.waitForWrites([midpoint..<(2 * size)], from: data)
+        #expect(fixture.server.gets.count == 4)
+        #expect(fixture.server.gets.last?.value(forHTTPHeaderField: "Range") == "bytes=\(midpoint)-\(2 * size - 1)")
+
+        if pauseAfterSplit {
+            task.cancel()
+            await #expect(throws: CancellationError.self) { try await task.value }
+            fixture.server.change { $0.pauseAfterBytes = [:] }
+            try await fixture.run()
+            let ranges = fixture.server.gets.compactMap { $0.value(forHTTPHeaderField: "Range") }
+            #expect(Set(ranges) == ["bytes=\(3 * mib)-\(size - 1)", "bytes=\(next)-\(midpoint - 1)"])
+        } else {
+            // 越界部分故意发错且不结束响应，只有截断写入并取消原请求才能通过。
+            let crossing = data.subdata(in: next..<midpoint) + Data(repeating: 0, count: 1024)
+            try fixture.server.heldRequest(at: size).send(crossing, finish: false)
+            try fixture.server.heldRequest(at: 0).send(data.subdata(in: (3 * mib)..<size))
+            _ = try await task.value
+        }
+        try fixture.checkResult(data)
+    }
+}
+
+@Test(arguments: [2, 17])
+private func resumesManifestWithOriginalFields(segmentCount: Int) async throws {
+    let size = mib
+    let data = payload(segmentCount * size)
+    try await withServer(Reply(body: data), segments: 1) { fixture in
+        var partial = Data(repeating: 0, count: data.count)
+        var segments: [[String: Int]] = []
+        var expected = Set<String>()
+        for index in 0..<segmentCount {
+            let start = index * size, end = start + size, next = start + size / 2
+            partial[start..<next] = data[start..<next]
+            segments.append(["start": start, "next": next, "end": end])
+            expected.insert("bytes=\(next)-\(end - 1)")
+        }
+        // 旧记录按起点排序，追加过新段的记录可能乱序且超过原并发上限。
+        if segmentCount > 2 { segments.swapAt(1, segmentCount - 1) }
+        let resource: [String: Any] = ["url": fixture.job.url.absoluteString, "total": data.count,
+                                       "etag": "\"v1\"", "lastModified": "Sun, 01 Nov 2026 00:00:00 GMT"]
+        try partial.write(to: fixture.part)
+        try JSONSerialization.data(withJSONObject: ["resource": resource, "segments": segments]).write(to: fixture.manifest)
+        try await fixture.run()
+        let ranges = fixture.server.gets.compactMap { $0.value(forHTTPHeaderField: "Range") }
+        #expect(Set(ranges) == expected)
+        #expect(ranges.count == expected.count)
+        try fixture.checkResult(data)
+    }
+}
+
+@Test func leavesSmallRemaindersIntact() async throws {
+    let prefix = mib / 4
+    let size = Int(EngineSegment.minimumSplitSize) - 1 + prefix
+    let data = payload(2 * size)
+    try await withServer(Reply(body: data, pauseAfterBytes: [0: prefix, size: prefix]), segments: 2) { fixture in
+        let task = Task { try await fixture.run() }
+        defer { task.cancel() }
+        try await fixture.waitForWrites([0..<prefix, size..<(size + prefix)], from: data)
+        try fixture.server.heldRequest(at: 0).send(data.subdata(in: prefix..<size))
+        try await fixture.waitForWrites([prefix..<size], from: data)
+        try fixture.server.heldRequest(at: size).send(data.suffix(from: size + prefix))
+        _ = try await task.value
+        #expect(fixture.server.gets.count == 2)
         try fixture.checkResult(data)
     }
 }
@@ -319,19 +409,20 @@ private func rangeProbeFindsSegmentSupport(headStatus: Int) async throws {
 }
 
 @Test func connectionLossResumesInterruptedSegment() async throws {
-    let data = payload(4 * mib)
-    try await withServer(Reply(body: data, disconnectAtSegmentStart: 2 * mib), segments: 2) { fixture in
+    let data = payload(2 * mib)
+    try await withServer(Reply(body: data, pauseAfterBytes: [mib: mib / 2]), segments: 2) { fixture in
         let task = Task { try await fixture.run() }
         defer { task.cancel() }
-        try await fixture.waitForWrites([(2 * mib)..<(3 * mib)], from: data)
-        try fixture.server.disconnect()
+        try await fixture.waitForWrites([mib..<(mib + mib / 2)], from: data)
+        let request = try fixture.server.heldRequest(at: mib)
+        request.client?.urlProtocol(request, didFailWithError: URLError(.networkConnectionLost))
         let error = await #expect(throws: URLError.self) { try await task.value }
         #expect(error?.code == .networkConnectionLost)
         #expect(FileManager.default.fileExists(atPath: fixture.manifest.path))
-        fixture.server.change { $0.disconnectAtSegmentStart = nil }
+        fixture.server.change { $0.pauseAfterBytes = [:] }
         try await fixture.run()
         let ranges = fixture.server.gets.compactMap { $0.value(forHTTPHeaderField: "Range") }
-        #expect(ranges.contains("bytes=3145728-4194303"))
+        #expect(ranges.contains("bytes=\(mib + mib / 2)-\(2 * mib - 1)"))
         try fixture.checkResult(data)
     }
 }

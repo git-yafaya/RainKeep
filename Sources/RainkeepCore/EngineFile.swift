@@ -4,15 +4,18 @@ import Foundation
 struct EngineSegment: Codable {
     let start: Int64
     var next: Int64
-    let end: Int64?  // 右开边界，单连接下载没有分段边界
+    var end: Int64?  // 右开边界，单连接下载没有分段边界
 
     static let full = Self(start: 0, next: 0, end: nil)
+    private static let minimumSegmentSize: Int64 = 1 << 20
+    static let minimumSplitSize = 2 * minimumSegmentSize
+
+    var remaining: Int64 { (end ?? next) - next }
 
     static func split(total: Int64?, requested: Int, ranged: Bool) -> [Self] {
         guard ranged, let total, total > 0 else { return [.full] }
-        let mib: Int64 = 1 << 20
-        let wanted = requested == 0 ? (total < 4 * mib ? 1 : 4) : requested
-        let count = max(1, min(Int64(wanted), 16, total / mib))
+        let wanted = requested == 0 ? (total < 4 * minimumSegmentSize ? 1 : 4) : requested
+        let count = max(1, min(Int64(wanted), 16, total / minimumSegmentSize))
         let size = total / count
         return (0..<count).map { index in
             let start = index * size
@@ -27,9 +30,9 @@ private struct EngineState: Codable {
 
     func canResume(_ current: EngineResource, fileSize: Int64) -> Bool {
         guard resource == current, let total = current.total, fileSize <= total,
-              (1...16).contains(segments.count) else { return false }
+              !segments.isEmpty else { return false }
         var boundary: Int64 = 0
-        for segment in segments {
+        for segment in segments.sorted(by: { $0.start < $1.start }) {
             guard segment.start == boundary, let end = segment.end, end > boundary, end <= total,
                   (boundary...end).contains(segment.next),
                   segment.next == boundary || segment.next <= fileSize else { return false }
@@ -50,7 +53,8 @@ final class EngineFile: @unchecked Sendable {
     private var lastProgress: ContinuousClock.Instant?
     private var lastSave = ContinuousClock.now
 
-    var segments: [EngineSegment] { lock.withLock { state.segments } }
+    let rangeConcurrency: Int
+    private var nextUnclaimedIndex = 0
 
     init(_ job: DownloadJob, resource: EngineResource, ranged: Bool,
          progress: @escaping @Sendable (DownloadProgress) -> Void) throws {
@@ -58,6 +62,7 @@ final class EngineFile: @unchecked Sendable {
         manifest = part.appendingPathExtension("json")
         self.progress = progress
         let plan = EngineSegment.split(total: resource.total, requested: job.segments, ranged: ranged)
+        rangeConcurrency = plan.first?.end == nil ? 0 : plan.count
         state = EngineState(resource: resource, segments: plan)
 
         let exists = FileManager.default.fileExists(atPath: part.path)
@@ -85,15 +90,39 @@ final class EngineFile: @unchecked Sendable {
         }
     }
 
-    func write(_ data: Data, to index: Int) throws {
+    func claimRange(active: Set<Int>) -> (index: Int, range: Range<Int64>)? {
+        lock.withLock {
+            while nextUnclaimedIndex < state.segments.count {
+                let index = nextUnclaimedIndex
+                nextUnclaimedIndex += 1
+                let segment = state.segments[index]
+                if let end = segment.end, segment.next < end { return (index, segment.next..<end) }
+            }
+
+            guard let index = active.max(by: { state.segments[$0].remaining < state.segments[$1].remaining })
+            else { return nil }
+            let segment = state.segments[index]
+            guard segment.remaining >= EngineSegment.minimumSplitSize, let end = segment.end else { return nil }
+            let midpoint = segment.next + segment.remaining / 2
+            state.segments[index].end = midpoint
+            // 只追加新段，在途请求持有的索引才能保持有效。
+            let newIndex = state.segments.count
+            state.segments.append(EngineSegment(start: midpoint, next: midpoint, end: end))
+            nextUnclaimedIndex = state.segments.count
+            return (newIndex, midpoint..<end)
+        }
+    }
+
+    func write(_ data: Data, to index: Int, requestedEnd: Int64? = nil) throws -> Bool {
         try lock.withLock {
             let segment = state.segments[index]
-            let (next, overflow) = segment.next.addingReportingOverflow(Int64(data.count))
-            guard !overflow, next <= (segment.end ?? state.resource.total ?? Int64.max) else {
+            let (receivedEnd, overflow) = segment.next.addingReportingOverflow(Int64(data.count))
+            guard !overflow, receivedEnd <= (requestedEnd ?? state.resource.total ?? Int64.max) else {
                 throw EngineError.incomplete
             }
+            let next = min(receivedEnd, segment.end ?? receivedEnd)
             try handle.seek(toOffset: UInt64(segment.next))
-            try handle.write(contentsOf: data)
+            try handle.write(contentsOf: data.prefix(Int(next - segment.next)))
             state.segments[index].next = next
             let now = ContinuousClock.now
             if now - lastSave >= .seconds(2) { try save() }
@@ -101,6 +130,7 @@ final class EngineFile: @unchecked Sendable {
                 lastProgress = now
                 report()
             }
+            return segment.end != requestedEnd && segment.end == next
         }
     }
 

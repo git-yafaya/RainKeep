@@ -4,12 +4,13 @@ import Foundation
 // 每个请求独占一个委托，同一任务的回调按响应、数据、完成的顺序交付。
 final class EngineTransfer: NSObject, URLSessionDataDelegate, @unchecked Sendable {
     typealias Check = @Sendable (URLResponse) throws -> Void
-    typealias Receive = @Sendable (Data) throws -> Void
+    typealias Receive = @Sendable (Data) throws -> Bool
 
     private let check: Check
     private let receive: Receive
     private let completion: CheckedContinuation<Void, any Error>
     private var failure: (any Error)?
+    private var reachedSplitBoundary = false
 
     private init(check: @escaping Check, receive: @escaping Receive,
                  completion: CheckedContinuation<Void, any Error>) {
@@ -35,6 +36,7 @@ final class EngineTransfer: NSObject, URLSessionDataDelegate, @unchecked Sendabl
             // 启动前取消由上面的检查处理，避免错过任务的完成回调。
             lock.withLock { if task.delegate is EngineTransfer { task.cancel() } }
         }
+        try Task.checkCancellation()
     }
 
     func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive response: URLResponse,
@@ -49,9 +51,10 @@ final class EngineTransfer: NSObject, URLSessionDataDelegate, @unchecked Sendabl
     }
 
     func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive data: Data) {
-        guard failure == nil else { return }
+        guard failure == nil, !reachedSplitBoundary else { return }
         do {
-            try receive(data)
+            reachedSplitBoundary = try receive(data)
+            if reachedSplitBoundary { dataTask.cancel() }
         } catch {
             failure = error
             dataTask.cancel()
@@ -59,7 +62,8 @@ final class EngineTransfer: NSObject, URLSessionDataDelegate, @unchecked Sendabl
     }
 
     func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: (any Error)?) {
-        if let error = failure ?? error { completion.resume(throwing: error) }
+        if reachedSplitBoundary, (error as? URLError)?.code == .cancelled { completion.resume() }
+        else if let error = failure ?? error { completion.resume(throwing: error) }
         else { completion.resume() }
     }
 }
