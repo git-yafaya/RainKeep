@@ -55,7 +55,7 @@ How the extension works and how to troubleshoot it: [extension notes](browser/ch
 
 ## Build from source
 
-Needs macOS 14+ and Xcode (Command Line Tools alone can't build SwiftUI).
+Needs macOS 14+ and Xcode.
 
 ```bash
 ./scripts/make-app.sh && open .build/Rainkeep.app   # debug app

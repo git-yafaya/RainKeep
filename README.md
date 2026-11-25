@@ -55,7 +55,7 @@
 
 ## 从源码构建
 
-需要 macOS 14+ 和 Xcode（只有命令行工具编译不了 SwiftUI）。
+需要 macOS 14+ 和 Xcode。
 
 ```bash
 ./scripts/make-app.sh && open .build/Rainkeep.app   # 调试版 App
