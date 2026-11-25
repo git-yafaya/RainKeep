@@ -24,7 +24,7 @@
 
 ## Features
 
-- **Fast**: multi-connection segmented downloads when the server allows it; a segment that finishes early takes over half of the slowest one, so every connection stays busy
+- **Fast**: multi-connection segmented downloads when the server allows it; a connection that finishes early takes over half of the largest remaining segment, so every connection stays busy
 - **Reliable**: resumes after pausing, network loss or restart; retries network errors automatically
 - **Tidy**: files go into subfolders of Downloads by type; custom categories that learn your habits, even telling apart lorebooks and presets that are both JSON
 - **Browser takeover**: downloads in Chrome, Edge, Arc and Brave go straight to Rainkeep
