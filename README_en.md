@@ -24,7 +24,7 @@
 
 ## Features
 
-- **Fast**: multi-connection segmented downloads when the server allows it
+- **Fast**: multi-connection segmented downloads when the server allows it; a segment that finishes early takes over half of the slowest one, so every connection stays busy
 - **Reliable**: resumes after pausing, network loss or restart; retries network errors automatically
 - **Tidy**: files go into subfolders of Downloads by type; custom categories that learn your habits, even telling apart lorebooks and presets that are both JSON
 - **Browser takeover**: downloads in Chrome, Edge, Arc and Brave go straight to Rainkeep
@@ -43,6 +43,7 @@
 - "New Category" at the bottom of the sidebar; right-click a category to add subcategories (up to three levels); drag tasks onto a category. After about three manual moves, similar files are sorted automatically
 - The menu bar icon shows progress; while it's on, closing the window keeps downloads running
 - ⌘,: Settings (download folder, concurrent downloads, theme, text size, background, language and more)
+- Settings → Updates → Check for Updates: when a new version is out, "Catch the Rain" downloads its installer with Rainkeep itself
 
 ## Browser takeover
 
@@ -50,7 +51,7 @@
 2. Turn on "Developer mode" at the top right of that page and drag "Rainkeep Extension" in as a whole
 3. Settings shows "Connected to <browser>" when it works. Keep "Rainkeep Extension" where it is; the browser loads the extension from there
 
-Details: [browser/chrome/README.md](browser/chrome/README.md).
+How the extension works and how to troubleshoot it: [extension notes](browser/chrome/README.md) (in Chinese).
 
 ## Build from source
 
@@ -62,7 +63,12 @@ Needs macOS 14+ and Xcode (Command Line Tools alone can't build SwiftUI).
 DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test
 ```
 
-Layout: `Sources/RainkeepCore` holds the download engine and sorting logic, `Sources/Rainkeep` the UI, `Sources/RainkeepHost` and `browser/chrome` the browser host and extension, `prototype/` the UI prototype; UI rules are in [docs/UI.md](docs/UI.md).
+Code layout:
+
+- [Download engine and sorting logic](Sources/RainkeepCore): no UI code; this is what `swift test` covers
+- [UI](Sources/Rainkeep): SwiftUI
+- [Browser host](Sources/RainkeepHost) and [extension](browser/chrome): browser takeover
+- [UI prototype](prototype/index.html) and [UI rules](docs/UI.md) (in Chinese): read these before changing the UI
 
 ## License
 

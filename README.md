@@ -24,7 +24,7 @@
 
 ## 特点
 
-- **快**：服务器支持时多线程分段下载
+- **快**：服务器支持时多线程分段下载；哪段先下完，就去帮最慢的那段分担，线程一直跑满
 - **稳**：暂停、断网、重启后都从断点续传，网络出错自动重试
 - **会整理**：按类型放进「下载」下的子文件夹；自定义分类，学你的归类习惯，连同为 JSON 的世界书和预设都能分开
 - **接管浏览器**：Chrome、Edge、Arc、Brave 里点下载直接交给拾雨
@@ -43,6 +43,7 @@
 - 侧栏底部「新建分类」，右键分类可建子分类（最多三级）；把任务拖到分类上即可归类。同类文件手动归 3 次左右，之后就会自动归
 - 菜单栏图标随时看进度；开着它时关掉窗口，下载照常继续
 - ⌘,：设置（下载位置、同时下载数、主题、字号、背景图、语言等）
+- 设置 →「新雨」→ 检查更新：有新版时点「接住新雨」，拾雨自己把新版安装包下下来
 
 ## 接管浏览器下载
 
@@ -50,7 +51,7 @@
 2. 在扩展页右上角打开「开发者模式」，把「拾雨扩展」整个拖进去
 3. 设置里显示「已连接」就好了。装好后别删掉「拾雨扩展」，浏览器是从那里加载它的
 
-细节见 [browser/chrome/README.md](browser/chrome/README.md)。
+想了解扩展怎么工作、连不上怎么排查，见 [扩展说明](browser/chrome/README.md)。
 
 ## 从源码构建
 
@@ -62,7 +63,12 @@
 DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test
 ```
 
-目录：`Sources/RainkeepCore` 是下载引擎和分类等逻辑，`Sources/Rainkeep` 是界面，`Sources/RainkeepHost` 和 `browser/chrome` 是浏览器宿主和扩展，`prototype/` 是界面原型，界面规则见 [docs/UI.md](docs/UI.md)。
+代码结构：
+
+- [下载引擎与分类逻辑](Sources/RainkeepCore)：不依赖界面，`swift test` 测的就是它
+- [界面](Sources/Rainkeep)：SwiftUI
+- [浏览器宿主](Sources/RainkeepHost) 和 [扩展](browser/chrome)：接管浏览器下载
+- [界面原型](prototype/index.html) 和 [界面规则](docs/UI.md)：改界面先看这两个
 
 ## 许可证
 
