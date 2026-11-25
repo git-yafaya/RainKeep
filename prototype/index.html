@@ -713,7 +713,7 @@ const STRINGS = {
     connected: (browser) => `已连接 ${browser}`, notConnected: '未连接',
     update: '更新检测', updateCurrent: (v) => `当前 ${v}`, updateCheck: '检查更新', updateChecking: '正在望云…',
     updateLatest: '天晴 · 已是最新', updateFound: (v) => `新雨已至 · ${v}`, updateGet: '接住新雨',
-    updateFailed: '无云可望 · 请检查网络后再试', updateRetry: '重试', updateFoundTip: (v) => `新雨已至 · ${v}，点击接住`,
+    bgFailed: '无法读取背景图片', updateFailed: '无云可望 · 请检查网络后再试', updateRetry: '重试', updateFoundTip: (v) => `新雨已至 · ${v}，点击接住`,
     panelActive: '进行中', panelDone: '最近完成', panelOpen: '打开拾雨', panelQuit: '退出',
     panelEmpty: '没有进行中的下载', panelEmptyDone: '还没有完成的下载',
     panelTitle: (n, speed) => (n ? `进行中 · ${n} 个 · ${speed}/s` : '进行中'),
@@ -747,7 +747,7 @@ const STRINGS = {
     connected: (browser) => `Connected to ${browser}`, notConnected: 'Not connected',
     update: 'Updates', updateCurrent: (v) => `Version ${v}`, updateCheck: 'Check for Updates', updateChecking: 'Watching the clouds…',
     updateLatest: 'Clear skies · Up to date', updateFound: (v) => `Fresh rain is here · ${v}`, updateGet: 'Catch the Rain',
-    updateFailed: 'No clouds in sight · Check your network and try again', updateRetry: 'Retry', updateFoundTip: (v) => `Fresh rain is here · ${v}. Click to catch it`,
+    bgFailed: "Couldn't load the background image", updateFailed: 'No clouds in sight · Check your network and try again', updateRetry: 'Retry', updateFoundTip: (v) => `Fresh rain is here · ${v}. Click to catch it`,
     panelActive: 'Active', panelDone: 'Recently Completed', panelOpen: 'Open Rainkeep', panelQuit: 'Quit',
     panelEmpty: 'Nothing downloading', panelEmptyDone: 'Nothing finished yet',
     panelTitle: (n, speed) => (n ? `Active · ${n} · ${speed}/s` : 'Active'),
@@ -1059,7 +1059,7 @@ function measureBrightness(url) {
       for (let i = 0; i < data.length; i += 4) sum += 0.2126 * data[i] + 0.7152 * data[i + 1] + 0.0722 * data[i + 2];
       resolve(sum / (data.length / 4) / 255);
     };
-    img.onerror = () => reject(new Error('图片读不出来'));
+    img.onerror = () => reject(new Error(t('bgFailed')));
     img.src = url;
   });
 }
@@ -1579,7 +1579,7 @@ $('browserConnect').addEventListener('click', () => {
   setTimeout(() => { linkedBrowser = 'Chrome'; renderBrowserLink(); }, 3000);
 });
 /* ---------- 更新检测：原型里第一次检查是「已是最新」，再检查一次「新雨已至」 ---------- */
-const APP_VERSION = '1.3';
+const APP_VERSION = '1.5';
 const SKY_SVG = `<svg class="sky" viewBox="0 0 20 18" aria-hidden="true">
   <path class="cloud" d="M5.5 10.5h9a3.25 3.25 0 0 0 .4-6.48A4.75 4.75 0 0 0 5.9 4.2a3.15 3.15 0 0 0-.4 6.3z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
   <g class="drops" stroke="currentColor" stroke-width="1.4" stroke-linecap="round">
@@ -1629,7 +1629,7 @@ function checkOrCatch() {
   renderUpdate();
   setTimeout(() => {
     updateChecks++;
-    update = updateChecks === 1 ? { state: 'latest' } : { state: 'available', version: '1.4' };
+    update = updateChecks === 1 ? { state: 'latest' } : { state: 'available', version: '1.6' };
     renderUpdate();
   }, UPDATE_DEMO_MS);
 }
