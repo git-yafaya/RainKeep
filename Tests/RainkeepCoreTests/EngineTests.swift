@@ -16,6 +16,7 @@ private struct Reply {
     var omitAcceptRanges = false
     var pauseAfterBytes: [Int: Int] = [:]
     var badContentRange = false
+    var disposition: String?
 }
 
 private final class Server: @unchecked Sendable {
@@ -71,6 +72,7 @@ private final class EngineProtocol: URLProtocol, @unchecked Sendable {
         var headers = ["Accept-Ranges": reply.ranges ? "bytes" : "none",
                        "ETag": reply.etag, "Last-Modified": reply.lastModified]
         if reply.omitAcceptRanges { headers.removeValue(forKey: "Accept-Ranges") }
+        if let disposition = reply.disposition { headers["Content-Disposition"] = disposition }
         if status == 200, reply.ranges, !reply.ignoreRange,
            let range = request.value(forHTTPHeaderField: "Range") {
             let bounds = range.dropFirst("bytes=".count).split(separator: "-")
@@ -353,6 +355,24 @@ private func changedResourceRestarts(_ change: Change) async throws {
         let request = try #require(fixture.server.gets.only)
         #expect(request.value(forHTTPHeaderField: "Range") == "bytes=0-\(new.count - 1)")
         try fixture.checkResult(new)
+    }
+}
+
+/// 服务器在 Content-Disposition 里给的名字随进度报给 App；HEAD 不支持分段时走首字节探测也要拿到
+@Test(arguments: [true, false])
+private func reportsServerFileName(ranges: Bool) async throws {
+    let data = payload(2 * mib)
+    let reply = Reply(body: data, ranges: ranges, disposition: #"attachment; filename="report 1.pdf""#)
+    try await withServer(reply) { fixture in
+        let log = ProgressLog()
+        try await fixture.run(log.append)
+        #expect(log.last?.serverName == "report 1.pdf")
+        try fixture.checkResult(data)
+    }
+    try await withServer(Reply(body: data)) { fixture in
+        let log = ProgressLog()
+        try await fixture.run(log.append)
+        #expect(log.last?.serverName == nil)
     }
 }
 

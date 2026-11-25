@@ -42,6 +42,8 @@ final class DownloadStore {
     @ObservationIgnored var learner = CategoryLearner()
     /// 浏览器带来的 Cookie 等请求头只放内存，不写进存盘文件
     @ObservationIgnored var headers: [UUID: [String: String]] = [:]
+    /// 服务器在 Content-Disposition 里给的文件名，下完时用
+    @ObservationIgnored var serverNames: [UUID: String] = [:]
 
     @ObservationIgnored private var toastToken = 0
     @ObservationIgnored var jobs: [UUID: Task<Void, Never>] = [:]
@@ -162,6 +164,7 @@ final class DownloadStore {
             let fileName = task.fileName ?? Naming.fileName(from: task.url)
             var item = DownloadItem(name: fileName, url: task.url, size: 0)
             item.features = LearnFeatures.make(url: task.url, referrer: task.referrer, fileName: fileName)
+            if task.fileName == nil { item.guessedName = true }
             if settings.learn, let suggestion = learner.suggest(item.features ?? [], in: categories) {
                 item.group = suggestion.category
                 item.autoSorted = true
@@ -207,6 +210,7 @@ final class DownloadStore {
         let job = jobs.removeValue(forKey: id)
         job?.cancel()
         headers[id] = nil
+        serverNames[id] = nil
         reschedule()
         guard item.status != .completed, let destination = item.destination else { return }
         Task {

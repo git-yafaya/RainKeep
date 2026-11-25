@@ -19,6 +19,8 @@ public struct DownloadJob: Sendable {
 public struct DownloadProgress: Sendable {
     public var received: Int64
     public var total: Int64?
+    /// 服务器在 Content-Disposition 里给的文件名，没给是 nil
+    public var serverName: String?
 }
 
 enum EngineError: LocalizedError, Equatable {
@@ -89,8 +91,12 @@ public enum DownloadEngine {
         defer { _ = lock.withLock { destinations.remove(path) } }
 
         do {
-            let (resource, ranges) = try await probe(job, session)
-            let file = try EngineFile(job, resource: resource, ranged: ranges, progress: onProgress)
+            let (resource, ranges, serverName) = try await probe(job, session)
+            let file = try EngineFile(job, resource: resource, ranged: ranges) { progress in
+                var progress = progress
+                progress.serverName = serverName
+                onProgress(progress)
+            }
             do {
                 try await download(job, resource, file, session)
             } catch {
@@ -124,14 +130,16 @@ public enum DownloadEngine {
         return http
     }
 
-    /// 先用 HEAD 探测，必要时再请求首字节。
-    private static func probe(_ job: DownloadJob, _ session: URLSession) async throws -> (EngineResource, Bool) {
+    /// 先用 HEAD 探测，必要时再请求首字节；顺带取服务器给的文件名。
+    /// shortcut: 只看探测响应里的 Content-Disposition，HEAD 不带、只有正式 GET 才带的服务器取不到，遇到再改。
+    private static func probe(_ job: DownloadJob, _ session: URLSession) async throws -> (EngineResource, Bool, String?) {
         var head = request(job)
         head.httpMethod = "HEAD"
         let (_, response) = try await session.data(for: head)
         guard let http = response as? HTTPURLResponse else { throw EngineError.invalidResponse }
+        let headName = (200..<300).contains(http.statusCode) ? serverName(http) : nil
         if (200..<300).contains(http.statusCode), let ranges = http.value(forHTTPHeaderField: "Accept-Ranges") {
-            return (EngineResource(job.url, http), ranges.lowercased() == "bytes")
+            return (EngineResource(job.url, http), ranges.lowercased() == "bytes", headName)
         }
 
         var sample = request(job)
@@ -140,14 +148,19 @@ public enum DownloadEngine {
         bytes.task.cancel()  // 只取响应头，服务器可能忽略 Range 并发送整个文件。
         try Task.checkCancellation()
         let sampled = try checked(headers)
-        guard sampled.statusCode == 206 else { return (EngineResource(job.url, sampled), false) }
+        let name = headName ?? serverName(sampled)
+        guard sampled.statusCode == 206 else { return (EngineResource(job.url, sampled), false, name) }
         let prefix = "bytes 0-0/"
         guard let range = sampled.value(forHTTPHeaderField: "Content-Range")?.lowercased(),
               range.hasPrefix(prefix) else { throw EngineError.invalidResponse }
         let length = range.dropFirst(prefix.count)
-        if length == "*" { return (EngineResource(job.url, sampled), false) }
+        if length == "*" { return (EngineResource(job.url, sampled), false, name) }
         guard let total = Int64(length), total > 0 else { throw EngineError.invalidResponse }
-        return (EngineResource(job.url, sampled, probedLength: total), true)
+        return (EngineResource(job.url, sampled, probedLength: total), true, name)
+    }
+
+    private static func serverName(_ response: HTTPURLResponse) -> String? {
+        response.value(forHTTPHeaderField: "Content-Disposition").flatMap(Naming.fileName(fromDisposition:))
     }
 
     /// 调度各分段，服务器不支持范围时退回整文件下载。

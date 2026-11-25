@@ -61,6 +61,8 @@ public struct DownloadItem: Identifiable, Codable, Sendable {
     public var features: [String]?
     /// 分类是按习惯自动归的；用户挪走时要给原分类扣票。老版本存的任务没有，当作 false
     public var autoSorted: Bool?
+    /// 名字是从链接猜的（浏览器没给），下完换成服务器给的名字。老版本存的任务没有，当作 false
+    public var guessedName: Bool?
 
     public init(id: UUID = UUID(), name: String, url: URL? = nil, destination: URL? = nil,
                 size: Int64, received: Int64 = 0, status: TaskStatus = .queued) {

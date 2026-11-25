@@ -65,6 +65,7 @@ extension DownloadStore {
 
     private func apply(_ progress: DownloadProgress, to id: UUID) {
         let now = ContinuousClock.now
+        if let name = progress.serverName { serverNames[id] = name }
         update(id) { item in
             guard item.status == .downloading else { return }
             item.received = progress.received
@@ -91,6 +92,7 @@ extension DownloadStore {
             $0.speed = 0
             $0.message = nil
         }
+        adoptServerName(id)
         let resorted = settings.learn ? resort(id) : nil
         relocate(id)
         if let resorted {
@@ -100,6 +102,29 @@ extension DownloadStore {
             SystemNotice.post(language.pick("下载完成", "Download complete"), body: name)
         }
         reschedule()
+    }
+
+    /// 名字是从链接猜的（比如 download.php），下完换成服务器给的名字，并挪进新类型对应的文件夹
+    private func adoptServerName(_ id: UUID) {
+        guard let name = serverNames.removeValue(forKey: id),
+              let i = items.firstIndex(where: { $0.id == id }), items[i].guessedName == true,
+              let source = items[i].destination else { return }
+        items[i].guessedName = nil
+        var renamed = items[i]
+        renamed.name = name
+        let dir = directory(for: renamed)
+        // 自己占着的名字不算重名，免得 a (1).zip 又被改成 a (2).zip
+        let taken = takenNames(in: dir).subtracting(dir.path == source.deletingLastPathComponent().path ? [source.lastPathComponent] : [])
+        let target = dir.appending(path: Naming.uniqueName(name, taken: taken))
+        guard target.path != source.path else { return }
+        do {
+            try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+            try FileManager.default.moveItem(at: source, to: target)
+            items[i].name = target.lastPathComponent
+            items[i].destination = target
+        } catch {
+            showToast(language.pick("改名失败：", "Couldn't rename the file: ") + error.localizedDescription)
+        }
     }
 
     private func fail(_ id: UUID, _ message: String) {
