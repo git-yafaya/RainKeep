@@ -43,6 +43,6 @@ DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test
 
 1. 改 `scripts/make-app.sh` 里的 `CFBundleShortVersionString` 和 `CFBundleVersion`（后者每次加一）
 2. `./scripts/make-dmg.sh`
-3. `gh release create v<版本> dist/Rainkeep-<版本>.dmg --title "拾雨 Rainkeep <版本>" --notes-file <说明>`；说明照前几版的格式：中文分「新功能 / 修复 / 升级」，最后附一段英文
+3. `gh release create v<版本> dist/Rainkeep-<版本>.dmg --title "拾雨 Rainkeep <版本>" --notes-file <说明>`；说明按全局 CLAUDE.md「中文文案」的更新日志格式写，正文不再重复标题
 
 App 只做了临时签名、没有公证，别的 Mac 首次打开要在「隐私与安全性」里点「仍要打开」。`dist/`、`*.dmg` 已在 `.gitignore`，不进仓库。
