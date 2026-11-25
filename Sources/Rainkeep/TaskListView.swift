@@ -95,7 +95,7 @@ struct TaskRow: View {
                 let (icon, label) = toggleAction
                 IconButton(systemName: icon, label: label) { store.toggle(item.id) }
                 if !compact {
-                    IconButton(systemName: "xmark", label: language.pick("移除", "Remove")) { store.remove(item.id) }
+                    IconButton(systemName: "trash", label: language.pick("删除", "Delete")) { store.pendingDelete = item.id }
                 }
             }
             .opacity(hovering || compact ? 1 : 0)
@@ -110,7 +110,7 @@ struct TaskRow: View {
         .contextMenu { if !compact { menu } }
     }
 
-    /// 右键：移到某个分类（按层级缩进）、移出分类、移除任务
+    /// 右键：移到某个分类（按层级缩进）、移出分类、从列表移除、删除
     @ViewBuilder private var menu: some View {
         let categories = flattened(parent: nil, depth: 0)
         if !categories.isEmpty {
@@ -127,7 +127,8 @@ struct TaskRow: View {
             }
             Divider()
         }
-        Button(language.pick("移除", "Remove"), role: .destructive) { store.remove(item.id) }
+        Button(language.pick("从列表移除", "Remove from List")) { store.remove(item.id) }
+        Button(language.pick("删除…", "Delete…"), role: .destructive) { store.pendingDelete = item.id }
     }
 
     private func flattened(parent: UUID?, depth: Int) -> [(category: UserCategory, depth: Int)] {

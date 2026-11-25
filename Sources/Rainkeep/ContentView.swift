@@ -242,7 +242,10 @@ struct ToastView: View {
 
     var body: some View {
         ZStack {
-            if let text = store.toastText {
+            if let item = store.items.first(where: { $0.id == store.pendingDelete }) {
+                // 点了删除后紧接着出完成提示，确认条直接消失，免得两条叠着淡入淡出
+                DeleteConfirm(item: item).transition(.asymmetric(insertion: .opacity, removal: .identity))
+            } else if let text = store.toastText {
                 Text(text)
                     .font(theme.font(12))
                     .foregroundStyle(theme.card)
@@ -250,10 +253,78 @@ struct ToastView: View {
                     .padding(.vertical, 6)
                     .background(RoundedRectangle(cornerRadius: 8).fill(theme.text.opacity(0.92)))
                     .transition(.opacity)
+                    .allowsHitTesting(false)
             }
         }
+        .padding(.horizontal, 24)
         .padding(.bottom, 44)
         .animation(.easeOut(duration: 0.2), value: store.toastText)
-        .allowsHitTesting(false)
+        .animation(.easeOut(duration: 0.2), value: store.pendingDelete)
+    }
+}
+
+/// 删除确认条：和提示同一位置，等用户点取消或删除，Esc 取消；文件名太长时截掉中间
+private struct DeleteConfirm: View {
+    let item: DownloadItem
+    @Environment(DownloadStore.self) private var store
+    @Environment(\.theme) private var theme
+    @Environment(\.language) private var language
+    private static let nameWidth: CGFloat = 260
+
+    var body: some View {
+        HStack(spacing: 4) {
+            HStack(spacing: 0) {
+                Text(language.pick("删除「", "Delete “")).layoutPriority(1)
+                Text(item.name).lineLimit(1).truncationMode(.middle).frame(maxWidth: Self.nameWidth)
+                Text(consequence).layoutPriority(1)
+            }
+            .padding(.trailing, 6)
+            Button(language.pick("取消", "Cancel")) { store.pendingDelete = nil }
+                .keyboardShortcut(.cancelAction)
+                .buttonStyle(ToastButtonStyle(color: theme.card.opacity(0.75)))
+            Button(language.pick("删除", "Delete")) { store.confirmDelete() }
+                .fontWeight(.semibold)
+                .buttonStyle(ToastButtonStyle(color: theme.danger))
+        }
+        .font(theme.font(12))
+        .foregroundStyle(theme.card)
+        .padding(.leading, 12)
+        .padding(.trailing, 4)
+        .padding(.vertical, 4)
+        .background(RoundedRectangle(cornerRadius: 8).fill(theme.text.opacity(0.92)))
+        .accessibilityElement(children: .contain)
+    }
+
+    private var consequence: String {
+        item.status == .completed
+            ? language.pick("」？文件会移到废纸篓", "”? The file will be moved to the Trash.")
+            : language.pick("」？已下载的部分会一起删除", "”? Downloaded data will be discarded.")
+    }
+}
+
+/// 确认条里的文字按钮：悬停时垫一层浅底
+private struct ToastButtonStyle: ButtonStyle {
+    let color: Color
+
+    func makeBody(configuration: Configuration) -> some View {
+        ToastButtonBody(configuration: configuration, color: color)
+    }
+}
+
+private struct ToastButtonBody: View {
+    let configuration: ButtonStyleConfiguration
+    let color: Color
+    @State private var hovering = false
+    @Environment(\.theme) private var theme
+
+    var body: some View {
+        configuration.label
+            .foregroundStyle(color)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 3)
+            .background(RoundedRectangle(cornerRadius: 5).fill(theme.card.opacity(hovering ? 0.18 : 0)))
+            .opacity(configuration.isPressed ? 0.7 : 1)
+            .contentShape(Rectangle())
+            .onHover { hovering = $0 }
     }
 }

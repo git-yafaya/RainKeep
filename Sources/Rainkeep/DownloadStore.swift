@@ -32,6 +32,8 @@ final class DownloadStore {
     var statusFilter: StatusFilter = .all
     var dialog: Dialog?
     var toastText: String?
+    /// 等用户确认删除的任务，底部显示确认条
+    var pendingDelete: UUID?
     /// 正在侧栏里改名的分类
     var renaming: UUID?
     private(set) var backgroundImage: NSImage?
@@ -221,6 +223,22 @@ final class DownloadStore {
                 try? FileManager.default.removeItem(at: file)  // 文件可能本来就不存在
             }
         }
+    }
+
+    /// 删除任务和文件：已下完的移到废纸篓（访达里能放回原处），没下完的连同临时文件删掉
+    func confirmDelete() {
+        let id = pendingDelete
+        pendingDelete = nil
+        guard let id, let item = items.first(where: { $0.id == id }) else { return }
+        guard item.status == .completed, let file = item.destination,
+              FileManager.default.fileExists(atPath: file.path) else { return remove(id) }
+        do {
+            try FileManager.default.trashItem(at: file, resultingItemURL: nil)
+        } catch {
+            return showToast(language.pick("移到废纸篓失败：", "Couldn't move to the Trash: ") + error.localizedDescription)
+        }
+        remove(id)
+        showToast(language.pick("已将「\(item.name)」移到废纸篓", "Moved “\(item.name)” to the Trash"))
     }
 
     func pauseOrResumeAll() {

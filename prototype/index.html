@@ -409,6 +409,21 @@
     opacity: 0; transition: opacity .2s; pointer-events: none; white-space: nowrap;
   }
   .toast.show { opacity: .92; }
+  /* 删除确认：和提示同一位置的深色条，带取消、删除两个按钮，等用户选 */
+  .confirm {
+    position: absolute; left: 50%; bottom: 44px; transform: translateX(-50%); z-index: 31;
+    display: none; align-items: center; gap: 4px; max-width: calc(100% - 48px);
+    background: var(--text); color: var(--window);
+    padding: 4px 4px 4px 12px; border-radius: 8px; font-size: var(--fs-xs);
+  }
+  .confirm.show { display: flex; animation: fade .2s ease-out; }
+  .confirm .msg { display: flex; min-width: 0; white-space: nowrap; margin-right: 6px; }
+  .confirm .fname { overflow: hidden; text-overflow: ellipsis; max-width: 260px; }
+  .confirm button { border: 0; background: none; color: inherit; font: inherit; padding: 3px 8px; border-radius: 5px; opacity: .75; }
+  .confirm button:hover { opacity: 1; background: color-mix(in srgb, var(--window) 18%, transparent); }
+  .confirm button.danger { color: var(--danger); opacity: 1; font-weight: 600; }
+  @keyframes fade { from { opacity: 0; } }
+  @media (prefers-reduced-motion: reduce) { .confirm.show { animation: none; } }
 
   /* 模拟菜单栏 + 状态栏面板（仿 Vorssaint：顶部图标、页签、小标题、卡片、底部两个按钮） */
   .menubar {
@@ -622,6 +637,11 @@
   </div>
 
   <div class="toast" id="toast" role="status"></div>
+  <div class="confirm" id="confirm" role="alertdialog">
+    <span class="msg"><span></span><span class="fname"></span><span></span></span>
+    <button id="confirmCancel" data-i18n="cancel"></button>
+    <button id="confirmDelete" class="danger" data-i18n="deleteTask"></button>
+  </div>
 </div>
 <div class="ctx" id="ctx" role="menu"></div>
 
@@ -672,7 +692,9 @@ const STRINGS = {
     themeSystem: '跟随系统', themeRainforest: '热带雨林', themeOrange: '初夏橙皮', themeGardenia: '雨后栀子',
     langAuto: '跟随系统',
     count: (n) => `${n} 个`, segs: (n) => `${n} 段`, auto: '自动',
-    pause: '暂停', resume: '继续', retry: '重试', reveal: '在访达中显示', removeTask: '移除',
+    pause: '暂停', resume: '继续', retry: '重试', reveal: '在访达中显示', removeTask: '从列表移除', deleteTask: '删除',
+    confirmTrash: (n) => `删除「${n}」？文件会移到废纸篓`, confirmDiscard: (n) => `删除「${n}」？已下载的部分会一起删除`,
+    trashed: (n) => `已将「${n}」移到废纸篓`,
     queued: '排队中', paused: '已暂停', failed: '连接中断', left: '剩',
     sec: '秒', min: '分', hour: '小时',
     emptyAll: '把链接拖进来，或按 ⌘N', emptyFilter: '没有符合条件的任务',
@@ -704,7 +726,9 @@ const STRINGS = {
     themeSystem: 'System', themeRainforest: 'Rainforest', themeOrange: 'Orange Peel', themeGardenia: 'Gardenia',
     langAuto: 'System',
     count: (n) => String(n), segs: (n) => String(n), auto: 'Auto',
-    pause: 'Pause', resume: 'Resume', retry: 'Retry', reveal: 'Show in Finder', removeTask: 'Remove',
+    pause: 'Pause', resume: 'Resume', retry: 'Retry', reveal: 'Show in Finder', removeTask: 'Remove from List', deleteTask: 'Delete',
+    confirmTrash: (n) => `Delete “${n}”? The file will be moved to the Trash.`, confirmDiscard: (n) => `Delete “${n}”? Downloaded data will be discarded.`,
+    trashed: (n) => `Moved “${n}” to the Trash`,
     queued: 'Queued', paused: 'Paused', failed: 'Connection lost', left: '',
     sec: 's', min: 'min', hour: 'h',
     emptyAll: 'Drop links here, or press ⌘N', emptyFilter: 'No matching tasks',
@@ -751,6 +775,7 @@ const ICONS = {
   retry:    '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M13 8a5 5 0 1 1-1.5-3.6M13 2.5v2.8h-2.8"/></svg>',
   folder:   '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M2 4.5c0-.6.4-1 1-1h3.2l1.5 1.6H13c.6 0 1 .4 1 1v5.9c0 .6-.4 1-1 1H3c-.6 0-1-.4-1-1z"/></svg>',
   folderPlus: '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4.5c0-.6.4-1 1-1h3.2l1.5 1.6H13c.6 0 1 .4 1 1v5.9c0 .6-.4 1-1 1H3c-.6 0-1-.4-1-1z"/><path d="M8 7.5v3.5M6.25 9.25h3.5"/></svg>',
+  trash:    '<svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 4h11M6 4V2.5h4V4M4 4l.7 9.5h6.6L12 4M6.8 6.5v4.5M9.2 6.5v4.5"/></svg>',
   close:    '<svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 4l8 8M12 4l-8 8"/></svg>',
   sliders:  '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M2.5 5h6M12.5 5h1M2.5 11h1M7.5 11h6"/><circle cx="10.5" cy="5" r="1.7"/><circle cx="5.5" cy="11" r="1.7"/></svg>',
   chevron:  '<svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6l4 4 4-4"/></svg>',
@@ -1217,9 +1242,9 @@ function renderList(animate) {
     toggle.setAttribute('aria-label', label);
     toggle.title = label;
     const remove = row.querySelector('[data-act="remove"]');
-    remove.innerHTML = ICONS.close;
-    remove.setAttribute('aria-label', t('removeTask'));
-    remove.title = t('removeTask');
+    remove.innerHTML = ICONS.trash;
+    remove.setAttribute('aria-label', t('deleteTask'));
+    remove.title = t('deleteTask');
     updateRow(row, task);
     list.append(row);
   });
@@ -1660,7 +1685,8 @@ $('list').addEventListener('contextmenu', (e) => {
   const entries = [{ heading: t('moveTo') }, ...flatGroups().map(({ group, depth }) =>
     ({ label: group.name, indent: depth, run: () => moveToGroup(task, group.id) }))];
   if (task.group) entries.push('-', { label: t('noGroup'), run: () => moveToGroup(task, null) });
-  entries.push('-', { label: t('removeTask'), danger: true, run: () => removeTask(task.id) });
+  entries.push('-', { label: t('removeTask'), run: () => removeTask(task.id) },
+    { label: t('deleteTask'), danger: true, run: () => askDelete(task.id) });
   openContext(e.clientX, e.clientY, entries);
 });
 
@@ -1754,6 +1780,32 @@ function removeTask(id) {
   renderAll();
 }
 
+// 删除前在底部确认；已下完的文件移到废纸篓，没下完的连同临时文件删掉
+let pendingDelete = null;
+function askDelete(id) {
+  const task = tasks.find((x) => x.id === id);
+  pendingDelete = id;
+  const [pre, post] = t(task.status === 'completed' ? 'confirmTrash' : 'confirmDiscard', '\u0000').split('\u0000');
+  const [preEl, nameEl, postEl] = $('confirm').querySelector('.msg').children;
+  preEl.textContent = pre; nameEl.textContent = task.name; nameEl.title = task.name; postEl.textContent = post;
+  $('toast').classList.remove('show');
+  $('confirm').classList.add('show');
+  $('confirmDelete').focus({ focusVisible: false });
+}
+function closeConfirm() {
+  pendingDelete = null;
+  $('confirm').classList.remove('show');
+}
+function confirmDelete() {
+  const task = tasks.find((x) => x.id === pendingDelete);
+  closeConfirm();
+  if (!task) return;
+  removeTask(task.id);
+  if (task.status === 'completed') toast(t('trashed', task.name));
+}
+$('confirmCancel').addEventListener('click', closeConfirm);
+$('confirmDelete').addEventListener('click', confirmDelete);
+
 function toggleTask(task) {
   switch (task.status) {
     case 'downloading':
@@ -1768,7 +1820,7 @@ $('list').addEventListener('click', (e) => {
   const btn = e.target.closest('[data-act]');
   if (!btn) return;
   const id = Number(btn.closest('.row').dataset.id);
-  if (btn.dataset.act === 'remove') removeTask(id);
+  if (btn.dataset.act === 'remove') askDelete(id);
   else toggleTask(tasks.find((x) => x.id === id));
 });
 
@@ -1790,6 +1842,7 @@ document.addEventListener('keydown', (e) => {
   const cmd = e.metaKey || e.ctrlKey;
   if (e.key === 'Escape') {
     if ($('ctx').classList.contains('open')) closeContext();
+    else if (pendingDelete !== null) closeConfirm();
     else if (openDd) { const btn = openDd.querySelector('.dd-btn'); closeDropdown(); btn.focus(); }
     else if ($('panel').classList.contains('open')) closePanel();
     else closeDialog();

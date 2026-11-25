@@ -39,7 +39,7 @@
 ## Usage
 
 - ⌘N or the toolbar `+`: paste links (one per line), ⌘Enter to start; or drag links onto the window
-- Hover a task to pause, resume, retry or remove it
+- Hover a task to pause, resume, retry or delete it. Deleting asks first and moves a finished file to the Trash; to clear only the entry, right-click and choose "Remove from List"
 - "New Category" at the bottom of the sidebar; right-click a category to add subcategories (up to three levels); drag tasks onto a category. After about three manual moves, similar files are sorted automatically
 - The menu bar icon shows progress; while it's on, closing the window keeps downloads running
 - ⌘,: Settings (download folder, concurrent downloads, theme, text size, background, language and more)
