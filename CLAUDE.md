@@ -34,7 +34,7 @@ DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test
 - 分类学习 (`Categories.swift`): 分层加权投票 + 60 天半衰期, 层级 [json, png] → [path, page, word] → [site, ext]. 添加时按网址特征建议, 下载完按文件内容 (`ContentFingerprint`) 再归一次. **用户手动指定的分类永远不覆盖.**
 - 下载结构: `DownloadStore` 管任务增删, 外观, 存盘, 调度和重试在 `DownloadStore+Engine`, 分类在 `DownloadStore+Categories`; 存盘格式在 Core 的 `SavedState`.
 - 动态分段: 某段下完就把剩余最多那段对半劈开, `.part.json` 里段数会超过 16. 1.0 读不了这种记录, 降级回 1.0 会从头重下.
-- 文件名三个来源, 优先级从高到低: 浏览器给的名字 → 下完后服务器响应头 `Content-Disposition` 给的名字 (只替换从链接猜的名字, `guessedName`) → 链接. 签名下载地址 (GitHub Release, S3, Azure) 的真名藏在 `rscd` / `response-content-disposition` 参数里, `+` 是空格; 路径末尾只是一串 ID.
+- 文件名三个来源, 优先级从高到低: 浏览器给的名字 → 下完后服务器响应头 `Content-Disposition` 给的名字 (只替换从链接猜的名字, `guessedName`) → 链接. 签名下载地址 (GitHub Release, S3, Azure) 的真名藏在 `rscd` / `response-content-disposition` / `b2ContentDisposition` (Civitai 用的 Backblaze B2) 参数里, `+` 是空格; 路径末尾只是一串 ID.
 - 更新检测读 GitHub 最新 Release (`UpdateCheck`): 版本号取 tag (去掉开头的 v), 安装包取附件里第一个 `.dmg`. 发版时 tag 必须是 `v<版本>`, 附件必须带 DMG, 否则老用户检测不到新版.
 - 用真 App 测试会读写真实的 `~/Library/Application Support/Rainkeep/`, 浏览器宿主清单也会指向刚启动的那个 .app: 测之前先备份 `state.json`, `extension.json`, 测完还原, 再打开 `/Applications` 里的正式版把宿主指回去. 下载相关的改动用真实文件验证, 并核对官方公布的 sha256.
 - 改图标只改 `assets/AppIcon.svg`, 跑 `./scripts/make-icon.sh` 同时生成 `.icns` 和扩展图标, 产物一起提交.

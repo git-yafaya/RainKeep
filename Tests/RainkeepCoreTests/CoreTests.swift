@@ -30,6 +30,9 @@ import Testing
     #expect(Naming.fileName(from: github) == "NAI_Launcher_macOS_4.4.0+47_Portable.zip")
     let azure = URL(string: "https://a.blob.core.windows.net/c/123?rscd=attachment%3B%20filename%2A%3DUTF-8%27%27%25E6%25B5%258B.zip")!
     #expect(Naming.fileName(from: azure) == "测.zip")
+    // 2026-11 真实 Civitai（Backblaze B2）签名地址，Authorization 省略：路径是简写名，真名带引号放在 b2ContentDisposition
+    let b2 = URL(string: "https://b2-large.civitai.com/file/civitai-modelfiles/model/1172194/krea2AnimeV14Q4KM.d46a3c79f2fe2ab26a0b7ae0bea74563.gguf?b2ContentDisposition=attachment%3B+filename%3D%22krea_2_anime_v1.4-Q4_K_M.gguf%22")!
+    #expect(Naming.fileName(from: b2) == "krea_2_anime_v1.4-Q4_K_M.gguf")
     #expect(Naming.fileName(fromDisposition: #"attachment; filename="../../etc/a.txt""#) == "a.txt")
     #expect(Naming.fileName(fromDisposition: "inline") == nil)
     #expect(Naming.fileName(from: URL(string: "https://x.com/a.zip?response-content-disposition=inline")!) == "a.zip")

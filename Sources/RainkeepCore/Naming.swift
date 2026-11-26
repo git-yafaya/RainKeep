@@ -12,9 +12,9 @@ public enum Naming {
         return scheme == "http" || scheme == "https"
     }
 
-    /// 签名下载地址（GitHub、S3 用 response-content-disposition，Azure 用 rscd）把真名放在参数里，
-    /// 路径最后一段只是一串 ID，所以先看参数
-    private static let dispositionParams: Set<String> = ["response-content-disposition", "rscd"]
+    /// 签名下载地址（GitHub、S3 用 response-content-disposition，Azure 用 rscd，Backblaze B2 用 b2ContentDisposition）
+    /// 把真名放在参数里，路径最后一段只是一串 ID 或简写名，所以先看参数
+    private static let dispositionParams: Set<String> = ["response-content-disposition", "rscd", "b2contentdisposition"]
 
     public static func fileName(from url: URL) -> String {
         // 按表单规则解码：+ 是空格，%2B 才是加号（GitHub 的 rscd 就用 + 当空格）
