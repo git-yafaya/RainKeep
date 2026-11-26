@@ -138,6 +138,7 @@ private struct RenameField: View {
     @Environment(\.language) private var language
     @State private var name = ""
     @State private var clickMonitor: Any?
+    @State private var frame = CGRect.zero
     @FocusState private var focused: Bool
 
     var body: some View {
@@ -149,12 +150,14 @@ private struct RenameField: View {
             .frame(height: 22)
             .background(RoundedRectangle(cornerRadius: 5).fill(theme.card))
             .overlay(RoundedRectangle(cornerRadius: 5).strokeBorder(theme.fieldFocus))
+            .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { frame = $0 }
             .padding(.horizontal, 6)
             .frame(height: 28)
             .onAppear {
                 name = category.name
-                focused = true
-                clickMonitor = NSEvent.addLocalMonitorForEvents(matching: .leftMouseDown, handler: endEditingOnOutsideClick)
+                // 输入框刚挂上窗口时 macOS 不接焦点，等下一轮再给
+                DispatchQueue.main.async { focused = true }
+                clickMonitor = NSEvent.addLocalMonitorForEvents(matching: .leftMouseDown, handler: saveOnOutsideClick)
             }
             .onDisappear {
                 if let clickMonitor { NSEvent.removeMonitor(clickMonitor) }
@@ -166,13 +169,12 @@ private struct RenameField: View {
             }
     }
 
-    /// macOS 点空白处不会让输入框失焦，这里点到输入框以外就交出焦点，走上面的失焦保存
-    private func endEditingOnOutsideClick(_ event: NSEvent) -> NSEvent? {
-        guard let window = event.window,
-              let field = (window.firstResponder as? NSTextView)?.delegate as? NSView,
-              let hit = window.contentView?.hitTest(event.locationInWindow),
-              !hit.isDescendant(of: field) else { return event }
-        window.makeFirstResponder(nil)
+    /// macOS 点空白处不会让输入框失焦，所以直接看点击位置：点到输入框以外就保存，不管它有没有拿到焦点
+    private func saveOnOutsideClick(_ event: NSEvent) -> NSEvent? {
+        guard let view = event.window?.contentView, store.renaming == category.id else { return event }
+        var point = view.convert(event.locationInWindow, from: nil)
+        if !view.isFlipped { point.y = view.bounds.height - point.y }
+        if !frame.contains(point) { store.rename(category.id, to: name) }
         return event
     }
 }
