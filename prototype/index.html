@@ -693,7 +693,7 @@ const STRINGS = {
     noLinks: '没有识别到 http/https 链接', noLinksDrop: '没有识别到链接', added: (n) => `已添加 ${n} 个任务`,
     general: '常规', appearance: '外观', downloadDir: '下载位置', change: '更改…',
     maxActive: '同时下载', threads: '每个任务分段', classify: '按类型放进子文件夹', learn: '学习我的分类习惯',
-    notify: '完成后通知', menuBar: '在菜单栏显示', browser: '接管浏览器下载', connect: '连接',
+    notify: '完成后通知', menuBar: '在菜单栏显示', browser: '接管浏览器下载', connect: '连接', reconnect: '重新连接',
     theme: '主题', fontSize: '字号', background: '背景图片', language: '语言', choose: '选择…', remove: '移除',
     themeSystem: '跟随系统', themeRainforest: '热带雨林', themeOrange: '初夏橙皮', themeGardenia: '雨后栀子',
     langAuto: '跟随系统',
@@ -727,7 +727,7 @@ const STRINGS = {
     noLinks: 'No http/https links found', noLinksDrop: 'No links found', added: (n) => `Added ${n} ${n === 1 ? 'task' : 'tasks'}`,
     general: 'General', appearance: 'Appearance', downloadDir: 'Save to', change: 'Change…',
     maxActive: 'Concurrent downloads', threads: 'Segments per task', classify: 'Sort into folders by type', learn: 'Learn my sorting habits',
-    notify: 'Notify when done', menuBar: 'Show in menu bar', browser: 'Take over browser downloads', connect: 'Connect',
+    notify: 'Notify when done', menuBar: 'Show in menu bar', browser: 'Take over browser downloads', connect: 'Connect', reconnect: 'Reconnect',
     theme: 'Theme', fontSize: 'Text size', background: 'Background image', language: 'Language', choose: 'Choose…', remove: 'Remove',
     themeSystem: 'System', themeRainforest: 'Rainforest', themeOrange: 'Orange Peel', themeGardenia: 'Gardenia',
     langAuto: 'System',
@@ -1569,10 +1569,11 @@ document.querySelectorAll('.dropdown').forEach(setupDropdown);
 document.querySelectorAll('.switch').forEach(setupSwitch);
 $('dirPath').textContent = settings.dir;
 $('changeDir').addEventListener('click', () => toast('SwiftUI 版这里会弹出访达选择文件夹'));
-/* 接管浏览器：App 把扩展复制到下载文件夹，打开访达和浏览器扩展页，用户自己拖进去；原型里 3 秒后模拟扩展连上 */
+/* 接管浏览器：App 把扩展复制到 Application Support，打开访达和浏览器扩展页，用户自己拖进去；原型里 3 秒后模拟扩展连上。
+   连上后按钮仍在：扩展被删或浏览器重装后，记录还是「已连接」，要能重新拖一次 */
 function renderBrowserLink() {
   $('browserStatus').textContent = linkedBrowser ? t('connected', linkedBrowser) : t('notConnected');
-  $('browserConnect').hidden = Boolean(linkedBrowser);
+  $('browserConnect').textContent = t(linkedBrowser ? 'reconnect' : 'connect');
 }
 $('browserConnect').addEventListener('click', () => {
   toast(t('browserTip'));

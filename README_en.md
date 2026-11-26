@@ -47,9 +47,9 @@
 
 ## Browser takeover
 
-1. Settings → Take over browser downloads → Connect: Rainkeep puts the extension in your Downloads folder and opens Finder and the browser's extensions page
+1. Settings → Take over browser downloads → Connect: Rainkeep prepares the extension and opens Finder and the browser's extensions page
 2. Turn on "Developer mode" at the top right of that page and drag "Rainkeep Extension" in as a whole
-3. Settings shows "Connected to <browser>" when it works. Keep "Rainkeep Extension" where it is; the browser loads the extension from there
+3. Settings shows "Connected to <browser>" when it works. If browser downloads stop going to Rainkeep, click "Reconnect" and drag it in again
 
 How the extension works and how to troubleshoot it: [extension notes](browser/chrome/README.md) (in Chinese).
 

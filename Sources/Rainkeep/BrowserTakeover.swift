@@ -1,4 +1,4 @@
-// 浏览器接管：启动时注册宿主；设置里一键把扩展放进下载文件夹，打开访达和浏览器扩展页，拖进去由用户自己来
+// 浏览器接管：启动时注册宿主；设置里一键把扩展放进 Application Support，打开访达和浏览器扩展页，拖进去由用户自己来
 import AppKit
 import RainkeepCore
 
@@ -19,7 +19,7 @@ extension DownloadStore {
         }
     }
 
-    /// 读扩展最近一次连上的记录；记录文件坏了当作未连接，用户点「接管」重装一次就会重写
+    /// 读扩展最近一次连上的记录；记录文件坏了当作未连接，用户点「重新连接」重装一次就会重写
     func refreshBrowserLink() {
         guard let support = Self.support else { return }
         let link: ExtensionLink?
@@ -31,7 +31,7 @@ extension DownloadStore {
         if link != browserLink { browserLink = link }
     }
 
-    /// 复制扩展到下载文件夹并在访达里选中，再用浏览器打开扩展页
+    /// 复制扩展到 Application Support 并在访达里选中，再用浏览器打开扩展页
     func connectBrowser() {
         guard let source = Bundle.main.url(forResource: "ChromeExtension", withExtension: nil) else {
             showToast(language.pick("App 里没有扩展，请用 scripts/make-app.sh 打包", "No extension bundled; build with scripts/make-app.sh"))
@@ -75,16 +75,14 @@ extension DownloadStore {
         return pick.map { (app: $0.1, page: $0.0.extensionsPage) }
     }
 
-    /// 放到下载文件夹的「拾雨扩展.bundle」：.bundle 让访达把它显示成一个整体、双击打不开，用户只能整个拖进浏览器，
-    /// 拖不到里面的单个文件；浏览器照样当文件夹加载。同名的是旧版扩展就覆盖，是别的东西就换个名字
+    /// 放到 Application Support/Rainkeep 下的「拾雨扩展.bundle」：浏览器一直从这里加载，不放下载文件夹，免得清理下载时被删；
+    /// .bundle 让访达把它显示成一个整体、双击打不开，用户只能整个拖进浏览器。目录归拾雨自己管，同名的直接覆盖
     private func placeExtension(from source: URL) throws -> URL {
+        guard let support = Self.support else { throw CocoaError(.fileNoSuchFile) }
         let files = FileManager.default
-        let root = settings.downloadDir
-        var target = root.appending(path: language.pick("拾雨扩展", "Rainkeep Extension") + ".bundle")
+        let root = support.appending(path: "Rainkeep", directoryHint: .isDirectory)
+        let target = root.appending(path: language.pick("拾雨扩展", "Rainkeep Extension") + ".bundle")
         try files.createDirectory(at: root, withIntermediateDirectories: true)
-        if files.fileExists(atPath: target.path), !isOurExtension(target) {
-            target = root.appending(path: Naming.uniqueName(target.lastPathComponent, taken: takenNames(in: root)))
-        }
         let staged = files.temporaryDirectory.appending(path: UUID().uuidString)
         try files.copyItem(at: source, to: staged)
         if files.fileExists(atPath: target.path) {
@@ -93,19 +91,5 @@ extension DownloadStore {
             try files.moveItem(at: staged, to: target)
         }
         return target
-    }
-
-    /// 看 manifest 里的固定扩展 ID 公钥，认出是不是之前放的扩展
-    private func isOurExtension(_ folder: URL) -> Bool {
-        guard let source = Bundle.main.url(forResource: "ChromeExtension", withExtension: nil),
-              let ours = manifestKey(source.appending(path: "manifest.json")),
-              let theirs = manifestKey(folder.appending(path: "manifest.json")) else { return false }
-        return ours == theirs
-    }
-
-    private func manifestKey(_ file: URL) -> String? {
-        guard let data = try? Data(contentsOf: file),
-              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return nil }
-        return json["key"] as? String
     }
 }

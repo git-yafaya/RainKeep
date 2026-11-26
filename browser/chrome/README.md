@@ -1,6 +1,6 @@
 # 浏览器下载接管
 
-用户装法见项目根目录 README "接管浏览器下载": 设置里点 "连接", 把下载文件夹里的 "拾雨扩展" 拖进浏览器扩展页 (要开 "开发者模式").
+用户装法见项目根目录 README "接管浏览器下载": 设置里点 "连接", 把访达里选中的 "拾雨扩展" 拖进浏览器扩展页 (要开 "开发者模式"). 扩展放在 `~/Library/Application Support/Rainkeep/拾雨扩展.bundle`, 浏览器从这里加载.
 
 - 扩展 ID 固定为 `fhfcdggihhigpphnfagldelhdcehnkoa` (manifest 里的 `key` 决定). 工具栏里的 "接管下载" 默认开启, 关闭后由浏览器直接下载.
 - App 每次启动把宿主清单写进各浏览器数据目录的 `NativeMessagingHosts/com.yafaya.rainkeep.json`, 指向 App 包里的 `RainkeepHost`; App 挪了位置下次启动自动更新.

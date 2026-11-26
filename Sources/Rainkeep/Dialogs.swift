@@ -170,18 +170,14 @@ private struct SettingsDialog: View {
         toggleRow(language.pick("在菜单栏显示", "Show in menu bar"), isOn: $store.settings.menuBar)
         divider
         SettingRow(title: language.pick("接管浏览器下载", "Take over browser downloads")) {
-            if let link = store.browserLink {
-                let browser = link.browser ?? language.pick("浏览器", "browser")
-                Text(language.pick("已连接 \(browser)", "Connected to \(browser)"))
-                    .font(theme.font(12))
-                    .foregroundStyle(.secondary)
-            } else {
-                Text(language.pick("未连接", "Not connected"))
-                    .font(theme.font(12))
-                    .foregroundStyle(.secondary)
-                Button(language.pick("连接", "Connect"), action: store.connectBrowser)
-                    .buttonStyle(DialogButtonStyle(isSmall: true))
-            }
+            let browser = store.browserLink.map { $0.browser ?? language.pick("浏览器", "browser") }
+            Text(browser.map { language.pick("已连接 \($0)", "Connected to \($0)") } ?? language.pick("未连接", "Not connected"))
+                .font(theme.font(12))
+                .foregroundStyle(.secondary)
+            // 连上后按钮仍在：扩展被删或浏览器重装后，记录还是「已连接」，要能重新拖一次
+            Button(browser == nil ? language.pick("连接", "Connect") : language.pick("重新连接", "Reconnect"),
+                   action: store.connectBrowser)
+                .buttonStyle(DialogButtonStyle(isSmall: true))
         }
         // 用户把扩展拖进浏览器后，扩展会连一次宿主留下记录；设置开着时隔两秒看一眼
         .task {

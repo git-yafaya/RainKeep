@@ -30,7 +30,7 @@ DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test
 - 固定标识, 改了要一起改: bundle id 和宿主名 `com.yafaya.rainkeep`, URL scheme `rainkeep://`, 数据目录 `~/Library/Application Support/Rainkeep/`.
 - 扩展 ID `fhfcdggihhigpphnfagldelhdcehnkoa` 由 `browser/chrome/manifest.json` 的 `key` 决定, 宿主清单只放行这个 ID; **不要改 `key`**, 否则已装的扩展连不上.
 - 浏览器宿主清单每次启动由 App 重写 (`BrowserHost.install`), 指向当前 `.app` 里的 `RainkeepHost`; 挪了 App 位置重启一次即可.
-- 扩展通过设置里的 "接管" 复制到 `~/Downloads/拾雨扩展.bundle` (`.bundle` 让访达把它当一个文件, 防止用户拖错里面的文件), 浏览器从那里以未打包扩展加载.
+- 扩展通过设置里的 "连接" 复制到 `~/Library/Application Support/Rainkeep/拾雨扩展.bundle` (`.bundle` 让访达把它当一个文件, 防止用户拖错里面的文件), 浏览器从那里以未打包扩展加载. 1.6 及以前放在 `~/Downloads`, 用户清理下载时会删掉, 扩展就停了; 连接记录不会过期, 所以设置里一直留着 "重新连接".
 - 分类学习 (`Categories.swift`): 分层加权投票 + 60 天半衰期, 层级 [json, png] → [path, page, word] → [site, ext]. 添加时按网址特征建议, 下载完按文件内容 (`ContentFingerprint`) 再归一次. **用户手动指定的分类永远不覆盖.**
 - 下载结构: `DownloadStore` 管任务增删, 外观, 存盘, 调度和重试在 `DownloadStore+Engine`, 分类在 `DownloadStore+Categories`; 存盘格式在 Core 的 `SavedState`.
 - 动态分段: 某段下完就把剩余最多那段对半劈开, `.part.json` 里段数会超过 16. 1.0 读不了这种记录, 降级回 1.0 会从头重下.
