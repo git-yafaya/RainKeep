@@ -1,5 +1,6 @@
 // 侧栏：「全部」+ 类型二级；自定义分类和「全部」并列，最多三级；竖线 + 圆角折钩表达层级
 // 同级切换滑块，跨级淡入淡出；分类可右键新建/改名/删除，任务行拖上来就归类
+import AppKit
 import RainkeepCore
 import SwiftUI
 
@@ -136,6 +137,7 @@ private struct RenameField: View {
     @Environment(\.theme) private var theme
     @Environment(\.language) private var language
     @State private var name = ""
+    @State private var clickMonitor: Any?
     @FocusState private var focused: Bool
 
     var body: some View {
@@ -152,12 +154,26 @@ private struct RenameField: View {
             .onAppear {
                 name = category.name
                 focused = true
+                clickMonitor = NSEvent.addLocalMonitorForEvents(matching: .leftMouseDown, handler: endEditingOnOutsideClick)
+            }
+            .onDisappear {
+                if let clickMonitor { NSEvent.removeMonitor(clickMonitor) }
             }
             .onSubmit { store.rename(category.id, to: name) }
             .onExitCommand { store.renaming = nil }
             .onChange(of: focused) { _, isFocused in
                 if !isFocused, store.renaming == category.id { store.rename(category.id, to: name) }
             }
+    }
+
+    /// macOS 点空白处不会让输入框失焦，这里点到输入框以外就交出焦点，走上面的失焦保存
+    private func endEditingOnOutsideClick(_ event: NSEvent) -> NSEvent? {
+        guard let window = event.window,
+              let field = (window.firstResponder as? NSTextView)?.delegate as? NSView,
+              let hit = window.contentView?.hitTest(event.locationInWindow),
+              !hit.isDescendant(of: field) else { return event }
+        window.makeFirstResponder(nil)
+        return event
     }
 }
 
