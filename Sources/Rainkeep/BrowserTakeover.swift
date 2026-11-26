@@ -31,22 +31,23 @@ extension DownloadStore {
         if link != browserLink { browserLink = link }
     }
 
-    /// 复制扩展到 Application Support 并在访达里选中，再用浏览器打开扩展页
-    func connectBrowser() {
+    /// 复制扩展到 Application Support 并在访达里选中，再用浏览器打开扩展页；扩展放好了返回 true，设置里据此展开引导
+    @discardableResult
+    func connectBrowser() -> Bool {
         guard let source = Bundle.main.url(forResource: "ChromeExtension", withExtension: nil) else {
             showToast(language.pick("App 里没有扩展，请用 scripts/make-app.sh 打包", "No extension bundled; build with scripts/make-app.sh"))
-            return
+            return false
         }
         guard let browser = preferredBrowser() else {
             showToast(language.pick("没找到 Chrome、Edge、Arc 或 Brave", "Chrome, Edge, Arc or Brave not found"))
-            return
+            return false
         }
         let folder: URL
         do {
             folder = try placeExtension(from: source)
         } catch {
             showToast(language.pick("导出扩展失败：", "Couldn't copy the extension: ") + error.localizedDescription)
-            return
+            return false
         }
         NSWorkspace.shared.activateFileViewerSelecting([folder])
         Task {
@@ -59,9 +60,8 @@ extension DownloadStore {
             }
             // 浏览器第一次启动才建数据目录，打开后再注册一次宿主
             installBrowserHost()
-            showToast(language.pick("开启扩展页右上角的「开发者模式」，将访达中的「拾雨扩展」拖入页面",
-                                    "Turn on “Developer mode” on the Extensions page, then drag “Rainkeep Extension” from Finder into the page"))
         }
+        return true
     }
 
     /// 默认浏览器是 Chrome 系就用它，否则用装了的第一个

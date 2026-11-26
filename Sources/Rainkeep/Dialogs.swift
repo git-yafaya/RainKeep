@@ -74,12 +74,31 @@ private struct AddDialog: View {
                 Button(language.pick("取消", "Cancel")) { store.dismissDialog() }
                     .keyboardShortcut(.cancelAction)
                     .buttonStyle(DialogButtonStyle())
-                Button(language.pick("下载", "Download")) { confirm() }
+                Button(action: confirm) {
+                    HStack(spacing: 5) {
+                        Text(language.pick("下载", "Download"))
+                        Text("⌘↩").opacity(0.75)
+                    }
+                }
                     .keyboardShortcut(.return, modifiers: .command)
                     .buttonStyle(DialogButtonStyle(isPrimary: true))
             }
         }
-        .onAppear { focused = true }
+        .onAppear {
+            focused = true
+            fillFromPasteboard()
+        }
+    }
+
+    /// 剪贴板里正好全是 http/https 链接时预填并全选，直接 ⌘↩ 就能下
+    private func fillFromPasteboard() {
+        guard text.isEmpty, let clip = NSPasteboard.general.string(forType: .string) else { return }
+        let tokens = clip.split(whereSeparator: \.isWhitespace)
+        let urls = Naming.parseURLs(clip)
+        guard !urls.isEmpty, urls.count == tokens.count else { return }
+        text = urls.map(\.absoluteString).joined(separator: "\n")
+        // 等输入框拿到焦点后再全选
+        DispatchQueue.main.async { NSApp.sendAction(#selector(NSText.selectAll(_:)), to: nil, from: nil) }
     }
 
     private func confirm() {
@@ -89,7 +108,7 @@ private struct AddDialog: View {
             return
         }
         store.dismissDialog()
-        store.add(urls: urls)
+        store.add(urls: urls, revealing: true)
     }
 }
 
@@ -169,23 +188,7 @@ private struct SettingsDialog: View {
         divider
         toggleRow(language.pick("在菜单栏显示", "Show in menu bar"), isOn: $store.settings.menuBar)
         divider
-        SettingRow(title: language.pick("接管浏览器下载", "Take over browser downloads")) {
-            let browser = store.browserLink.map { $0.browser ?? language.pick("浏览器", "browser") }
-            Text(browser.map { language.pick("已连接 \($0)", "Connected to \($0)") } ?? language.pick("未连接", "Not connected"))
-                .font(theme.font(12))
-                .foregroundStyle(.secondary)
-            // 连上后按钮仍在：扩展被删或浏览器重装后，记录还是「已连接」，要能重新拖一次
-            Button(browser == nil ? language.pick("连接", "Connect") : language.pick("重新连接", "Reconnect"),
-                   action: store.connectBrowser)
-                .buttonStyle(DialogButtonStyle(isSmall: true))
-        }
-        // 用户把扩展拖进浏览器后，扩展会连一次宿主留下记录；设置开着时隔两秒看一眼
-        .task {
-            while !Task.isCancelled {
-                store.refreshBrowserLink()
-                try? await Task.sleep(for: .seconds(2))
-            }
-        }
+        BrowserRow()
         divider
         UpdateRow()
     }
@@ -206,8 +209,9 @@ private struct SettingsDialog: View {
             Button(language.pick("选择…", "Choose…"), action: chooseBackground).buttonStyle(DialogButtonStyle(isSmall: true))
         }
         divider
+        // 最后一行离弹窗底边太近，往上展开
         dropdownRow(.language, language.pick("语言", "Language"), selection: $store.settings.language,
-                    options: [(nil, language.pick("跟随系统", "System")), (.zh, "中文"), (.en, "English")])
+                    options: [(nil, language.pick("跟随系统", "System")), (.zh, "中文"), (.en, "English")], opensUpward: true)
     }
 
     private var divider: some View { theme.line.frame(height: 1) }
@@ -220,9 +224,11 @@ private struct SettingsDialog: View {
 
     /// 打开的下拉要盖住下面的行，所以把这一行提到上层
     private func dropdownRow<Value: Hashable>(_ menu: SettingMenu, _ title: String, selection: Binding<Value>,
-                                              options: [(value: Value, label: String)]) -> some View {
+                                              options: [(value: Value, label: String)],
+                                              opensUpward: Bool = false) -> some View {
         SettingRow(title: title) {
-            Dropdown(options: options, selection: selection, isOpen: binding(for: menu), label: title)
+            Dropdown(options: options, selection: selection, isOpen: binding(for: menu), label: title,
+                     opensUpward: opensUpward)
         }
         .zIndex(openMenu == menu ? 1 : 0)
     }
@@ -256,7 +262,67 @@ private struct SettingsDialog: View {
     }
 }
 
-/// 更新检测：天气图标 + 状态文字；「接住新雨」把安装包加进下载列表
+/// 接管浏览器下载：连接状态 +「连接 / 重新连接」；点了以后在行下常驻两步引导，扩展连上就收起
+private struct BrowserRow: View {
+    @Environment(DownloadStore.self) private var store
+    @Environment(\.theme) private var theme
+    @Environment(\.language) private var language
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var isGuiding = false
+    /// 点「连接」那一刻的连接记录时间；记录比它新说明拖进去连上了
+    @State private var seenAtConnect: Date?
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            SettingRow(title: language.pick("接管浏览器下载", "Take over browser downloads")) {
+                let browser = store.browserLink.map { $0.browser ?? language.pick("浏览器", "browser") }
+                HStack(spacing: 6) {
+                    if browser != nil { Circle().fill(theme.accent).frame(width: 6, height: 6) }
+                    Text(browser.map { language.pick("已连接 \($0)", "Connected to \($0)") } ?? language.pick("未连接", "Not connected"))
+                }
+                .font(theme.font(12))
+                .foregroundStyle(.secondary)
+                // 连上后按钮仍在：扩展被删或浏览器重装后，记录还是「已连接」，要能重新拖一次
+                Button(browser == nil ? language.pick("连接", "Connect") : language.pick("重新连接", "Reconnect")) {
+                    guard store.connectBrowser() else { return }
+                    seenAtConnect = store.browserLink?.seen
+                    isGuiding = true
+                }
+                .buttonStyle(DialogButtonStyle(isSmall: true))
+            }
+            if isGuiding {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(language.pick("1. 在浏览器扩展页右上角开启「开发者模式」",
+                                       "1. Turn on “Developer mode” at the top right of the Extensions page"))
+                    Text(language.pick("2. 将访达中已选中的「拾雨扩展」整个拖入页面",
+                                       "2. Drag the selected “Rainkeep Extension” from Finder into the page"))
+                }
+                .font(theme.font(11.5))
+                .foregroundStyle(.secondary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.vertical, 8)
+                .padding(.horizontal, 12)
+                .background(RoundedRectangle(cornerRadius: 8).fill(theme.segmentBackground))
+                .padding(.bottom, 10)
+                .transition(.opacity)
+            }
+        }
+        .animation(reduceMotion ? nil : Motion.fade, value: isGuiding)
+        // 用户把扩展拖进浏览器后，扩展会连一次宿主留下记录；设置开着时隔两秒看一眼
+        .task {
+            while !Task.isCancelled {
+                store.refreshBrowserLink()
+                try? await Task.sleep(for: .seconds(2))
+            }
+        }
+        .onChange(of: store.browserLink) { _, link in
+            guard isGuiding, let seen = link?.seen, seen > (seenAtConnect ?? .distantPast) else { return }
+            isGuiding = false
+        }
+    }
+}
+
+/// 更新检测：天气图标 + 状态文字；「接住新雨」把安装包加进下载列表，下好后「打开安装包」
 private struct UpdateRow: View {
     @Environment(DownloadStore.self) private var store
     @Environment(\.theme) private var theme
@@ -268,19 +334,20 @@ private struct UpdateRow: View {
     var body: some View {
         SettingRow(title: language.pick("更新检测", "Updates")) {
             switch phase {
-            case .checking, .latest, .available: UpdateSky(phase: phase).foregroundStyle(.secondary)
-            default: EmptyView()
+            case .idle, .failed: EmptyView()
+            default: UpdateSky(phase: phase).foregroundStyle(.secondary)
             }
-            Text(phase.status(language))
+            Text(store.updateStatus)
                 .font(theme.font(12))
+                .monospacedDigit()
                 .foregroundStyle(isFailed ? theme.danger : .secondary)
                 .help(failure ?? "")
-                // 和原型一致：旧字立刻消失、新字淡入，免得新旧两段并排挤在一行
-                .id(phase.status(language))
+                // 和原型一致：旧字立刻消失、新字淡入，免得新旧两段并排挤在一行；接雨时百分比原地变，不重播
+                .id(isCatching ? "catching" : phase.status(language))
                 .transition(.asymmetric(insertion: .opacity, removal: .identity))
-            if phase != .checking {
+            if phase != .checking, !isCatching {
                 Button(buttonTitle, action: store.checkOrCatchUpdate)
-                    .buttonStyle(DialogButtonStyle(isPrimary: isAvailable, isSmall: true))
+                    .buttonStyle(DialogButtonStyle(isPrimary: isPrimary, isSmall: true))
                     .transition(.asymmetric(insertion: .opacity, removal: .identity))
             }
         }
@@ -290,12 +357,20 @@ private struct UpdateRow: View {
     private var buttonTitle: String {
         switch phase {
         case .available: language.pick("接住新雨", "Catch the Rain")
+        case .ready: language.pick("打开安装包", "Open Installer")
         case .failed: language.pick("重试", "Retry")
         default: language.pick("检查更新", "Check for Updates")
         }
     }
 
-    private var isAvailable: Bool { if case .available = phase { true } else { false } }
+    private var isPrimary: Bool {
+        switch phase {
+        case .available, .ready: true
+        default: false
+        }
+    }
+
+    private var isCatching: Bool { if case .catching = phase { true } else { false } }
     private var isFailed: Bool { failure != nil }
     private var failure: String? { if case .failed(let reason) = phase { reason } else { nil } }
 }
@@ -381,18 +456,29 @@ private struct SettingRow<Content: View>: View {
     }
 }
 
-/// 自绘下拉：按钮下方展开、和按钮等宽、文字左边对齐，跟主题变色；Esc 和点外面能收起（由外层控制 isOpen）
+/// 自绘下拉：按钮下方（靠底时上方）展开、和按钮等宽、文字左边对齐，跟主题变色；
+/// ↑/↓ 挑选、回车确定，Esc 和点外面能收起（由外层控制 isOpen）
 private struct Dropdown<Value: Hashable>: View {
-    /// 放得下英文选项（如 Orange Peel）
-    static var width: CGFloat { 120 }
+    /// 放得下英文选项（如 Orange Peel），随字号缩放
+    private static var baseWidth: CGFloat { 120 }
     /// 按钮文字左内边距；菜单内边距 4 + 选项左内边距 6 也等于它，两边文字才能对齐
     static var textInset: CGFloat { 10 }
+    private static var buttonHeight: CGFloat { 24 }
+    private static var menuGap: CGFloat { 4 }
 
     let options: [(value: Value, label: String)]
     @Binding var selection: Value
     @Binding var isOpen: Bool
     let label: String
+    var opensUpward = false
     @Environment(\.theme) private var theme
+    /// 键盘或鼠标正指着的选项
+    @State private var highlighted: Int?
+    @State private var keyMonitor: Any?
+    @State private var menuHeight: CGFloat = 0
+
+    private var width: CGFloat { Self.baseWidth * theme.scale }
+    private var height: CGFloat { Self.buttonHeight * theme.scale }
 
     var body: some View {
         Button {
@@ -409,7 +495,7 @@ private struct Dropdown<Value: Hashable>: View {
             .font(theme.font(12))
             .padding(.leading, Self.textInset)
             .padding(.trailing, 8)
-            .frame(width: Self.width, height: 24)
+            .frame(width: width, height: height)
             .background(RoundedRectangle(cornerRadius: 6).fill(theme.segmentBackground))
             .contentShape(Rectangle())
         }
@@ -419,37 +505,83 @@ private struct Dropdown<Value: Hashable>: View {
         .overlay(alignment: .topLeading) {
             if isOpen {
                 menu
-                    .offset(y: 28)
-                    .transition(.opacity.combined(with: .offset(y: -4)))
+                    .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { menuHeight = $0 }
+                    .offset(y: opensUpward ? -menuHeight - Self.menuGap : height + Self.menuGap)
+                    .transition(.opacity.combined(with: .offset(y: opensUpward ? 4 : -4)))
             }
         }
+        .onChange(of: isOpen) { _, open in
+            if open { startKeys() } else { stopKeys() }
+        }
+        .onDisappear(perform: stopKeys)
+    }
+
+    /// 按钮在默认键盘设置下拿不到焦点，所以打开时直接监听按键
+    private func startKeys() {
+        highlighted = options.firstIndex { $0.value == selection }
+        stopKeys()
+        keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
+            guard isOpen else { return event }
+            switch event.keyCode {
+            case KeyCode.up: move(-1)
+            case KeyCode.down: move(1)
+            case KeyCode.returnKey, KeyCode.enter: choose()
+            default: return event
+            }
+            return nil
+        }
+    }
+
+    private func stopKeys() {
+        if let keyMonitor { NSEvent.removeMonitor(keyMonitor) }
+        keyMonitor = nil
+    }
+
+    private func move(_ step: Int) {
+        let current = highlighted ?? (step > 0 ? -1 : options.count)
+        highlighted = min(options.count - 1, max(0, current + step))
+    }
+
+    private func choose() {
+        if let highlighted, options.indices.contains(highlighted) { selection = options[highlighted].value }
+        isOpen = false
     }
 
     private var menu: some View {
         VStack(spacing: 0) {
-            ForEach(options, id: \.value) { option in
+            ForEach(Array(options.enumerated()), id: \.element.value) { index, option in
                 DropdownOption(label: option.label, isSelected: option.value == selection,
-                               leadingInset: Self.textInset - 4) {
+                               isHighlighted: highlighted == index, leadingInset: Self.textInset - 4,
+                               onHover: { if $0 { highlighted = index } }) {
                     selection = option.value
                     isOpen = false
                 }
             }
         }
         .padding(4)
-        .frame(width: Self.width)
+        .frame(width: width)
         .background(RoundedRectangle(cornerRadius: 8).fill(theme.menu))
         .shadow(color: .black.opacity(0.14), radius: 12, y: 4)
         .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(theme.line))
     }
 }
 
+/// 下拉里用到的按键码（Carbon kVK_*）
+private enum KeyCode {
+    static let returnKey: UInt16 = 36
+    static let enter: UInt16 = 76
+    static let down: UInt16 = 125
+    static let up: UInt16 = 126
+}
+
 private struct DropdownOption: View {
     let label: String
     let isSelected: Bool
+    let isHighlighted: Bool
     let leadingInset: CGFloat
+    let onHover: (Bool) -> Void
     let action: () -> Void
     @Environment(\.theme) private var theme
-    @State private var hovering = false
 
     var body: some View {
         Button(action: action) {
@@ -461,15 +593,15 @@ private struct DropdownOption: View {
                     .opacity(isSelected ? 1 : 0)
             }
             .font(theme.font(12))
-            .foregroundStyle(hovering ? theme.onAccent : theme.text)
+            .foregroundStyle(isHighlighted ? theme.onAccent : theme.text)
             .padding(.leading, leadingInset)
             .padding(.trailing, 8)
             .frame(maxWidth: .infinity, minHeight: 24)
-            .background(RoundedRectangle(cornerRadius: 5).fill(hovering ? theme.accent : .clear))
+            .background(RoundedRectangle(cornerRadius: 5).fill(isHighlighted ? theme.accent : .clear))
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .onHover { hovering = $0 }
+        .onHover(perform: onHover)
         .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 }

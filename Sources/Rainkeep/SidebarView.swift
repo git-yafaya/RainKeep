@@ -9,18 +9,24 @@ struct SidebarView: View {
     @Environment(\.language) private var language
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Namespace private var namespace
+    @AppStorage("typesCollapsed") private var typesCollapsed = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 1) {
             ScrollView(.vertical, showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 1) {
                     SidebarRow(title: language.pick("全部", "All"), count: store.count(for: .all), level: 1,
-                               isSelected: store.selection == .all, namespace: namespace) { select(.all) }
-                    TreeChildren(count: FileCategory.allCases.count) { index in
-                        let type = FileCategory.allCases[index]
-                        SidebarRow(title: type.name(language), count: store.count(for: .type(type)), level: 2,
-                                   isSelected: store.selection == .type(type), namespace: namespace) {
-                            select(.type(type))
+                               isSelected: store.selection == .all, trailingInset: 28, namespace: namespace) { select(.all) }
+                        .overlay(alignment: .trailing) {
+                            FoldButton(isCollapsed: typesCollapsed, action: toggleTypes).padding(.trailing, 6)
+                        }
+                    if !typesCollapsed {
+                        TreeChildren(count: FileCategory.allCases.count) { index in
+                            let type = FileCategory.allCases[index]
+                            SidebarRow(title: type.name(language), count: store.count(for: .type(type)), level: 2,
+                                       isSelected: store.selection == .type(type), namespace: namespace) {
+                                select(.type(type))
+                            }
                         }
                     }
                     ForEach(store.categories.children(of: nil)) { category in
@@ -44,6 +50,12 @@ struct SidebarView: View {
         .padding(.horizontal, 10)
         .padding(.bottom, 10)
         .padding(.top, Layout.sidebarTop)
+    }
+
+    /// 收起内置类型时，正选着的类型藏起来了，回到「全部」
+    private func toggleTypes() {
+        typesCollapsed.toggle()
+        if typesCollapsed, case .type = store.selection { select(.all) }
     }
 
     /// 同级用同一个匹配 id 让背景滑过去；跨级 id 不同，背景走淡入淡出
@@ -163,7 +175,7 @@ private struct RenameField: View {
                 if let clickMonitor { NSEvent.removeMonitor(clickMonitor) }
             }
             .onSubmit { store.rename(category.id, to: name) }
-            .onExitCommand { store.renaming = nil }
+            .onExitCommand { store.cancelRename(category.id) }
             .onChange(of: focused) { _, isFocused in
                 if !isFocused, store.renaming == category.id { store.rename(category.id, to: name) }
             }
@@ -186,6 +198,8 @@ private struct SidebarRow: View {
     let level: Int
     let isSelected: Bool
     var isDropTarget = false
+    /// 右侧留给叠在行上的小按钮（「全部」的折叠箭头）
+    var trailingInset: CGFloat = 10
     let namespace: Namespace.ID
     let action: () -> Void
 
@@ -205,7 +219,8 @@ private struct SidebarRow: View {
                 }
             }
             .foregroundStyle(level == 1 || isSelected ? .primary : .secondary)
-            .padding(.horizontal, 10)
+            .padding(.leading, 10)
+            .padding(.trailing, trailingInset)
             .frame(height: 28)
             .background {
                 ZStack {
@@ -227,6 +242,35 @@ private struct SidebarRow: View {
         .buttonStyle(.plain)
         .onHover { hovering = $0 }
         .accessibilityAddTraits(isSelected ? .isSelected : [])
+    }
+}
+
+/// 「全部」右侧的折叠小箭头：展开朝下，收起朝右
+private struct FoldButton: View {
+    let isCollapsed: Bool
+    let action: () -> Void
+    @Environment(\.theme) private var theme
+    @Environment(\.language) private var language
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var hovering = false
+
+    var body: some View {
+        let label = isCollapsed ? language.pick("展开类型列表", "Expand types") : language.pick("收起类型列表", "Collapse types")
+        Button(action: action) {
+            Image(systemName: "chevron.down")
+                .font(theme.font(9, .semibold))
+                .rotationEffect(.degrees(isCollapsed ? -90 : 0))
+                .animation(reduceMotion ? nil : Motion.fade, value: isCollapsed)
+                .foregroundStyle(hovering ? .primary : .tertiary)
+                .frame(width: 18, height: 18)
+                .background(RoundedRectangle(cornerRadius: 4).fill(hovering ? theme.hover : .clear))
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .onHover { hovering = $0 }
+        .help(label)
+        .accessibilityLabel(label)
+        .accessibilityValue(isCollapsed ? language.pick("已收起", "Collapsed") : language.pick("已展开", "Expanded"))
     }
 }
 

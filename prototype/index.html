@@ -195,6 +195,17 @@
   .side-item[aria-current="true"] { color: var(--text); }
   .side-item[data-level="1"] { font-weight: 600; color: var(--text); }
   .side-item .count { color: var(--text-3); font-size: var(--fs-xs); font-variant-numeric: tabular-nums; font-weight: 400; }
+  .side-head { position: relative; }
+  .side-head .side-item { padding-right: 28px; }
+  .fold-btn {
+    position: absolute; right: 6px; top: 5px; width: 18px; height: 18px; border-radius: 4px;
+    display: grid; place-items: center; color: var(--text-3);
+    transition: color .15s, background .15s;
+  }
+  .fold-btn:hover { color: var(--text); background: var(--hover); }
+  .fold-btn svg { transition: transform .2s var(--ease); }
+  .fold-btn[aria-expanded="false"] svg { transform: rotate(-90deg); }
+  .side-children[hidden] { display: none; }
   .side-item.drop-target { background: color-mix(in srgb, var(--accent) 18%, transparent); }
   .side-item input {
     width: 100%; height: 22px; margin-left: -4px; padding: 0 4px; border-radius: 5px;
@@ -253,6 +264,7 @@
     width: 28px; height: 28px; border-radius: 6px; flex: none;
     display: grid; place-items: center; color: var(--text-2);
   }
+  .icon-btn[hidden] { display: none; }
   .icon-btn:hover:not(:disabled) { background: var(--hover); color: var(--text); }
   .icon-btn:disabled { opacity: .35; }
 
@@ -323,7 +335,9 @@
   .dialog textarea:focus { border-color: color-mix(in srgb, var(--text) 20%, transparent); }
   .dialog .error { color: var(--danger); font-size: var(--fs-xs); min-height: 18px; padding-top: 4px; }
   .dialog .buttons { display: flex; justify-content: flex-end; gap: 8px; }
-  .btn { height: 26px; padding: 0 14px; border-radius: 6px; background: var(--seg-bg); }
+  .btn { height: 26px; padding: 0 14px; border-radius: 6px; background: var(--seg-bg); display: inline-flex; align-items: center; gap: 5px; }
+  .btn[hidden] { display: none; }
+  .btn kbd { font: inherit; font-size: .9em; opacity: .75; }
   .btn.small { height: 22px; padding: 0 10px; font-size: var(--fs-xs); }
   .btn.primary { background: var(--accent); color: var(--on-accent); }
 
@@ -335,30 +349,42 @@
     min-height: 42px; border-bottom: 1px solid var(--line);
   }
   .setting:last-child { border-bottom: 0; }
+  .setting-group { border-bottom: 1px solid var(--line); }
+  .setting-group:last-child { border-bottom: 0; }
+  .setting-group .setting { border-bottom: 0; }
   .setting .value { display: flex; align-items: center; gap: 8px; min-width: 0; }
-  .setting .status { color: var(--text-2); font-size: var(--fs-xs); white-space: nowrap; }
+  .setting .status { display: inline-flex; align-items: center; gap: 6px; color: var(--text-2); font-size: var(--fs-xs); white-space: nowrap; }
+  .status-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); flex: none; }
+  .guide {
+    margin: 0 0 10px; padding: 8px 12px 8px 26px; border-radius: 8px;
+    background: var(--seg-bg); color: var(--text-2); font-size: var(--fs-xs); line-height: 1.55;
+  }
+  .guide[hidden] { display: none; }
   .setting .path { color: var(--text-2); font: var(--fs-xs) ui-monospace, "SF Mono", Menlo, monospace; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-  /* 更新检测的天气：望云时乌云来回飘，天晴出太阳，有新雨时强调色的雨点落三轮后停住。设置行和工具栏共用 */
+  /* 更新检测的天气：望云时乌云来回飘，天晴出太阳，有新雨落三轮，正在接雨持续落雨，新雨已落停住。设置行和工具栏共用 */
   .sky { display: none; width: 18px; height: 16px; flex: none; color: var(--text-2); overflow: visible; }
-  [data-update="checking"] .sky, [data-update="latest"] .sky, [data-update="available"] .sky { display: block; }
+  [data-update="checking"] .sky, [data-update="latest"] .sky, [data-update="available"] .sky,
+  [data-update="catching"] .sky, [data-update="ready"] .sky { display: block; }
   .sky .sun, .sky .drops { display: none; }
-  [data-update="latest"] .sky .sun, [data-update="available"] .sky .drops { display: inline; }
+  [data-update="latest"] .sky .sun, [data-update="available"] .sky .drops,
+  [data-update="catching"] .sky .drops, [data-update="ready"] .sky .drops { display: inline; }
   [data-update="latest"] .sky .cloud { display: none; }
-  [data-update="available"] .sky { color: var(--accent); transform: translateY(1px); }
+  [data-update="available"] .sky, [data-update="catching"] .sky, [data-update="ready"] .sky { color: var(--accent); transform: translateY(1px); }
   /* 只有云时图形偏上，整体往下挪到视觉居中 */
   [data-update="idle"] .sky, [data-update="checking"] .sky, [data-update="failed"] .sky { transform: translateY(3px); }
   [data-update="checking"] .sky .cloud { animation: drift 1.6s ease-in-out infinite alternate; }
   [data-update="latest"] .sky .sun { transform-box: fill-box; transform-origin: center; animation: sun-in .5s var(--ease); }
   [data-update="available"] .drops line { animation: rain .9s ease-in 3; }
+  [data-update="catching"] .drops line { animation: rain .9s ease-in infinite; }
   .drops line:nth-child(2) { animation-delay: .3s; }
   .drops line:nth-child(3) { animation-delay: .6s; }
   @keyframes drift { from { transform: translateX(-1.5px); } to { transform: translateX(1.5px); } }
   @keyframes sun-in { from { opacity: 0; transform: rotate(-45deg) scale(.6); } }
   @keyframes rain { 0% { opacity: 0; transform: translateY(-3px); } 30% { opacity: 1; } 100% { opacity: 0; transform: translateY(3px); } }
   #skyBtn .sky { display: block; }
-  #skyBtn:not([data-update="available"]) .sky { color: inherit; }
-  #updateStatus { animation: fade-in .22s ease-out; }
+  #skyBtn:not([data-update="available"]):not([data-update="catching"]):not([data-update="ready"]) .sky { color: inherit; }
+  #updateStatus { font-variant-numeric: tabular-nums; animation: fade-in .22s ease-out; }
   [data-update="failed"] #updateStatus { color: var(--danger); }
 
   .switch {
@@ -374,11 +400,11 @@
   .switch[aria-checked="true"] { background: var(--accent); }
   .switch[aria-checked="true"]::after { transform: translateX(13px); }
 
-  /* 自绘下拉：按钮 + 下方列表，Esc / 点外面收起 */
+  /* 自绘下拉：按钮 + 下方（靠底时上方）列表，随字号缩放宽度，Esc / 点外面收起 */
   .dropdown { position: relative; }
   .dd-btn {
     display: flex; align-items: center; justify-content: space-between; gap: 10px;
-    min-width: 108px; height: 24px; padding: 0 8px 0 10px; border-radius: 6px;
+    min-width: calc(120px * var(--scale)); height: calc(24px * var(--scale)); padding: 0 8px 0 10px; border-radius: 6px;
     background: var(--seg-bg); font-size: var(--fs-xs);
   }
   .dd-btn svg { color: var(--text-2); transition: transform .2s var(--ease); }
@@ -389,8 +415,11 @@
     background: var(--menu); box-shadow: var(--menu-shadow);
     display: none; flex-direction: column;
   }
+  .dd-list.up { top: auto; bottom: calc(100% + 4px); }
   .dd-list.open { display: flex; animation: menu-in .14s var(--ease); }
+  .dd-list.up.open { animation-name: menu-in-up; }
   @keyframes menu-in { from { opacity: 0; transform: translateY(-4px); } }
+  @keyframes menu-in-up { from { opacity: 0; transform: translateY(4px); } }
   .dd-opt {
     display: flex; align-items: center; justify-content: space-between; gap: 6px;
     height: 24px; padding: 0 8px 0 6px; border-radius: 5px; font-size: var(--fs-xs); text-align: left; white-space: nowrap;
@@ -427,13 +456,14 @@
     background: var(--text); color: var(--window);
     padding: 4px 4px 4px 12px; border-radius: 8px; font-size: var(--fs-xs);
   }
-  .confirm.show { display: flex; animation: fade .2s ease-out; }
+  .confirm.show { display: flex; animation: confirm-in .2s var(--ease); }
   .confirm .msg { display: flex; min-width: 0; white-space: nowrap; margin-right: 6px; }
   .confirm .fname { overflow: hidden; text-overflow: ellipsis; max-width: 260px; }
   .confirm button { border: 0; background: none; color: inherit; font: inherit; padding: 3px 8px; border-radius: 5px; opacity: .75; }
   .confirm button:hover { opacity: 1; background: color-mix(in srgb, var(--window) 18%, transparent); }
   .confirm button.danger { color: var(--danger); opacity: 1; font-weight: 600; }
   @keyframes fade { from { opacity: 0; } }
+  @keyframes confirm-in { from { opacity: 0; transform: translate(-50%, 6px); } }
   @media (prefers-reduced-motion: reduce) { .confirm.show { animation: none; } }
 
   /* 模拟菜单栏 + 状态栏面板（仿 Vorssaint：顶部图标、页签、小标题、卡片、底部两个按钮） */
@@ -449,6 +479,7 @@
   }
   .mb-item:hover, .mb-item[aria-expanded="true"] { background: rgba(255, 255, 255, .22); }
   .mb-item .speed { font-size: 10.5px; line-height: 1; }
+  .mb-item .mb-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--danger); flex: none; }
   .panel {
     position: fixed; top: 32px; z-index: 50; width: 320px;
     background: var(--window); color: var(--text);
@@ -538,6 +569,7 @@
         <button data-status="active" aria-pressed="false" data-i18n="filterActive"></button>
         <button data-status="done" aria-pressed="false" data-i18n="filterDone"></button>
       </div>
+      <button class="icon-btn" id="clearDoneBtn" hidden></button>
       <button class="icon-btn" id="skyBtn" data-update="idle"></button>
       <button class="icon-btn" id="pauseAll"></button>
       <button class="icon-btn" id="addBtn"></button>
@@ -552,7 +584,7 @@
       <div class="error" id="urlError" role="alert"></div>
       <div class="buttons">
         <button class="btn" data-close data-i18n="cancel"></button>
-        <button class="btn primary" id="confirmAdd" data-i18n="download"></button>
+        <button class="btn primary" id="confirmAdd"><span data-i18n="download"></span><kbd>⌘↩</kbd></button>
       </div>
     </div>
   </div>
@@ -599,12 +631,18 @@
           <span id="menuBarLabel" data-i18n="menuBar"></span>
           <button class="switch" role="switch" data-key="menuBar" aria-labelledby="menuBarLabel"></button>
         </div>
-        <div class="setting">
-          <span data-i18n="browser"></span>
-          <div class="value">
-            <span class="status" id="browserStatus"></span>
-            <button class="btn small" id="browserConnect" data-i18n="connect"></button>
+        <div class="setting-group">
+          <div class="setting">
+            <span data-i18n="browser"></span>
+            <div class="value">
+              <span class="status" id="browserStatus"></span>
+              <button class="btn small" id="browserConnect" data-i18n="connect"></button>
+            </div>
           </div>
+          <ol class="guide" id="browserGuide" hidden>
+            <li data-i18n="browserStep1"></li>
+            <li data-i18n="browserStep2"></li>
+          </ol>
         </div>
         <div class="setting" id="updateRow" data-update="idle">
           <span data-i18n="update"></span>
@@ -669,10 +707,12 @@
 <script>
 const TICK_MS = 500;
 const MB = 1024 ** 2;
-const TOAST_MS = 1800;
+const TOAST_MS = 2000;
+const TOAST_LONG_MS = 3600;
 const SIDEBAR_MIN = 160;
 const SIDEBAR_MAX = 340;
 const SIDEBAR_KEY = 'rainkeep.sidebarWidth';
+const FOLD_KEY = 'rainkeep.typesCollapsed';
 const FADE_MS = 220;         // 侧栏跨级切换的淡入淡出时长
 const STAGGER_CAP = 12;     // 列表入场动画最多错开 12 行，后面的同时出现
 const MAX_DEPTH = 3;        // 自定义分类最多三级
@@ -688,7 +728,8 @@ const STRINGS = {
   zh: {
     all: '全部', video: '视频', audio: '音频', image: '图片', doc: '文档', archive: '压缩包', installer: '安装包', other: '其他',
     filterAll: '全部', filterActive: '进行中', filterDone: '已完成',
-    pauseAll: '全部暂停', resumeAll: '全部继续', add: '添加下载（⌘N）', settings: '设置', newGroup: '新建分类',
+    pauseAll: '全部暂停', resumeAll: '全部继续', clearDone: '清空已完成记录', add: '添加下载（⌘N）', settings: '设置', newGroup: '新建分类',
+    foldTypes: '收起类型列表', unfoldTypes: '展开类型列表',
     addTitle: '添加下载', addPlaceholder: '粘贴链接，每行一个', addLinks: '下载链接', cancel: '取消', download: '下载', done: '完成',
     noLinks: '没有识别到 http/https 链接', noLinksDrop: '没有识别到链接', added: (n) => `已添加 ${n} 个任务`,
     general: '常规', appearance: '外观', downloadDir: '下载位置', change: '更改…',
@@ -698,7 +739,10 @@ const STRINGS = {
     themeSystem: '跟随系统', themeRainforest: '热带雨林', themeOrange: '初夏橙皮', themeGardenia: '雨后栀子',
     langAuto: '跟随系统',
     count: (n) => `${n} 个`, segs: (n) => `${n} 段`, auto: '自动',
-    pause: '暂停', resume: '继续', retry: '重试', reveal: '在访达中显示', removeTask: '从列表移除', deleteTask: '删除',
+    openTask: '打开', opened: (n) => `已打开：${n}`, copyLink: '复制下载链接', copiedLink: '已复制链接',
+    pause: '暂停', resume: '继续', retry: '重试', reveal: '在访达中显示', removeTask: '从列表移除',
+    deleteTask: '删除', deleteEllipsis: '删除…',
+    clearedDone: (n) => `已清空 ${n} 条完成记录，文件已保留`,
     confirmTrash: (n) => `删除「${n}」？文件会移到废纸篓`, confirmDiscard: (n) => `删除「${n}」？已下载的部分会一起删除`,
     trashed: (n) => `已将「${n}」移到废纸篓`,
     queued: '排队中', paused: '已暂停', failed: '连接中断', left: '剩',
@@ -707,22 +751,28 @@ const STRINGS = {
     downloading: (n, speed) => `${n} 个下载中 · ${speed}/s`,
     finished: (name) => `下载完成：${name}`,
     newSub: '新建子分类', rename: '重命名', deleteGroup: '删除分类', moveTo: '移到分类', noGroup: '不放进分类',
-    untitled: '未命名分类', movedTo: (name) => `已移到「${name}」`, learned: (name) => `已按习惯归入「${name}」`,
+    untitled: '未命名分类', invalidGroupName: '分类名不能包含 / 或 :',
+    movedTo: (name) => `已移到「${name}」`, learned: (name) => `已按习惯归入「${name}」· 来源相似`,
     deleted: (name) => `已删除分类「${name}」，其中任务已保留`,
-    browserTip: '开启扩展页右上角的「开发者模式」，将访达中的「拾雨扩展」拖入页面',
+    browserStep1: '在浏览器扩展页右上角开启「开发者模式」',
+    browserStep2: '将访达中已选中的「拾雨扩展」整个拖入页面',
     connected: (browser) => `已连接 ${browser}`, notConnected: '未连接',
     update: '更新检测', updateCurrent: (v) => `当前 ${v}`, updateCheck: '检查更新', updateChecking: '正在望云…',
     updateLatest: '天晴 · 已是最新', updateFound: (v) => `新雨已至 · ${v}`, updateGet: '接住新雨',
-    bgFailed: '无法读取背景图片', updateFailed: '无云可望 · 请检查网络后再试', updateRetry: '重试', updateFoundTip: (v) => `新雨已至 · ${v}，点击接住`,
+    updateCatching: (pct) => `正在接雨 · ${pct}%`, updateReady: (v) => `新雨已落 · ${v}`, updateOpen: '打开安装包',
+    bgFailed: '无法读取背景图片', updateFailed: '无云可望 · 请检查网络后再试', updateRetry: '重试',
+    updateFoundTip: (v) => `新雨已至 · ${v}，点击接住`, updateReadyTip: (v) => `新雨已落 · ${v}，点击打开安装包`,
     panelActive: '进行中', panelDone: '最近完成', panelOpen: '打开拾雨', panelQuit: '退出',
     panelEmpty: '没有进行中的下载', panelEmptyDone: '还没有完成的下载',
-    panelTitle: (n, speed) => (n ? `进行中 · ${n} 个 · ${speed}/s` : '进行中'),
+    panelFailed: (n) => `${n} 个失败`, panelPaused: (n) => `${n} 个已暂停`,
+    panelDownloading: (n, speed) => `${n} 个下载中 · ${speed}/s`,
     quitTip: '原型里不会真的退出',
   },
   en: {
     all: 'All', video: 'Videos', audio: 'Audio', image: 'Images', doc: 'Documents', archive: 'Archives', installer: 'Installers', other: 'Other',
     filterAll: 'All', filterActive: 'Active', filterDone: 'Completed',
-    pauseAll: 'Pause All', resumeAll: 'Resume All', add: 'Add Download (⌘N)', settings: 'Settings', newGroup: 'New Category',
+    pauseAll: 'Pause All', resumeAll: 'Resume All', clearDone: 'Clear Completed', add: 'Add Download (⌘N)', settings: 'Settings', newGroup: 'New Category',
+    foldTypes: 'Collapse types', unfoldTypes: 'Expand types',
     addTitle: 'Add Download', addPlaceholder: 'Paste links, one per line', addLinks: 'Download links', cancel: 'Cancel', download: 'Download', done: 'Done',
     noLinks: 'No http/https links found', noLinksDrop: 'No links found', added: (n) => `Added ${n} ${n === 1 ? 'task' : 'tasks'}`,
     general: 'General', appearance: 'Appearance', downloadDir: 'Save to', change: 'Change…',
@@ -732,7 +782,10 @@ const STRINGS = {
     themeSystem: 'System', themeRainforest: 'Rainforest', themeOrange: 'Orange Peel', themeGardenia: 'Gardenia',
     langAuto: 'System',
     count: (n) => String(n), segs: (n) => String(n), auto: 'Auto',
-    pause: 'Pause', resume: 'Resume', retry: 'Retry', reveal: 'Show in Finder', removeTask: 'Remove from List', deleteTask: 'Delete',
+    openTask: 'Open', opened: (n) => `Opened: ${n}`, copyLink: 'Copy Link', copiedLink: 'Link copied',
+    pause: 'Pause', resume: 'Resume', retry: 'Retry', reveal: 'Show in Finder', removeTask: 'Remove from List',
+    deleteTask: 'Delete', deleteEllipsis: 'Delete…',
+    clearedDone: (n) => `Cleared ${n} completed ${n === 1 ? 'task' : 'tasks'} (files kept)`,
     confirmTrash: (n) => `Delete “${n}”? The file will be moved to the Trash.`, confirmDiscard: (n) => `Delete “${n}”? Downloaded data will be discarded.`,
     trashed: (n) => `Moved “${n}” to the Trash`,
     queued: 'Queued', paused: 'Paused', failed: 'Connection lost', left: '',
@@ -741,16 +794,21 @@ const STRINGS = {
     downloading: (n, speed) => `${n} downloading · ${speed}/s`,
     finished: (name) => `Downloaded: ${name}`,
     newSub: 'New Subcategory', rename: 'Rename', deleteGroup: 'Delete Category', moveTo: 'Move to', noGroup: 'No category',
-    untitled: 'Untitled Category', movedTo: (name) => `Moved to “${name}”`, learned: (name) => `Auto-sorted into “${name}”`,
+    untitled: 'Untitled Category', invalidGroupName: 'Category name cannot contain / or :',
+    movedTo: (name) => `Moved to “${name}”`, learned: (name) => `Auto-sorted into “${name}” · similar source`,
     deleted: (name) => `Deleted “${name}” (tasks kept)`,
-    browserTip: 'Turn on “Developer mode” on the Extensions page, then drag “Rainkeep Extension” from Finder into the page',
+    browserStep1: 'Turn on “Developer mode” at the top right of the Extensions page',
+    browserStep2: 'Drag the selected “Rainkeep Extension” from Finder into the page',
     connected: (browser) => `Connected to ${browser}`, notConnected: 'Not connected',
     update: 'Updates', updateCurrent: (v) => `Version ${v}`, updateCheck: 'Check for Updates', updateChecking: 'Watching the clouds…',
     updateLatest: 'Clear skies · Up to date', updateFound: (v) => `Fresh rain is here · ${v}`, updateGet: 'Catch the Rain',
-    bgFailed: "Couldn't load the background image", updateFailed: 'No clouds in sight · Check your network and try again', updateRetry: 'Retry', updateFoundTip: (v) => `Fresh rain is here · ${v}. Click to catch it`,
+    updateCatching: (pct) => `Catching rain · ${pct}%`, updateReady: (v) => `${v} is ready`, updateOpen: 'Open Installer',
+    bgFailed: "Couldn't load the background image", updateFailed: 'No clouds in sight · Check your network and try again', updateRetry: 'Retry',
+    updateFoundTip: (v) => `Fresh rain is here · ${v}. Click to catch it`, updateReadyTip: (v) => `${v} is ready. Click to open installer`,
     panelActive: 'Active', panelDone: 'Recently Completed', panelOpen: 'Open Rainkeep', panelQuit: 'Quit',
     panelEmpty: 'Nothing downloading', panelEmptyDone: 'Nothing finished yet',
-    panelTitle: (n, speed) => (n ? `Active · ${n} · ${speed}/s` : 'Active'),
+    panelFailed: (n) => `${n} failed`, panelPaused: (n) => `${n} paused`,
+    panelDownloading: (n, speed) => `${n} downloading · ${speed}/s`,
     quitTip: 'The prototype does not really quit',
   },
 };
@@ -782,6 +840,7 @@ const ICONS = {
   folder:   '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M2 4.5c0-.6.4-1 1-1h3.2l1.5 1.6H13c.6 0 1 .4 1 1v5.9c0 .6-.4 1-1 1H3c-.6 0-1-.4-1-1z"/></svg>',
   folderPlus: '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4.5c0-.6.4-1 1-1h3.2l1.5 1.6H13c.6 0 1 .4 1 1v5.9c0 .6-.4 1-1 1H3c-.6 0-1-.4-1-1z"/><path d="M8 7.5v3.5M6.25 9.25h3.5"/></svg>',
   trash:    '<svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 4h11M6 4V2.5h4V4M4 4l.7 9.5h6.6L12 4M6.8 6.5v4.5M9.2 6.5v4.5"/></svg>',
+  clear:    '<svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M2.5 4.5h11M2.5 8h7M2.5 11.5h5M11 9.5l3 3M14 9.5l-3 3"/></svg>',
   close:    '<svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 4l8 8M12 4l-8 8"/></svg>',
   sliders:  '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M2.5 5h6M12.5 5h1M2.5 11h1M7.5 11h6"/><circle cx="10.5" cy="5" r="1.7"/><circle cx="5.5" cy="11" r="1.7"/></svg>',
   chevron:  '<svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6l4 4 4-4"/></svg>',
@@ -903,17 +962,26 @@ function savePath(task) {
   return settings.classify ? `${settings.dir}/${t(task.type)}/${task.name}` : `${settings.dir}/${task.name}`;
 }
 
-function addUrls(urls) {
+function addUrls(urls, fromUser = false) {
   let learnedGroup = null;
+  const added = [];
   for (const url of urls) {
     const task = makeTask(uniqueName(nameFromUrl(url)), (20 + Math.random() * 1500) * MB, 0, 'queued', url);
     const suggestion = settings.learn ? suggestGroup(task) : null;
     if (suggestion) { task.group = suggestion; learnedGroup = suggestion; }
     tasks.push(task);
+    added.push(task);
   }
   schedule();
-  renderAll();
-  toast(learnedGroup ? t('learned', groupById(learnedGroup).name) : t('added', urls.length));
+  // 手动添加的任务如果被当前筛选藏起来了，切回能看见它的视图，免得以为没加上
+  let switched = false;
+  if (fromUser && added.length) {
+    if (view.status === 'done') { view.status = 'all'; switched = true; }
+    if (!added.some((task) => matchesKey(task, view.key))) { view.key = 'all'; switched = true; }
+  }
+  renderAll(switched);
+  toast(learnedGroup && urls.length === 1 ? t('learned', groupById(learnedGroup).name) : t('added', urls.length));
+  return added;
 }
 
 /* ---------- 习惯学习：手动归类时记下来源网站和扩展名 ---------- */
@@ -949,12 +1017,21 @@ function moveToGroup(task, group) {
 /* ---------- 分类管理 ---------- */
 
 let renamingId = null;
+let justCreatedId = null;
+let typesCollapsed = (() => {
+  try { return localStorage.getItem(FOLD_KEY) === '1'; } catch { return false; }
+})();
+
+function saveTypesCollapsed() {
+  try { localStorage.setItem(FOLD_KEY, typesCollapsed ? '1' : '0'); } catch { /* 隐私模式忽略 */ }
+}
 
 function createGroup(parent) {
   if (parent && depthOf(parent) >= MAX_DEPTH) return;
   const group = { id: `g${Date.now()}`, name: t('untitled'), parent };
   groups.push(group);
   renamingId = group.id;
+  justCreatedId = group.id;
   buildSidebar();
 }
 
@@ -969,11 +1046,22 @@ function deleteGroup(id) {
   toast(t('deleted', name));
 }
 
+function cancelRename(id) {
+  if (justCreatedId === id) groups = groups.filter((g) => g.id !== id);
+  renamingId = null;
+  justCreatedId = null;
+  buildSidebar();
+}
+
 function commitRename(input, id) {
   const name = input.value.trim();
   const group = groupById(id);
-  if (group && name) group.name = name;
+  if (group && name) {
+    if (name === '.' || name === '..' || /[/:]/.test(name)) toast(t('invalidGroupName'), true);
+    else group.name = name;
+  }
   renamingId = null;
+  justCreatedId = null;
   buildSidebar();
   renderAll();
 }
@@ -1072,6 +1160,9 @@ function translateStatic() {
   renderBrowserLink();
   renderUpdate(false);
   $('resizer').setAttribute('aria-label', lang() === 'zh' ? '调整侧栏宽度' : 'Resize sidebar');
+  $('clearDoneBtn').innerHTML = ICONS.clear;
+  $('clearDoneBtn').setAttribute('aria-label', t('clearDone'));
+  $('clearDoneBtn').title = t('clearDone');
   $('addBtn').setAttribute('aria-label', t('add'));
   $('addBtn').title = t('add');
   $('settingsBtn').innerHTML = `${ICONS.sliders}<span>${t('settings')}</span>`;
@@ -1087,9 +1178,13 @@ function translateStatic() {
 
 /* ---------- 渲染 ---------- */
 
+// 未完成在上、已完成在下，各段内部最新添加排最前
 function visibleTasks() {
-  return tasks.filter((task) => matchesKey(task, view.key) &&
+  const matched = tasks.filter((task) => matchesKey(task, view.key) &&
     (view.status === 'all' || (view.status === 'done') === (task.status === 'completed')));
+  const active = matched.filter((x) => x.status !== 'completed').reverse();
+  const done = matched.filter((x) => x.status === 'completed').reverse();
+  return [...active, ...done];
 }
 
 function matchesKey(task, key) {
@@ -1099,9 +1194,16 @@ function matchesKey(task, key) {
   return subtreeIds(id).includes(task.group);
 }
 
-// 把滑块移到目标元素位置，过渡动画由 CSS 负责
+// 累加相对位置到滑块所在的父容器，兼容嵌套节点，过渡动画由 CSS 负责
 function moveThumb(thumb, target) {
-  thumb.style.transform = `translate(${target.offsetLeft}px, ${target.offsetTop}px)`;
+  const parent = thumb.offsetParent;
+  if (!parent || !target) return;
+  let x = 0, y = 0;
+  for (let el = target; el && el !== parent; el = el.offsetParent) {
+    x += el.offsetLeft;
+    y += el.offsetTop;
+  }
+  thumb.style.transform = `translate(${x}px, ${y}px)`;
   thumb.style.width = `${target.offsetWidth}px`;
   thumb.style.height = `${target.offsetHeight}px`;
 }
@@ -1126,12 +1228,13 @@ function groupNode(group, level) {
     input.value = group.name;
     input.setAttribute('aria-label', t('rename'));
     item.firstChild.replaceWith(input);
+    let canceled = false;
     input.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') input.blur();
-      if (e.key === 'Escape') { input.value = group.name; input.blur(); }
+      if (e.key === 'Escape') { canceled = true; cancelRename(group.id); }
       e.stopPropagation();
     });
-    input.addEventListener('blur', () => commitRename(input, group.id));
+    input.addEventListener('blur', () => { if (!canceled) commitRename(input, group.id); });
     requestAnimationFrame(() => { input.focus(); input.select(); });
   }
   node.append(item);
@@ -1148,9 +1251,24 @@ function groupNode(group, level) {
 function buildSidebar() {
   const tree = $('sideTree');
   tree.replaceChildren();
-  tree.append(sideItem('all', t('all'), 1));
+  const head = document.createElement('div');
+  head.className = 'side-head';
+  const allBtn = sideItem('all', t('all'), 1);
+  const foldBtn = document.createElement('button');
+  foldBtn.className = 'fold-btn';
+  foldBtn.innerHTML = ICONS.chevron;
+  const syncFold = () => {
+    const tip = t(typesCollapsed ? 'unfoldTypes' : 'foldTypes');
+    foldBtn.setAttribute('aria-expanded', String(!typesCollapsed));
+    foldBtn.setAttribute('aria-label', tip);
+    foldBtn.title = tip;
+  };
+  syncFold();
+  head.append(allBtn, foldBtn);
+  tree.append(head);
   const types = document.createElement('div');
   types.className = 'side-children';
+  types.hidden = typesCollapsed;
   for (const type of TYPES) {
     const node = document.createElement('div');
     node.className = 'node';
@@ -1158,6 +1276,19 @@ function buildSidebar() {
     types.append(node);
   }
   tree.append(types);
+  foldBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    typesCollapsed = !typesCollapsed;
+    types.hidden = typesCollapsed;
+    saveTypesCollapsed();
+    syncFold();
+    if (typesCollapsed && view.key.startsWith('type:')) {
+      view.key = 'all';
+      renderAll(true);
+    } else {
+      renderSidebar();
+    }
+  });
   for (const group of childrenOf(null)) {
     const gap = document.createElement('div');
     gap.className = 'side-gap';
@@ -1249,8 +1380,8 @@ function renderList(animate) {
     toggle.title = label;
     const remove = row.querySelector('[data-act="remove"]');
     remove.innerHTML = ICONS.trash;
-    remove.setAttribute('aria-label', t('deleteTask'));
-    remove.title = t('deleteTask');
+    remove.setAttribute('aria-label', t('deleteEllipsis'));
+    remove.title = t('deleteEllipsis');
     updateRow(row, task);
     list.append(row);
   });
@@ -1264,6 +1395,8 @@ function renderToolbar() {
     if (b.dataset.status === view.status) current = b;
   }
   moveThumb($('segThumb'), current);
+  const hasDoneInView = tasks.some((x) => x.status === 'completed' && matchesKey(x, view.key));
+  $('clearDoneBtn').hidden = view.status !== 'done' || !hasDoneInView;
   const running = tasks.some((x) => x.status === 'downloading' || x.status === 'queued');
   const paused = tasks.some((x) => x.status === 'paused');
   const btn = $('pauseAll');
@@ -1283,8 +1416,23 @@ function renderMenuBar() {
   $('menubar').hidden = !settings.menuBar;
   if (!settings.menuBar) closePanel();
   const active = tasks.some((x) => x.status === 'downloading');
-  $('mbItem').innerHTML = ICONS.drop(14) + (active ? `<span class="speed">${fmtBytes(totalSpeed())}/s</span>` : '');
+  const hasFailed = tasks.some((x) => x.status === 'failed');
+  $('mbItem').innerHTML = ICONS.drop(14)
+    + (active ? `<span class="speed">${fmtBytes(totalSpeed())}/s</span>` : '')
+    + (hasFailed ? '<i class="mb-dot" aria-hidden="true"></i>' : '');
   $('mbItem').setAttribute('aria-label', t('panelActive'));
+}
+
+function panelTitleText() {
+  if (panelTab !== 'active') return t('panelDone');
+  const dl = tasks.filter((x) => x.status === 'downloading').length;
+  const fail = tasks.filter((x) => x.status === 'failed').length;
+  const pause = tasks.filter((x) => x.status === 'paused').length;
+  const parts = [t('panelActive')];
+  if (dl) parts.push(t('panelDownloading', dl, fmtBytes(totalSpeed())));
+  if (fail) parts.push(t('panelFailed', fail));
+  else if (!dl && pause) parts.push(t('panelPaused', pause));
+  return parts.join(' · ');
 }
 
 function renderPanel() {
@@ -1295,11 +1443,13 @@ function renderPanel() {
     if (b.dataset.tab === panelTab) current = b;
   }
   moveThumb($('tabThumb'), current);
-  const active = tasks.filter((x) => x.status === 'downloading' || x.status === 'queued');
-  const done = tasks.filter((x) => x.status === 'completed');
-  const downloading = tasks.filter((x) => x.status === 'downloading').length;
-  $('panelTitle').textContent = panelTab === 'active' ? t('panelTitle', downloading, fmtBytes(totalSpeed())) : t('panelDone');
-  const pages = [['active', active], ['done', done.slice().reverse()]].map(([tab, all]) => {
+  // 与主窗口一致包含全部未完成任务：失败任务置顶方便重试，其余按最新在前
+  const failed = tasks.filter((x) => x.status === 'failed').reverse();
+  const otherActive = tasks.filter((x) => x.status !== 'completed' && x.status !== 'failed').reverse();
+  const active = [...failed, ...otherActive];
+  const done = tasks.filter((x) => x.status === 'completed').reverse();
+  $('panelTitle').textContent = panelTitleText();
+  const pages = [['active', active], ['done', done]].map(([tab, all]) => {
     const page = document.createElement('div');
     page.className = 'p-page' + (tab === panelTab ? ' current' : '');
     fillPanelPage(page, tab, all.slice(0, PANEL_LIMIT));
@@ -1340,12 +1490,12 @@ function renderAll(animate = false) {
 }
 
 let toastTimer;
-function toast(text) {
+function toast(text, long = text.length > 18) {
   const el = $('toast');
   el.textContent = text;
   el.classList.add('show');
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => el.classList.remove('show'), TOAST_MS);
+  toastTimer = setTimeout(() => el.classList.remove('show'), long ? TOAST_LONG_MS : TOAST_MS);
 }
 
 /* ---------- 模拟下载 ---------- */
@@ -1363,6 +1513,13 @@ function tick() {
       finished.push(task);
     }
   }
+  if (update.state === 'catching') {
+    const pkg = tasks.find((x) => x.id === update.taskId);
+    if (!pkg) { update = { state: 'available', version: update.version }; renderUpdate(); }
+    else if (pkg.status === 'completed') { update = { state: 'ready', version: update.version, taskId: pkg.id }; renderUpdate(); }
+    else if (pkg.status === 'failed') { update = { state: 'failed' }; renderUpdate(); }
+    else renderUpdate(false);
+  }
   if (finished.length) {
     schedule();
     renderAll();
@@ -1376,8 +1533,7 @@ function tick() {
   renderStatusbar();
   renderMenuBar();
   if ($('panel').classList.contains('open') && panelTab === 'active') {
-    const downloading = tasks.filter((x) => x.status === 'downloading').length;
-    $('panelTitle').textContent = t('panelTitle', downloading, fmtBytes(totalSpeed()));
+    $('panelTitle').textContent = panelTitleText();
   }
 }
 
@@ -1446,11 +1602,23 @@ function closeDialog() {
   lastFocus?.focus();
 }
 
-function openAdd() {
+async function openAdd() {
   openDialog('addScrim');
+  const box = $('urls');
   $('urlError').textContent = '';
-  $('urls').value = '';
-  $('urls').focus();
+  box.value = '';
+  box.focus();
+  // 剪贴板里正好全是 http/https 链接时，自动预填并全选，直接按 ⌘↩ 即可下载
+  try {
+    const clip = (await navigator.clipboard?.readText?.())?.trim();
+    if (!clip || box.value || openScrim?.id !== 'addScrim') return;
+    const tokens = clip.split(/\s+/);
+    const urls = parseUrls(clip);
+    if (urls.length && urls.length === tokens.length) {
+      box.value = urls.join('\n');
+      box.select();
+    }
+  } catch { /* 浏览器没给剪贴板权限时静默跳过 */ }
 }
 
 function confirmAdd() {
@@ -1460,7 +1628,7 @@ function confirmAdd() {
     return;
   }
   closeDialog();
-  addUrls(urls);
+  addUrls(urls, true);
 }
 
 let settingsPage = 'general';
@@ -1506,7 +1674,13 @@ function closeDropdown() {
 function openDropdown(dd) {
   closeDropdown();
   openDd = dd;
-  dd.querySelector('.dd-list').classList.add('open');
+  const list = dd.querySelector('.dd-list');
+  list.classList.remove('up');
+  list.classList.add('open');
+  const dialog = dd.closest('.dialog');
+  if (dialog && list.getBoundingClientRect().bottom > dialog.getBoundingClientRect().bottom - 8) {
+    list.classList.add('up');
+  }
   dd.querySelector('.dd-btn').setAttribute('aria-expanded', 'true');
   (dd.querySelector('[aria-selected="true"]') || dd.querySelector('.dd-opt')).focus();
 }
@@ -1569,17 +1743,29 @@ document.querySelectorAll('.dropdown').forEach(setupDropdown);
 document.querySelectorAll('.switch').forEach(setupSwitch);
 $('dirPath').textContent = settings.dir;
 $('changeDir').addEventListener('click', () => toast('SwiftUI 版这里会弹出访达选择文件夹'));
-/* 接管浏览器：App 把扩展复制到 Application Support，打开访达和浏览器扩展页，用户自己拖进去；原型里 3 秒后模拟扩展连上。
+/* 接管浏览器：点「连接」在行下常驻展开两步引导；原型里 3.2 秒后模拟扩展拖入连上并收起引导。
    连上后按钮仍在：扩展被删或浏览器重装后，记录还是「已连接」，要能重新拖一次 */
+let connectTimer;
 function renderBrowserLink() {
-  $('browserStatus').textContent = linkedBrowser ? t('connected', linkedBrowser) : t('notConnected');
+  const status = $('browserStatus');
+  if (linkedBrowser) {
+    status.innerHTML = '<i class="status-dot" aria-hidden="true"></i><span></span>';
+    status.lastElementChild.textContent = t('connected', linkedBrowser);
+  } else {
+    status.textContent = t('notConnected');
+  }
   $('browserConnect').textContent = t(linkedBrowser ? 'reconnect' : 'connect');
 }
 $('browserConnect').addEventListener('click', () => {
-  toast(t('browserTip'));
-  setTimeout(() => { linkedBrowser = 'Chrome'; renderBrowserLink(); }, 3000);
+  $('browserGuide').hidden = false;
+  clearTimeout(connectTimer);
+  connectTimer = setTimeout(() => {
+    linkedBrowser = 'Chrome';
+    $('browserGuide').hidden = true;
+    renderBrowserLink();
+  }, 3200);
 });
-/* ---------- 更新检测：原型里第一次检查是「已是最新」，再检查一次「新雨已至」 ---------- */
+/* ---------- 更新检测：第一次检查「已是最新」，再检查「新雨已至」→「正在接雨」→「新雨已落 · 打开安装包」 ---------- */
 const APP_VERSION = '1.8';
 const SKY_SVG = `<svg class="sky" viewBox="0 0 20 18" aria-hidden="true">
   <path class="cloud" d="M5.5 10.5h9a3.25 3.25 0 0 0 .4-6.48A4.75 4.75 0 0 0 5.9 4.2a3.15 3.15 0 0 0-.4 6.3z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
@@ -1594,35 +1780,53 @@ const SKY_SVG = `<svg class="sky" viewBox="0 0 20 18" aria-hidden="true">
 const UPDATE_DEMO_MS = 1800;
 let update = { state: 'idle' };
 let updateChecks = 0;
+function updatePercent() {
+  const pkg = tasks.find((x) => x.id === update.taskId);
+  return pkg && pkg.size > 0 ? Math.min(99, Math.round((pkg.done / pkg.size) * 100)) : 0;
+}
 function renderUpdate(animate = true) {
   $('updateRow').dataset.update = update.state;
-  // 工具栏的天气一直在：没查过或查失败时是一朵静止的云，点它就查
   const sky = $('skyBtn');
   sky.dataset.update = update.state;
+  const pct = update.state === 'catching' ? updatePercent() : 0;
+  const statusText = {
+    idle: t('updateCurrent', APP_VERSION),
+    checking: t('updateChecking'),
+    latest: t('updateLatest'),
+    available: t('updateFound', update.version),
+    catching: t('updateCatching', pct),
+    ready: t('updateReady', update.version),
+    failed: t('updateFailed'),
+  }[update.state];
   const tip = update.state === 'available' ? t('updateFoundTip', update.version)
-    : { checking: t('updateChecking'), latest: t('updateLatest'), failed: t('updateFailed') }[update.state] ?? t('updateCheck');
+    : update.state === 'ready' ? t('updateReadyTip', update.version)
+    : update.state === 'idle' ? t('updateCheck') : statusText;
   sky.title = tip;
   sky.setAttribute('aria-label', tip);
   const status = $('updateStatus');
   const button = $('updateBtn');
-  status.textContent = {
-    idle: t('updateCurrent', APP_VERSION), checking: t('updateChecking'), latest: t('updateLatest'),
-    available: t('updateFound', update.version), failed: t('updateFailed'),
-  }[update.state];
-  button.hidden = update.state === 'checking';
-  button.textContent = t({ available: 'updateGet', failed: 'updateRetry' }[update.state] ?? 'updateCheck');
-  button.classList.toggle('primary', update.state === 'available');
+  status.textContent = statusText;
+  button.hidden = update.state === 'checking' || update.state === 'catching';
+  button.textContent = t({ available: 'updateGet', ready: 'updateOpen', failed: 'updateRetry' }[update.state] ?? 'updateCheck');
+  button.classList.toggle('primary', update.state === 'available' || update.state === 'ready');
   if (!animate) return;
   status.style.animation = 'none';
   void status.offsetWidth;  // 重放淡入
   status.style.animation = '';
 }
 function checkOrCatch() {
-  if (update.state === 'checking') return;
+  if (update.state === 'checking' || update.state === 'catching') return;
+  if (update.state === 'ready') {
+    const pkg = tasks.find((x) => x.id === update.taskId);
+    toast(t('opened', pkg?.name ?? `Rainkeep-${update.version}.dmg`));
+    return;
+  }
   if (update.state === 'available') {
-    // 拾雨自己就是下载器：新版安装包直接加进任务列表
-    addUrls([`https://github.com/git-yafaya/RainKeep/releases/download/v${update.version}/Rainkeep-${update.version}.dmg`]);
-    update = { state: 'idle' };
+    // 拾雨自己就是下载器：新版安装包加进任务列表，并跟踪下载进度直到就绪
+    const [pkg] = addUrls([`https://github.com/git-yafaya/RainKeep/releases/download/v${update.version}/Rainkeep-${update.version}.dmg`], true);
+    pkg.size = 48 * MB;
+    pkg.baseSpeed = 14 * MB;
+    update = { state: 'catching', version: update.version, taskId: pkg.id };
     renderUpdate();
     return;
   }
@@ -1706,14 +1910,43 @@ $('sidebar').addEventListener('contextmenu', (e) => {
 
 $('list').addEventListener('contextmenu', (e) => {
   const row = e.target.closest('.row');
-  if (!row) return;
+  if (!row) {
+    const hasDone = tasks.some((x) => x.status === 'completed' && matchesKey(x, view.key));
+    if (!hasDone) return;
+    e.preventDefault();
+    openContext(e.clientX, e.clientY, [{ label: t('clearDone'), run: clearCompleted }]);
+    return;
+  }
   e.preventDefault();
   const task = tasks.find((x) => x.id === Number(row.dataset.id));
-  const entries = [{ heading: t('moveTo') }, ...flatGroups().map(({ group, depth }) =>
-    ({ label: group.name, indent: depth, run: () => moveToGroup(task, group.id) }))];
-  if (task.group) entries.push('-', { label: t('noGroup'), run: () => moveToGroup(task, null) });
-  entries.push('-', { label: t('removeTask'), run: () => removeTask(task.id) },
-    { label: t('deleteTask'), danger: true, run: () => askDelete(task.id) });
+  const entries = [];
+  if (task.status === 'completed') {
+    entries.push(
+      { label: t('openTask'), run: () => toast(t('opened', task.name)) },
+      { label: t('reveal'), run: () => toast(savePath(task)) },
+      '-',
+    );
+  }
+  if (task.url) {
+    entries.push({
+      label: t('copyLink'),
+      run: () => {
+        navigator.clipboard?.writeText?.(task.url).catch(() => {});
+        toast(t('copiedLink'));
+      },
+    }, '-');
+  }
+  const allGroups = flatGroups();
+  if (allGroups.length) {
+    entries.push({ heading: t('moveTo') }, ...allGroups.map(({ group, depth }) =>
+      ({ label: group.name, indent: depth, run: () => moveToGroup(task, group.id) })));
+    if (task.group) entries.push({ label: t('noGroup'), run: () => moveToGroup(task, null) });
+    entries.push('-');
+  }
+  entries.push(
+    { label: t('removeTask'), run: () => removeTask(task.id) },
+    { label: t('deleteEllipsis'), danger: true, run: () => askDelete(task.id) },
+  );
   openContext(e.clientX, e.clientY, entries);
 });
 
@@ -1803,8 +2036,25 @@ $('segmented').addEventListener('click', (e) => {
 
 function removeTask(id) {
   tasks = tasks.filter((x) => x.id !== id);
+  if ((update.state === 'catching' || update.state === 'ready') && update.taskId === id) {
+    update = { state: 'available', version: update.version };
+    renderUpdate();
+  }
   schedule();
   renderAll();
+}
+
+function clearCompleted() {
+  const before = tasks.length;
+  tasks = tasks.filter((x) => !(x.status === 'completed' && matchesKey(x, view.key)));
+  const cleared = before - tasks.length;
+  if (!cleared) return;
+  if (update.state === 'ready' && !tasks.some((x) => x.id === update.taskId)) {
+    update = { state: 'available', version: update.version };
+    renderUpdate();
+  }
+  renderAll(true);
+  toast(t('clearedDone', cleared));
 }
 
 // 删除前在底部确认；已下完的文件移到废纸篓，没下完的连同临时文件删掉
@@ -1851,6 +2101,16 @@ $('list').addEventListener('click', (e) => {
   else toggleTask(tasks.find((x) => x.id === id));
 });
 
+$('list').addEventListener('dblclick', (e) => {
+  if (e.target.closest('.actions')) return;
+  const row = e.target.closest('.row');
+  if (!row) return;
+  const task = tasks.find((x) => x.id === Number(row.dataset.id));
+  if (task?.status === 'completed') toast(t('opened', task.name));
+});
+
+$('clearDoneBtn').addEventListener('click', clearCompleted);
+
 $('pauseAll').addEventListener('click', () => {
   const running = tasks.some((x) => x.status === 'downloading' || x.status === 'queued');
   for (const task of tasks) {
@@ -1875,6 +2135,7 @@ document.addEventListener('keydown', (e) => {
     else closeDialog();
     return;
   }
+  if (pendingDelete !== null && e.key === 'Enter') { e.preventDefault(); confirmDelete(); return; }
   if (openScrim?.id === 'addScrim' && e.key === 'Enter' && cmd) confirmAdd();
   if (openScrim) return;
   if (cmd && e.key.toLowerCase() === 'n') { e.preventDefault(); openAdd(); }
@@ -1895,7 +2156,7 @@ win.addEventListener('drop', (e) => {
   win.classList.remove('dropping');
   const text = e.dataTransfer.getData('text/uri-list') || e.dataTransfer.getData('text/plain');
   const urls = parseUrls(text);
-  if (urls.length) addUrls(urls); else toast(t('noLinksDrop'));
+  if (urls.length) addUrls(urls, true); else toast(t('noLinksDrop'));
 });
 
 window.addEventListener('resize', () => renderAll());
@@ -1912,16 +2173,17 @@ groups = [
   { id: 'design', name: '设计稿', parent: 'proj' },
   { id: 'study', name: '学习', parent: null },
 ];
+// 按添加时间从早到晚排列；展示时未完成在上、已完成在下，各自最新排最前
 tasks = [
-  makeTask('WWDC26-Keynote.mp4', 1.9 * 1024 * MB, 1.18 * 1024 * MB, 'downloading', 'https://developer.apple.com/videos/WWDC26-Keynote.mp4', 'study'),
-  makeTask('macOS-Wallpapers.zip', 820 * MB, 210 * MB, 'downloading', 'https://example.com/macOS-Wallpapers.zip'),
-  makeTask('Podcast-Ep42.mp3', 96 * MB, 40 * MB, 'downloading', 'https://example.com/Podcast-Ep42.mp3'),
-  makeTask('node-v24.11.0.pkg', 78 * MB, 0, 'queued', 'https://nodejs.org/dist/node-v24.11.0.pkg'),
-  makeTask('Xcode_27.dmg', 12.4 * 1024 * MB, 3.1 * 1024 * MB, 'paused', 'https://developer.apple.com/Xcode_27.dmg'),
-  makeTask('dataset-2026.tar.gz', 640 * MB, 233 * MB, 'failed', 'https://example.com/dataset-2026.tar.gz'),
-  makeTask('年度报告-Q3.pdf', 18 * MB, 18 * MB, 'completed', 'https://intranet.example.com/年度报告-Q3.pdf', 'work'),
-  makeTask('首页-v3.fig', 42 * MB, 42 * MB, 'completed', 'https://figma.example.com/首页-v3.fig', 'design'),
   makeTask('IMG_2048.heic', 4.2 * MB, 4.2 * MB, 'completed', 'https://example.com/IMG_2048.heic'),
+  makeTask('首页-v3.fig', 42 * MB, 42 * MB, 'completed', 'https://figma.example.com/首页-v3.fig', 'design'),
+  makeTask('年度报告-Q3.pdf', 18 * MB, 18 * MB, 'completed', 'https://intranet.example.com/年度报告-Q3.pdf', 'work'),
+  makeTask('dataset-2026.tar.gz', 640 * MB, 233 * MB, 'failed', 'https://example.com/dataset-2026.tar.gz'),
+  makeTask('Xcode_27.dmg', 12.4 * 1024 * MB, 3.1 * 1024 * MB, 'paused', 'https://developer.apple.com/Xcode_27.dmg'),
+  makeTask('node-v24.11.0.pkg', 78 * MB, 0, 'queued', 'https://nodejs.org/dist/node-v24.11.0.pkg'),
+  makeTask('Podcast-Ep42.mp3', 96 * MB, 40 * MB, 'downloading', 'https://example.com/Podcast-Ep42.mp3'),
+  makeTask('macOS-Wallpapers.zip', 820 * MB, 210 * MB, 'downloading', 'https://example.com/macOS-Wallpapers.zip'),
+  makeTask('WWDC26-Keynote.mp4', 1.9 * 1024 * MB, 1.18 * 1024 * MB, 'downloading', 'https://developer.apple.com/videos/WWDC26-Keynote.mp4', 'study'),
 ];
 applyAppearance();
 translateStatic();

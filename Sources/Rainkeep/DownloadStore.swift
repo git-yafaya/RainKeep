@@ -16,7 +16,10 @@ private struct NewTask {
 @MainActor
 @Observable
 final class DownloadStore {
-    private static let toastDuration = Duration.milliseconds(1800)
+    private static let toastDuration = Duration.milliseconds(2000)
+    /// 报错、归类依据这类要读一会儿的提示
+    private static let longToastDuration = Duration.milliseconds(3600)
+    private static let longToastLength = 18
 
     var items: [DownloadItem] = []
     var settings = AppSettings() {
@@ -36,6 +39,8 @@ final class DownloadStore {
     var pendingDelete: UUID?
     /// 正在侧栏里改名的分类
     var renaming: UUID?
+    /// 刚新建、还没确认名字的分类；改名时按 Esc 就撤回
+    var justCreated: UUID?
     private(set) var backgroundImage: NSImage?
     private var backgroundIsBright = true
     /// 浏览器扩展最近一次连上的记录，nil 表示还没连上过
@@ -85,11 +90,19 @@ final class DownloadStore {
                    backgroundIsBright: backgroundImage == nil ? nil : backgroundIsBright)
     }
 
+    /// 未完成在上、已完成在下，各段内部最新添加的排最前；排队调度仍按 items 原顺序
     var visibleItems: [DownloadItem] {
-        items.filter { item in
-            matches(item, selection) &&
-                (statusFilter == .all || (statusFilter == .done) == (item.status == .completed))
-        }
+        let matched = items.filter { isVisible($0) }
+        return matched.filter { $0.status != .completed }.reversed() + matched.filter { $0.status == .completed }.reversed()
+    }
+
+    private func isVisible(_ item: DownloadItem) -> Bool {
+        matches(item, selection) && (statusFilter == .all || (statusFilter == .done) == (item.status == .completed))
+    }
+
+    /// 当前侧栏范围里有没有已完成的任务，决定「清空已完成记录」出不出现
+    var hasCompletedInSelection: Bool {
+        items.contains { $0.status == .completed && matches($0, selection) }
     }
 
     /// 筛选条件变了列表才重建、播入场动画
@@ -149,8 +162,19 @@ final class DownloadStore {
         reschedule()
     }
 
-    func add(urls: [URL]) {
-        add(urls.map { NewTask(url: $0) })
+    /// revealing：用户手动添加（弹窗、拖拽）时，新任务若被当前筛选藏住就切回能看到它的视图
+    @discardableResult
+    func add(urls: [URL], revealing: Bool = false) -> [UUID] {
+        let ids = add(urls.map { NewTask(url: $0) })
+        if revealing { reveal(ids) }
+        return ids
+    }
+
+    private func reveal(_ ids: [UUID]) {
+        let added = items.filter { ids.contains($0.id) }
+        guard !added.isEmpty, !added.contains(where: isVisible) else { return }
+        if statusFilter == .done { statusFilter = .all }
+        if !added.contains(where: isVisible) { selection = .all }
     }
 
     /// 浏览器扩展经 rainkeep://add 交来的下载；链接不合法直接拒绝
@@ -164,8 +188,10 @@ final class DownloadStore {
     }
 
     /// 学过习惯的新任务先按链接放进对应分类，下完再按内容复判
-    private func add(_ tasks: [NewTask]) {
+    @discardableResult
+    private func add(_ tasks: [NewTask]) -> [UUID] {
         var learned: CategoryLearner.Suggestion?
+        var ids: [UUID] = []
         for task in tasks {
             let fileName = task.fileName ?? Naming.fileName(from: task.url)
             var item = DownloadItem(name: fileName, url: task.url, size: 0)
@@ -181,6 +207,7 @@ final class DownloadStore {
             item.destination = dir.appending(path: item.name)
             if !task.headers.isEmpty { headers[item.id] = task.headers }
             items.append(item)
+            ids.append(item.id)
         }
         reschedule()
         if let learned, tasks.count == 1 {
@@ -188,6 +215,7 @@ final class DownloadStore {
         } else {
             showToast(language.pick("已添加 \(tasks.count) 个任务", "Added \(tasks.count) \(tasks.count == 1 ? "task" : "tasks")"))
         }
+        return ids
     }
 
     /// 行内主按钮：下载/排队→暂停，暂停/失败→重新排队，已完成→在访达中显示
@@ -202,11 +230,52 @@ final class DownloadStore {
             items[i].status = .queued
             items[i].message = nil
         case .completed:
-            if let destination = items[i].destination {
-                NSWorkspace.shared.activateFileViewerSelecting([destination])
-            }
+            if let file = existingFile(of: items[i]) { NSWorkspace.shared.activateFileViewerSelecting([file]) }
         }
         reschedule()
+    }
+
+    /// 双击或右键「打开」：用系统默认应用打开下好的文件
+    func open(_ id: UUID) {
+        guard let item = items.first(where: { $0.id == id }), let file = existingFile(of: item) else { return }
+        NSWorkspace.shared.open(file)
+    }
+
+    /// 文件还在原处就返回路径；被移走或删掉了提示一句，右键菜单里会出「重新下载」
+    private func existingFile(of item: DownloadItem) -> URL? {
+        guard let file = item.destination, FileManager.default.fileExists(atPath: file.path) else {
+            showToast(language.pick("文件已被移动或删除", "File was moved or deleted"), long: true)
+            return nil
+        }
+        return file
+    }
+
+    /// 已完成但文件不见了：从头重新排队下载
+    func redownload(_ id: UUID) {
+        guard let i = items.firstIndex(where: { $0.id == id }), items[i].url != nil else { return }
+        items[i].received = 0
+        items[i].size = 0
+        items[i].message = nil
+        items[i].status = .queued
+        reschedule()
+    }
+
+    /// 只从列表里清掉当前侧栏范围内的完成记录，磁盘上的文件不动
+    func clearCompleted() {
+        let before = items.count
+        items.removeAll { $0.status == .completed && matches($0, selection) }
+        let cleared = before - items.count
+        guard cleared > 0 else { return }
+        reschedule()
+        showToast(language.pick("已清空 \(cleared) 条完成记录，文件已保留",
+                                "Cleared \(cleared) completed \(cleared == 1 ? "task" : "tasks") (files kept)"))
+    }
+
+    func copyLink(_ id: UUID) {
+        guard let url = items.first(where: { $0.id == id })?.url else { return }
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(url.absoluteString, forType: .string)
+        showToast(language.pick("已复制链接", "Link copied"))
     }
 
     /// 移除任务；没下完的顺手删掉临时文件，已完成的文件保留
@@ -288,24 +357,27 @@ final class DownloadStore {
         backgroundImage = image
     }
 
-    func showToast(_ text: String) {
+    /// long 不传时按字数判断，超过 18 个字的停久一点
+    func showToast(_ text: String, long: Bool? = nil) {
         toastText = text
         toastToken += 1
         let token = toastToken
+        let duration = long ?? (text.count > Self.longToastLength) ? Self.longToastDuration : Self.toastDuration
         Task {
-            try? await Task.sleep(for: Self.toastDuration)
+            try? await Task.sleep(for: duration)
             if token == toastToken { toastText = nil }
         }
     }
 
     // MARK: 文件位置
 
-    /// 有自定义分类放进分类路径，否则按设置决定要不要按类型分文件夹（文件夹名用当时的界面语言）
+    /// 有自定义分类放进分类路径，否则按设置决定要不要按类型分文件夹
+    /// 类型文件夹名固定跟系统语言，临时切界面语言不会让下载目录里中英文文件夹分家
     func directory(for item: DownloadItem) -> URL {
         if let group = item.group, categories[group] != nil {
             return categories.path(of: group).reduce(settings.downloadDir) { $0.appending(path: $1.name) }
         }
-        return settings.classify ? settings.downloadDir.appending(path: item.category.name(language)) : settings.downloadDir
+        return settings.classify ? settings.downloadDir.appending(path: item.category.name(.system)) : settings.downloadDir
     }
 
     /// 目录里已有的文件 + 列表里要下到这个目录的任务，新任务不能和它们重名

@@ -7,5 +7,11 @@
   },
   "takeOver": {
     "message": "接管下载"
+  },
+  "hostConnected": {
+    "message": "已连接拾雨 App"
+  },
+  "hostNotConnected": {
+    "message": "未连接拾雨 App"
   }
 }

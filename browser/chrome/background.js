@@ -37,6 +37,18 @@ async function isBrowserRetry(item) {
   return item.byExtensionId === chrome.runtime.id;
 }
 
+// 成功转交宿主后，在工具栏图标上短暂显示对勾；角标出错不影响接管流程。
+async function flashBadge() {
+  try {
+    await chrome.action.setBadgeBackgroundColor({ color: "#34c759" });
+    await chrome.action.setBadgeText({ text: "✓" });
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+    await chrome.action.setBadgeText({ text: "" });
+  } catch (error) {
+    console.error("拾雨角标更新失败。", error.message);
+  }
+}
+
 // 取消后只传递目标站点的 Cookie 和文件名，不传本机目录。
 async function takeOver(item) {
   const url = item.finalUrl || item.url;
@@ -60,6 +72,7 @@ async function takeOver(item) {
       userAgent: navigator.userAgent,
     });
     if (response?.ok !== true) throw new Error(response?.error || "宿主未确认接管");
+    flashBadge();
   } catch (error) {
     console.error("拾雨接管失败，交回浏览器。", error.message);
     await returnToBrowser(item.url);

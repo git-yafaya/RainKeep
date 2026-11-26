@@ -19,6 +19,7 @@ extension DownloadStore {
                 jobs.removeValue(forKey: item.id)?.cancel()
             }
         }
+        followInstaller()
         save()
     }
 

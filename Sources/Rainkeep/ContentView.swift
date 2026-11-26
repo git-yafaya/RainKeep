@@ -64,11 +64,12 @@ struct ContentView: View {
             if web.isEmpty {
                 store.showToast(language.pick("没有识别到链接", "No links found"))
             } else {
-                store.add(urls: web)
+                store.add(urls: web, revealing: true)
             }
             return true
         } isTargeted: { isDropTargeted = $0 }
         .focusEffectDisabled()
+        .background(WindowTitle(title: language.pick("拾雨", "Rainkeep")))
         .onAppear { store.openMainWindow = { [openWindow] in openWindow(id: RainkeepApp.mainWindow) } }
     }
 }
@@ -89,14 +90,36 @@ private struct BackgroundImage: View {
     }
 }
 
-/// 隐藏标题栏后，用空白处拖动窗口
+/// 隐藏标题栏后，用空白处拖动窗口；macOS 14 没有 WindowDragGesture，垫一层 AppKit 视图来拖
 private struct WindowDragArea: ViewModifier {
     func body(content: Content) -> some View {
         if #available(macOS 15.0, *) {
             content.gesture(WindowDragGesture())
         } else {
-            content
+            content.background(WindowDragView())
         }
+    }
+}
+
+private struct WindowDragView: NSViewRepresentable {
+    final class DragView: NSView {
+        override var mouseDownCanMoveWindow: Bool { true }
+        override func mouseDown(with event: NSEvent) { window?.performDrag(with: event) }
+    }
+
+    func makeNSView(context: Context) -> NSView { DragView() }
+    func updateNSView(_ nsView: NSView, context: Context) {}
+}
+
+/// 主窗口标题跟界面语言走；Window 场景的标题只能取启动时的语言（App.body 不能读设置）
+private struct WindowTitle: NSViewRepresentable {
+    let title: String
+
+    func makeNSView(context: Context) -> NSView { NSView() }
+
+    func updateNSView(_ nsView: NSView, context: Context) {
+        // 刚建好时视图还没挂上窗口，等下一轮
+        DispatchQueue.main.async { nsView.window?.title = title }
     }
 }
 
@@ -161,6 +184,10 @@ private struct HeaderBar: View {
             Segmented(options: StatusFilter.allCases.map { ($0, $0.title(language)) },
                       selection: $store.statusFilter)
                 .padding(.trailing, 6)
+            if store.statusFilter == .done, store.hasCompletedInSelection {
+                IconButton(systemName: "text.badge.xmark", label: language.pick("清空已完成记录", "Clear Completed"),
+                           size: 13, weight: .regular, action: store.clearCompleted)
+            }
             Button(action: store.checkOrCatchUpdate) { UpdateSky(phase: store.update) }
                 .buttonStyle(IconButtonStyle())
                 .help(updateTip)
@@ -185,7 +212,8 @@ private struct HeaderBar: View {
         switch store.update {
         case .idle: language.pick("检查更新", "Check for Updates")
         case .available(let release): language.pick("新雨已至 · \(release.version)，点击接住", "Fresh rain is here · \(release.version). Click to catch it")
-        default: store.update.status(language)
+        case .ready(let release, _): language.pick("新雨已落 · \(release.version)，点击打开安装包", "\(release.version) is ready. Click to open installer")
+        default: store.updateStatus
         }
     }
 }
@@ -254,12 +282,14 @@ struct StatusBar: View {
 struct ToastView: View {
     @Environment(DownloadStore.self) private var store
     @Environment(\.theme) private var theme
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         ZStack {
             if let item = store.items.first(where: { $0.id == store.pendingDelete }) {
                 // 点了删除后紧接着出完成提示，确认条直接消失，免得两条叠着淡入淡出
-                DeleteConfirm(item: item).transition(.asymmetric(insertion: .opacity, removal: .identity))
+                DeleteConfirm(item: item)
+                    .transition(.asymmetric(insertion: .opacity.combined(with: .offset(y: 6)), removal: .identity))
             } else if let text = store.toastText {
                 Text(text)
                     .font(theme.font(12))
@@ -274,11 +304,11 @@ struct ToastView: View {
         .padding(.horizontal, 24)
         .padding(.bottom, 44)
         .animation(.easeOut(duration: 0.2), value: store.toastText)
-        .animation(.easeOut(duration: 0.2), value: store.pendingDelete)
+        .animation(reduceMotion ? nil : .easeOut(duration: 0.2), value: store.pendingDelete)
     }
 }
 
-/// 删除确认条：和提示同一位置，等用户点取消或删除，Esc 取消；文件名太长时截掉中间
+/// 删除确认条：和提示同一位置，等用户点取消或删除，Enter 删除、Esc 取消；文件名太长时截掉中间
 private struct DeleteConfirm: View {
     let item: DownloadItem
     @Environment(DownloadStore.self) private var store
@@ -290,7 +320,8 @@ private struct DeleteConfirm: View {
         HStack(spacing: 4) {
             HStack(spacing: 0) {
                 Text(language.pick("删除「", "Delete “")).layoutPriority(1)
-                Text(item.name).lineLimit(1).truncationMode(.middle).frame(maxWidth: Self.nameWidth)
+                // fixedSize 让框只取文件名实际宽度（最多 260），否则短名字两边会空出一截
+                Text(item.name).lineLimit(1).truncationMode(.middle).frame(maxWidth: Self.nameWidth).fixedSize()
                 Text(consequence).layoutPriority(1)
             }
             .padding(.trailing, 6)
@@ -298,6 +329,7 @@ private struct DeleteConfirm: View {
                 .keyboardShortcut(.cancelAction)
                 .buttonStyle(ToastButtonStyle(color: theme.card.opacity(0.75)))
             Button(language.pick("删除", "Delete")) { store.confirmDelete() }
+                .keyboardShortcut(.defaultAction)
                 .fontWeight(.semibold)
                 .buttonStyle(ToastButtonStyle(color: theme.danger))
         }

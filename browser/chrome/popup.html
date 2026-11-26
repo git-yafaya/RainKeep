@@ -1,13 +1,32 @@
 <!doctype html>
-<!-- 工具栏只显示下载接管开关。 -->
+<!-- 工具栏弹窗：接管开关和宿主连接状态。 -->
 <html lang="zh-CN">
 <meta charset="utf-8">
 <title>Rainkeep</title>
 <style>
-  :root { color-scheme: light dark; }
-  body { margin: 14px; font: 14px system-ui, sans-serif; }
-  label { display: flex; align-items: center; gap: 8px; white-space: nowrap; cursor: pointer; }
+  :root {
+    color-scheme: light dark;
+    --accent: #007aff; --track: rgba(0,0,0,.12); --muted: #86868b; --danger: #d93a2b; --ring: #8e8e93;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --accent: #0a84ff; --track: rgba(255,255,255,.18); --muted: #98989d; --danger: #ff6b5b; --ring: #98989d; }
+  }
+  body { margin: 14px; min-width: 200px; font: 13px system-ui, sans-serif; -webkit-tap-highlight-color: transparent; }
+  label { display: flex; align-items: center; justify-content: space-between; gap: 12px; white-space: nowrap; cursor: pointer; }
+  input { appearance: none; margin: 0; flex: none; position: relative; width: 32px; height: 19px; border-radius: 10px;
+    background: var(--track); outline: none; cursor: inherit; transition: background .2s; }
+  input::after { content: ""; position: absolute; top: 2px; left: 2px; width: 15px; height: 15px; border-radius: 50%;
+    background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,.3); transition: transform .2s; }
+  input:checked { background: var(--accent); }
+  input:checked::after { transform: translateX(13px); }
+  input:disabled { opacity: .5; cursor: default; }
+  input:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+  #status { display: flex; align-items: center; gap: 6px; min-height: 16px; margin-top: 8px; font-size: 12px; color: var(--muted); }
+  #status.ok::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
+  #status.fail { color: var(--danger); }
+  @media (prefers-reduced-motion: reduce) { input, input::after { transition: none; } }
 </style>
-<label><input id="enabled" type="checkbox" role="switch" disabled><span id="label"></span></label>
+<label><span id="label"></span><input id="enabled" type="checkbox" role="switch" disabled></label>
+<div id="status"></div>
 <script src="popup.js"></script>
 </html>

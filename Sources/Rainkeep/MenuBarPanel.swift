@@ -20,17 +20,32 @@ enum DropIcon {
     }
 }
 
-/// 菜单栏上的图标；有下载时后面跟总速度
+/// 菜单栏上的图标；有下载时后面跟总速度，有失败任务时水滴旁带一个危险色圆点
 struct MenuBarLabel: View {
     @Environment(DownloadStore.self) private var store
     private static let icon = DropIcon.image(side: 15)
 
     var body: some View {
-        if store.activeItems.isEmpty {
+        let speed = store.activeItems.isEmpty ? "" : " \(Format.bytes(store.totalSpeed))/s"
+        if store.items.contains(where: { $0.status == .failed }) {
+            // 菜单栏只认文字和图片，圆点画成非模板图，才能保留颜色
+            Text("\(Image(nsImage: Self.icon))\(Image(nsImage: Self.dot(store.theme.danger)))\(speed)").monospacedDigit()
+        } else if speed.isEmpty {
             Image(nsImage: Self.icon)
         } else {
-            Text("\(Image(nsImage: Self.icon)) \(Format.bytes(store.totalSpeed))/s").monospacedDigit()
+            Text("\(Image(nsImage: Self.icon))\(speed)").monospacedDigit()
         }
+    }
+
+    private static func dot(_ color: Color) -> NSImage {
+        let side = 6.0
+        let image = NSImage(size: NSSize(width: side + 2, height: side), flipped: false) { _ in
+            NSColor(color).setFill()
+            NSBezierPath(ovalIn: NSRect(x: 2, y: 0, width: side, height: side)).fill()
+            return true
+        }
+        image.isTemplate = false
+        return image
     }
 }
 
@@ -79,18 +94,34 @@ struct MenuBarPanel: View {
         .background(theme.card)
     }
 
+    /// 「进行中」和主窗口口径一致：所有未完成任务，失败的置顶方便重试，其余最新在前
     private func items(_ tab: PanelTab) -> [DownloadItem] {
-        let list = tab == .active
-            ? store.items.filter { $0.status == .downloading || $0.status == .queued }
-            : store.items.filter { $0.status == .completed }.reversed()
+        let list: [DownloadItem] = switch tab {
+        case .active:
+            store.items.filter { $0.status == .failed }.reversed()
+                + store.items.filter { $0.status != .completed && $0.status != .failed }.reversed()
+        case .done:
+            store.items.filter { $0.status == .completed }.reversed()
+        }
         return Array(list.prefix(Self.limit))
     }
 
+    /// 进行中 · N 个下载中 · 速度 · N 个失败；没在下载时才提已暂停数
     private var title: String {
         guard tab == .active else { return language.pick("最近完成", "Recently Completed") }
-        let count = store.activeItems.count
-        guard count > 0 else { return language.pick("进行中", "Active") }
-        return language.pick("进行中 · \(count) 个", "Active · \(count)") + " · \(Format.bytes(store.totalSpeed))/s"
+        let downloading = store.activeItems.count
+        let failed = store.items.filter { $0.status == .failed }.count
+        let paused = store.items.filter { $0.status == .paused }.count
+        var parts = [language.pick("进行中", "Active")]
+        if downloading > 0 {
+            parts.append(language.pick("\(downloading) 个下载中", "\(downloading) downloading") + " · \(Format.bytes(store.totalSpeed))/s")
+        }
+        if failed > 0 {
+            parts.append(language.pick("\(failed) 个失败", "\(failed) failed"))
+        } else if downloading == 0, paused > 0 {
+            parts.append(language.pick("\(paused) 个已暂停", "\(paused) paused"))
+        }
+        return parts.joined(separator: " · ")
     }
 
     /// 两个图标页签，选中背景滑过去

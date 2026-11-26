@@ -37,6 +37,12 @@ struct TaskListView: View {
                     .padding(.horizontal, 10)
                     .padding(.vertical, 6)
                 }
+                // 行有自己的右键菜单；落在空白处才出这一项
+                .contextMenu {
+                    if store.hasCompletedInSelection {
+                        Button(language.pick("清空已完成记录", "Clear Completed"), action: store.clearCompleted)
+                    }
+                }
             }
         }
         .id(store.filterKey)        // 筛选变了整块重建，触发逐行入场
@@ -71,34 +77,45 @@ struct TaskRow: View {
     @Environment(\.theme) private var theme
     @Environment(\.language) private var language
     @State private var hovering = false
+    /// 行内按钮拿到键盘焦点时按钮也要显出来
+    @FocusState private var focusedButton: RowButton?
+
+    private enum RowButton { case toggle, delete }
 
     var body: some View {
         HStack(spacing: compact ? 10 : 12) {
-            FileIcon(name: item.name, color: item.category.color, side: compact ? 28 : 36)
-            VStack(alignment: .leading, spacing: compact ? 4 : 5) {
-                Text(item.name)
-                    .fontWeight(.medium)
-                    .lineLimit(1)
-                    .truncationMode(.middle)
-                    .help(item.name)
-                if item.status != .completed {
-                    ProgressLine(progress: item.progress, status: item.status)
+            HStack(spacing: compact ? 10 : 12) {
+                FileIcon(name: item.name, color: item.category.color, side: compact ? 28 : 36)
+                VStack(alignment: .leading, spacing: compact ? 4 : 5) {
+                    Text(item.name)
+                        .fontWeight(.medium)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                        .help(item.name)
+                    if item.status != .completed {
+                        ProgressLine(progress: item.progress, status: item.status)
+                    }
+                    Text(Format.summary(item, language, groupName: store.groupName(of: item)))
+                        .font(theme.font(11.5))
+                        .monospacedDigit()
+                        .foregroundStyle(item.status == .failed ? AnyShapeStyle(theme.danger) : AnyShapeStyle(.secondary))
+                        .lineLimit(1)
                 }
-                Text(Format.summary(item, language, groupName: store.groupName(of: item)))
-                    .font(theme.font(11.5))
-                    .monospacedDigit()
-                    .foregroundStyle(item.status == .failed ? AnyShapeStyle(theme.danger) : AnyShapeStyle(.secondary))
-                    .lineLimit(1)
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
+            // 双击只认左边文字区，免得连点右侧按钮时误开文件
+            .contentShape(Rectangle())
+            .onTapGesture(count: 2) { if item.status == .completed { store.open(item.id) } }
             HStack(spacing: 2) {
                 let (icon, label) = toggleAction
                 IconButton(systemName: icon, label: label) { store.toggle(item.id) }
+                    .focused($focusedButton, equals: .toggle)
                 if !compact {
-                    IconButton(systemName: "trash", label: language.pick("删除", "Delete")) { store.pendingDelete = item.id }
+                    IconButton(systemName: "trash", label: language.pick("删除…", "Delete…")) { store.pendingDelete = item.id }
+                        .focused($focusedButton, equals: .delete)
                 }
             }
-            .opacity(hovering || compact ? 1 : 0)
+            .opacity(hovering || focusedButton != nil || compact ? 1 : 0)
         }
         .padding(compact ? 8 : 10)
         .background(RoundedRectangle(cornerRadius: compact ? 10 : 8).fill(hovering ? theme.hover : .clear))
@@ -110,8 +127,21 @@ struct TaskRow: View {
         .contextMenu { if !compact { menu } }
     }
 
-    /// 右键：移到某个分类（按层级缩进）、移出分类、从列表移除、删除
+    /// 右键：打开 / 在访达中显示（文件丢了就重新下载）、复制链接、移到分类、从列表移除、删除
     @ViewBuilder private var menu: some View {
+        if item.status == .completed {
+            if let file = item.destination, FileManager.default.fileExists(atPath: file.path) {
+                Button(language.pick("打开", "Open")) { store.open(item.id) }
+                Button(language.pick("在访达中显示", "Show in Finder")) { store.toggle(item.id) }
+            } else if item.url != nil {
+                Button(language.pick("重新下载", "Redownload")) { store.redownload(item.id) }
+            }
+            Divider()
+        }
+        if item.url != nil {
+            Button(language.pick("复制下载链接", "Copy Link")) { store.copyLink(item.id) }
+            Divider()
+        }
         let categories = flattened(parent: nil, depth: 0)
         if !categories.isEmpty {
             Menu(language.pick("移到分类", "Move to")) {

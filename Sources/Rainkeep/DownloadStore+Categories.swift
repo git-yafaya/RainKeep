@@ -14,12 +14,26 @@ extension DownloadStore {
     func newCategory(parent: UUID?) {
         guard let category = categories.add(language.pick("未命名分类", "Untitled Category"), parent: parent) else { return }
         renaming = category.id
+        justCreated = category.id
         save()
     }
 
+    /// 名字为空保持原名；含 / 或 : 这类不能当文件夹名的字符时也保持原名，并说明原因
     func rename(_ id: UUID, to name: String) {
-        categories.rename(id, to: name)
+        let blank = name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        if !categories.rename(id, to: name), !blank {
+            showToast(language.pick("分类名不能包含 / 或 :", "Category name cannot contain / or :"), long: true)
+        }
         renaming = nil
+        justCreated = nil
+        save()
+    }
+
+    /// 改名时按 Esc：刚新建还没起名的分类直接撤回，已有的分类保持原名
+    func cancelRename(_ id: UUID) {
+        if justCreated == id { categories.remove(id) }
+        renaming = nil
+        justCreated = nil
         save()
     }
 
