@@ -88,4 +88,8 @@ public struct SavedState: Codable, Sendable {
     public func encoded() throws -> Data {
         try JSONEncoder().encode(self)
     }
+
+    public static func brokenBackupURL(for file: URL, at date: Date = .now) -> URL {
+        file.deletingLastPathComponent().appending(path: "state.broken-\(Int64(date.timeIntervalSince1970)).json")
+    }
 }

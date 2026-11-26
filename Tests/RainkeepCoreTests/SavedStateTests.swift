@@ -90,3 +90,9 @@ private let state10 = #"""
     #expect(again.learner == original.learner)
     #expect(again.items.map(\.id) == original.items.map(\.id))
 }
+
+@Test func brokenBackupUsesSameDirectoryAndUnixSeconds() {
+    let file = URL(fileURLWithPath: "/tmp/Rainkeep/state.json")
+    let backup = SavedState.brokenBackupURL(for: file, at: Date(timeIntervalSince1970: 1_750_000_000.9))
+    #expect(backup.path == "/tmp/Rainkeep/state.broken-1750000000.json")
+}

@@ -55,15 +55,26 @@ public enum Naming {
         return invalid ? nil : name
     }
 
+    /// 临时文件和续传清单也占用对应的成品名。
+    public static func partialBaseName(_ name: String) -> String? {
+        let lower = name.lowercased()
+        for suffix in [".part.json", ".part"] where lower.hasSuffix(suffix) {
+            let base = String(name.dropLast(suffix.count))
+            return base.isEmpty ? nil : base
+        }
+        return nil
+    }
+
     /// 重名时加 " (1)"、" (2)"……
     public static func uniqueName(_ name: String, taken: Set<String>) -> String {
-        guard taken.contains(name) else { return name }
+        let occupied = Set(taken.map { $0.lowercased() })
+        guard occupied.contains(name.lowercased()) else { return name }
         let ext = (name as NSString).pathExtension
         let stem = (name as NSString).deletingPathExtension
         var n = 1
         while true {
             let candidate = ext.isEmpty ? "\(stem) (\(n))" : "\(stem) (\(n)).\(ext)"
-            if !taken.contains(candidate) { return candidate }
+            if !occupied.contains(candidate.lowercased()) { return candidate }
             n += 1
         }
     }

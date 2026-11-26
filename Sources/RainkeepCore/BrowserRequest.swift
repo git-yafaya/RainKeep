@@ -30,7 +30,7 @@ public struct BrowserRequest: Equatable, Sendable {
     }
 
     /// 将浏览器字段逐项编码，保留原下载链接的查询参数和片段。
-    public static func url(for request: Self) -> URL {
+    public static func url(for request: Self) throws -> URL {
         var parts = URLComponents()
         parts.scheme = "rainkeep"
         parts.host = "add"
@@ -40,7 +40,9 @@ public struct BrowserRequest: Equatable, Sendable {
             if let value { items.append(URLQueryItem(name: name, value: value)) }
         }
         parts.queryItems = items
-        return parts.url!
+        guard let url = parts.url else { throw URLError(.badURL) }
+        guard url.absoluteString.utf8.count <= 64 * 1024 else { throw URLError(.dataLengthExceedsMaximum) }
+        return url
     }
 
     /// 只接受指向 add 的下载命令，拒绝重复参数和无效链接。

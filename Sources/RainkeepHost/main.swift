@@ -1,4 +1,5 @@
 // 读取一条 Native Messaging 消息，记录扩展连接或转交下载。
+import AppKit
 import Darwin
 import RainkeepCore
 import Foundation
@@ -51,7 +52,8 @@ private func parentBrowser() -> String? {
     return app.map { String($0.dropLast(4)) }
 }
 
-private func handleMessage() throws {
+@MainActor
+private func handleMessage() async throws {
     let prefix = try readExactly(4)
     let length = prefix.withUnsafeBytes { UInt32(littleEndian: $0.loadUnaligned(as: UInt32.self)) }
     guard (1...1_048_576).contains(length) else { throw HostError.size }
@@ -70,7 +72,7 @@ private func handleMessage() throws {
     let payload = try decoder.decode(Payload.self, from: body)
     guard let request = BrowserRequest(url: payload.url, referrer: payload.referrer, filename: payload.filename,
                                        cookies: payload.cookies, userAgent: payload.userAgent) else { throw HostError.payload }
-    let url = BrowserRequest.url(for: request)
+    let url = try BrowserRequest.url(for: request)
     if dryRun { return }
     // 旧版 App 即使收到 open 事件也不会建任务，先确认包内已注册下载协议。
     let executable = URL(fileURLWithPath: CommandLine.arguments[0]).standardizedFileURL
@@ -79,15 +81,14 @@ private func handleMessage() throws {
           let types = bundle.object(forInfoDictionaryKey: "CFBundleURLTypes") as? [[String: Any]],
           types.contains(where: { ($0["CFBundleURLSchemes"] as? [String])?.contains("rainkeep") == true })
     else { throw HostError.open }
-    let process = Process()
-    process.executableURL = URL(fileURLWithPath: "/usr/bin/open")
-    // 指定拾雨 App，避免把含 Cookie 的 URL 交给其他同 scheme 应用。
-    process.arguments = ["-g", "-a", app.path, url.absoluteString]
-    process.standardOutput = FileHandle.nullDevice
-    process.standardError = FileHandle.nullDevice
-    try process.run()
-    process.waitUntilExit()
-    guard process.terminationStatus == 0 else { throw HostError.open }
+    let config = NSWorkspace.OpenConfiguration()
+    config.activates = false
+    do {
+        _ = try await NSWorkspace.shared.open([url], withApplicationAt: app, configuration: config)
+    } catch {
+        // 系统错误可能包含原 URL，回复扩展时不带凭据。
+        throw HostError.open
+    }
 }
 
 /// stdout 只传输带小端长度前缀的 JSON。
@@ -100,7 +101,7 @@ private func writeReply(_ reply: Reply) throws {
 }
 
 do {
-    try handleMessage()
+    try await handleMessage()
 } catch {
     try writeReply(Reply(ok: false, error: error.localizedDescription))
     exit(0)

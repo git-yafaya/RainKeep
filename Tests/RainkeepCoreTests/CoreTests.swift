@@ -14,6 +14,15 @@ import Testing
     #expect(Naming.uniqueName("a.heic", taken: []) == "a.heic")
     #expect(Naming.uniqueName("a.heic", taken: ["a.heic", "a (1).heic"]) == "a (2).heic")
     #expect(Naming.uniqueName("README", taken: ["README"]) == "README (1)")
+    #expect(Naming.uniqueName("Report.ZIP", taken: ["report.zip", "REPORT (1).zip"]) == "Report (2).ZIP")
+}
+
+@Test func partialFilesReserveBaseName() {
+    #expect(Naming.partialBaseName("Report.ZIP.part") == "Report.ZIP")
+    #expect(Naming.partialBaseName("Report.ZIP.PART.JSON") == "Report.ZIP")
+    #expect(Naming.partialBaseName("notes.part.part.json") == "notes.part")
+    #expect(Naming.partialBaseName("notes.part.json.bak") == nil)
+    #expect(Naming.partialBaseName(".part") == nil)
 }
 
 @Test func parseKeepsOnlyWebLinks() {

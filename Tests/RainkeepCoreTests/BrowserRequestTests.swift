@@ -9,12 +9,28 @@ import RainkeepCore
     let request = try #require(BrowserRequest(url: link, referrer: "https://example.org/?a=1&b=2",
                                               filename: "资料 + 100% & #1.zip",
                                               cookies: "token=a+b/c==; id=42", userAgent: "Browser/123"))
-    #expect(BrowserRequest.parse(BrowserRequest.url(for: request)) == request)
+    #expect(BrowserRequest.parse(try BrowserRequest.url(for: request)) == request)
     #expect(request.headers == ["Referer": "https://example.org/?a=1&b=2",
                                 "Cookie": "token=a+b/c==; id=42", "User-Agent": "Browser/123"])
     let minimal = try #require(BrowserRequest(url: link))
-    #expect(BrowserRequest.parse(BrowserRequest.url(for: minimal)) == minimal)
+    #expect(BrowserRequest.parse(try BrowserRequest.url(for: minimal)) == minimal)
     #expect(minimal.headers.isEmpty)
+}
+
+@Test func limitsEncodedBrowserURLBytes() throws {
+    let link = try #require(URL(string: "https://example.org/download"))
+    func request(_ filename: String) throws -> BrowserRequest {
+        try #require(BrowserRequest(url: link, filename: filename))
+    }
+    let prefix = "雨"
+    let size = try BrowserRequest.url(for: request(prefix)).absoluteString.utf8.count
+    let name = prefix + String(repeating: "a", count: 64 * 1024 - size)
+    let exact = try BrowserRequest.url(for: request(name))
+    #expect(exact.absoluteString.utf8.count == 64 * 1024)
+    let over = try request(name + "a")
+    #expect(throws: URLError(.dataLengthExceedsMaximum)) { try BrowserRequest.url(for: over) }
+    let expanded = try request(String(repeating: "雨", count: 8_000))
+    #expect(throws: URLError(.dataLengthExceedsMaximum)) { try BrowserRequest.url(for: expanded) }
 }
 
 /// 外部调用者不能指定其他协议、歧义目标、危险文件名或多行请求头。

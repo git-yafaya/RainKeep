@@ -51,6 +51,7 @@ async function flashBadge() {
 
 // 取消后只传递目标站点的 Cookie 和文件名，不传本机目录。
 async function takeOver(item) {
+  if (item.incognito) return;
   const url = item.finalUrl || item.url;
   if (!/^https?:\/\//i.test(item.url) || !/^https?:\/\//i.test(url) ||
       item.state !== "in_progress" || await isBrowserRetry(item)) return;

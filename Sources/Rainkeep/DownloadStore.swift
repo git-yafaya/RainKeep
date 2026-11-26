@@ -58,23 +58,33 @@ final class DownloadStore {
     @ObservationIgnored var openMainWindow: (() -> Void)?
     @ObservationIgnored private var toastToken = 0
     @ObservationIgnored var jobs: [UUID: Task<Void, Never>] = [:]
+    @ObservationIgnored private var removingDestinations: Set<URL> = []
     @ObservationIgnored var speedSamples: [UUID: (time: ContinuousClock.Instant, received: Int64)] = [:]
     /// 网络每恢复一次加一，等待重试的任务看到变化就立刻续传
     @ObservationIgnored var networkGeneration = 0
     @ObservationIgnored private var monitor: NWPathMonitor?
-    @ObservationIgnored private let stateFile: URL?
+    @ObservationIgnored private var stateFile: URL?
 
     init(stateFile: URL? = DownloadStore.defaultStateFile()) {
         self.stateFile = stateFile
-        guard let stateFile, let data = try? Data(contentsOf: stateFile) else { return }
+        guard let stateFile else { return }
         do {
-            let saved = try SavedState.restore(from: data)
+            let saved = try SavedState.restore(from: Data(contentsOf: stateFile))
             settings = saved.settings
             categories = saved.categories ?? CategoryTree()
             learner = saved.learner ?? CategoryLearner()
             items = saved.items
+        } catch CocoaError.fileReadNoSuchFile {
+            return
         } catch {
-            showToast(language.pick("读取任务列表失败：", "Couldn't read saved tasks: ") + error.localizedDescription)
+            let backup = SavedState.brokenBackupURL(for: stateFile)
+            do {
+                try FileManager.default.moveItem(at: stateFile, to: backup)
+                showToast(language.pick("任务列表读取失败，原件已保存在 ", "Couldn't read saved tasks. Original saved as ") + backup.lastPathComponent)
+            } catch {
+                self.stateFile = nil
+                showToast(language.pick("备份任务列表失败，已停止保存：", "Couldn't back up saved tasks. Saving is disabled: ") + error.localizedDescription)
+            }
         }
         loadBackground()
     }
@@ -202,9 +212,9 @@ final class DownloadStore {
                 item.autoSorted = true
                 learned = suggestion
             }
-            let dir = directory(for: item)
-            item.name = Naming.uniqueName(fileName, taken: takenNames(in: dir))
-            item.destination = dir.appending(path: item.name)
+            let destination = availableDestination(for: item)
+            item.name = destination.lastPathComponent
+            item.destination = destination
             if !task.headers.isEmpty { headers[item.id] = task.headers }
             items.append(item)
             ids.append(item.id)
@@ -288,6 +298,7 @@ final class DownloadStore {
         serverNames[id] = nil
         reschedule()
         guard item.status != .completed, let destination = item.destination else { return }
+        removingDestinations.insert(destination)
         Task {
             // 等引擎停下、写完最后一次续传记录再删，免得删了又被写回来
             await job?.value
@@ -295,6 +306,7 @@ final class DownloadStore {
             for file in [part, part.appendingPathExtension("json")] {
                 try? FileManager.default.removeItem(at: file)  // 文件可能本来就不存在
             }
+            removingDestinations.remove(destination)
         }
     }
 
@@ -380,13 +392,19 @@ final class DownloadStore {
         return settings.classify ? settings.downloadDir.appending(path: item.category.name(.system)) : settings.downloadDir
     }
 
-    /// 目录里已有的文件 + 列表里要下到这个目录的任务，新任务不能和它们重名
+    func availableDestination(for item: DownloadItem) -> URL {
+        let dir = directory(for: item)
+        return dir.appending(path: Naming.uniqueName(item.name, taken: takenNames(in: dir)))
+    }
+
+    /// 成品、断点和仍在清理的路径都占用名字。
     func takenNames(in dir: URL) -> Set<String> {
         let onDisk = (try? FileManager.default.contentsOfDirectory(atPath: dir.path)) ?? []  // 目录还没建时为空
-        let planned = items.compactMap(\.destination)
+        let destinations = items.compactMap(\.destination) + removingDestinations
+        let planned = destinations
             .filter { $0.deletingLastPathComponent().path == dir.path }
             .map(\.lastPathComponent)
-        return Set(onDisk + planned)
+        return Set(onDisk + onDisk.compactMap(Naming.partialBaseName) + planned)
     }
 
     // MARK: 存盘

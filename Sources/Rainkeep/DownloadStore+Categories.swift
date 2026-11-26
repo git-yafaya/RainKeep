@@ -50,16 +50,18 @@ extension DownloadStore {
 
     /// 手动归类：给新分类加票，自动归错的给原分类扣票；已下完的文件立刻挪进分类文件夹，没下完的等下完再挪
     func assign(_ id: UUID, to group: UUID?) {
-        guard let i = items.firstIndex(where: { $0.id == id }), items[i].group != group else { return }
-        if settings.learn {
+        guard let i = items.firstIndex(where: { $0.id == id }),
+              items[i].group != group || items[i].autoSorted != false else { return }
+        let changed = items[i].group != group
+        if settings.learn, changed {
             let features = items[i].features
                 ?? LearnFeatures.make(url: items[i].url, referrer: nil, fileName: items[i].name)
             if items[i].autoSorted == true, let wrong = items[i].group { learner.retract(features, from: wrong) }
             if let group { learner.record(features, to: group) }
         }
         items[i].group = group
-        items[i].autoSorted = nil
-        if let group, let name = categories[group]?.name {
+        items[i].autoSorted = false
+        if changed, let group, let name = categories[group]?.name {
             relocate(id)
             showToast(language.pick("已移到「\(name)」", "Moved to “\(name)”"))
         }
@@ -68,7 +70,8 @@ extension DownloadStore {
 
     /// 下完按文件内容再判断一次；用户手动归过类的不动。返回改了的分类
     func resort(_ id: UUID) -> CategoryLearner.Suggestion? {
-        guard let i = items.firstIndex(where: { $0.id == id }), items[i].group == nil || items[i].autoSorted == true, let file = items[i].destination else { return nil }
+        guard let i = items.firstIndex(where: { $0.id == id }), items[i].autoSorted != false,
+              items[i].group == nil || items[i].autoSorted == true, let file = items[i].destination else { return nil }
         let content: [String]
         do {
             content = try ContentFingerprint.features(of: file)

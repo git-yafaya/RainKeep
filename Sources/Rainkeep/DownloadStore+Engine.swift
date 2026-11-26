@@ -16,7 +16,7 @@ extension DownloadStore {
             if item.status == .downloading, !running {
                 jobs[item.id] = Task { [weak self] in await self?.run(item.id) }
             } else if item.status != .downloading, running {
-                jobs.removeValue(forKey: item.id)?.cancel()
+                jobs[item.id]?.cancel()
             }
         }
         followInstaller()
@@ -25,8 +25,26 @@ extension DownloadStore {
 
     /// 跑一个任务直到完成、失败或被取消；网络类错误按退避自动重试，引擎每次都从断点续上
     private func run(_ id: UUID) async {
+        defer {
+            // 引擎和重试等待都已退出，立即继续的任务现在才可以重新占用目标路径。
+            if jobs.removeValue(forKey: id) != nil { reschedule() }
+        }
+        guard !Task.isCancelled, let i = items.firstIndex(where: { $0.id == id }) else { return }
+        guard let url = items[i].url else {
+            fail(id, language.pick("任务缺少下载链接", "Missing download URL"))
+            return
+        }
+        let destination: URL
+        if let existing = items[i].destination {
+            destination = existing
+        } else {
+            destination = availableDestination(for: items[i])
+            items[i].name = destination.lastPathComponent
+            items[i].destination = destination
+            save()
+        }
         var attempt = 0
-        while let item = items.first(where: { $0.id == id }), let url = item.url, let destination = item.destination {
+        while !Task.isCancelled {
             do {
                 try FileManager.default.createDirectory(at: destination.deletingLastPathComponent(),
                                                         withIntermediateDirectories: true)
@@ -38,7 +56,7 @@ extension DownloadStore {
                 finish(id)
                 return
             } catch {
-                if Task.isCancelled || error is CancellationError { return }
+                if Task.isCancelled { return }
                 attempt += 1
                 guard Retry.isTransient(error), attempt < Retry.maxAttempts else {
                     fail(id, describe(error))
@@ -83,7 +101,6 @@ extension DownloadStore {
     }
 
     private func finish(_ id: UUID) {
-        jobs[id] = nil
         speedSamples[id] = nil
         headers[id] = nil
         update(id) {
@@ -93,6 +110,7 @@ extension DownloadStore {
             $0.speed = 0
             $0.message = nil
         }
+        save()
         adoptServerName(id)
         let resorted = settings.learn ? resort(id) : nil
         relocate(id)
@@ -102,7 +120,6 @@ extension DownloadStore {
             showToast(language.pick("下载完成：", "Downloaded: ") + name)
             SystemNotice.post(language.pick("下载完成", "Download complete"), body: name)
         }
-        reschedule()
     }
 
     /// 名字是从链接猜的（比如 download.php），下完换成服务器给的名字，并挪进新类型对应的文件夹
@@ -129,14 +146,12 @@ extension DownloadStore {
     }
 
     private func fail(_ id: UUID, _ message: String) {
-        jobs[id] = nil
         speedSamples[id] = nil
         update(id) {
             $0.status = .failed
             $0.speed = 0
             $0.message = message
         }
-        reschedule()
     }
 
     /// 引擎自己的错误按界面语言显示，其余用系统给的说明

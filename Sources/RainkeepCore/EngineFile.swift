@@ -158,7 +158,7 @@ final class EngineFile: @unchecked Sendable {
         try handle.close()
         try Task.checkCancellation()
         try FileManager.default.moveItem(at: part, to: destination)
-        try FileManager.default.removeItem(at: manifest)
+        try? FileManager.default.removeItem(at: manifest)  // 成品已交付，清单删不掉不影响结果
         lock.withLock { report() }
         return destination
     }
