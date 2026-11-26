@@ -1580,7 +1580,7 @@ $('browserConnect').addEventListener('click', () => {
   setTimeout(() => { linkedBrowser = 'Chrome'; renderBrowserLink(); }, 3000);
 });
 /* ---------- 更新检测：原型里第一次检查是「已是最新」，再检查一次「新雨已至」 ---------- */
-const APP_VERSION = '1.6';
+const APP_VERSION = '1.7';
 const SKY_SVG = `<svg class="sky" viewBox="0 0 20 18" aria-hidden="true">
   <path class="cloud" d="M5.5 10.5h9a3.25 3.25 0 0 0 .4-6.48A4.75 4.75 0 0 0 5.9 4.2a3.15 3.15 0 0 0-.4 6.3z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
   <g class="drops" stroke="currentColor" stroke-width="1.4" stroke-linecap="round">
@@ -1630,7 +1630,7 @@ function checkOrCatch() {
   renderUpdate();
   setTimeout(() => {
     updateChecks++;
-    update = updateChecks === 1 ? { state: 'latest' } : { state: 'available', version: '1.7' };
+    update = updateChecks === 1 ? { state: 'latest' } : { state: 'available', version: '1.8' };
     renderUpdate();
   }, UPDATE_DEMO_MS);
 }
