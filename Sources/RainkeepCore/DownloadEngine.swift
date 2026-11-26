@@ -208,7 +208,10 @@ public enum DownloadEngine {
         let bounds = "\(range.lowerBound)-\(range.upperBound - 1)"
         req.setValue("bytes=\(bounds)", forHTTPHeaderField: "Range")
         req.setValue(resource.ifRange, forHTTPHeaderField: "If-Range")
-        try await EngineTransfer.run(req, session: session) { response in
+        // 每段单开一个会话：同一会话会把各段复用进一条 HTTP/2 连接，分段就失去了意义（Civitai 实测 4 段共用一条连接只有约 1/4 的速度）
+        let rangeSession = URLSession(configuration: session.configuration)
+        defer { rangeSession.finishTasksAndInvalidate() }
+        try await EngineTransfer.run(req, session: rangeSession) { response in
             let http = try checked(response)
             guard http.statusCode != 200, resource.acceptsValidators(http) else { throw EngineError.restart }
             guard http.statusCode == 206, http.hasIdentityEncoding, let total = resource.total,
